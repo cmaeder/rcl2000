@@ -1,0 +1,49 @@
+name:                rcl2000
+version:             0.1.0.0
+github:              "cmaeder/rcl2000"
+license:             BSD3
+author:              "Christian Maeder"
+maintainer:          "c.maeder@uni-bremen.de"
+copyright:           "2020 Christian Maeder"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/cmaeder/rcl2000#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- parsec1
+
+library:
+  source-dirs: src
+
+executables:
+  rcl2000-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - rcl2000
+
+tests:
+  rcl2000-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - rcl2000
