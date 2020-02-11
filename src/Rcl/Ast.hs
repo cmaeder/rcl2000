@@ -9,6 +9,9 @@ data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
 chEmpty :: Char
 chEmpty = '\x2205'
 
+lEmpty :: String
+lEmpty = "\\0"
+
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
 
@@ -17,8 +20,14 @@ data BinOp = Union | Inter deriving Show
 chUnion :: Char
 chUnion = '\x222A'
 
+lUnion :: String
+lUnion = "\\cup"
+
 chInter :: Char
 chInter = '\x2229'
+
+lInter :: String
+lInter = "\\cap"
 
 data UnOp = AO | OE | User | Roles | RolesStar | Sessions
   | Permissions | PermissionsStar | Operations | Object | Card deriving Show
@@ -28,8 +37,8 @@ unOps :: [UnOp]
 unOps = [AO, OE, User, RolesStar, Roles, Sessions
   , PermissionsStar, Permissions, Operations, Object]
 
-prUnOp :: UnOp -> String
-prUnOp o = let
+stUnOp :: UnOp -> String
+stUnOp o = let
   s = show o
   l = length s
   v = map toLower s in
@@ -45,8 +54,8 @@ data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving Show
 cmpOps :: [CmpOp]
 cmpOps = [Elem, Eq, Le, Lt, Ge, Gt, Ne]
 
-prCmpOp :: CmpOp -> String
-prCmpOp o = case o of
+stCmpOp :: CmpOp -> String
+stCmpOp o = case o of
   Elem -> "in"
   Eq -> "="
   Le -> "<="
@@ -58,22 +67,42 @@ prCmpOp o = case o of
 altCmpOps :: [CmpOp]
 altCmpOps = [Elem, Le, Ge, Ne]
 
-prAltCmpOp :: CmpOp -> String
-prAltCmpOp o = case o of
+csCmpOp :: CmpOp -> String
+csCmpOp o = case o of
   Elem -> "\x2208"
   Le -> "\x2264"
   Ge -> "\x2265"
   Ne -> "\x2260"
-  _ -> prCmpOp o
+  _ -> stCmpOp o
+
+lCmpOp :: CmpOp -> String
+lCmpOp o = case o of
+  Elem -> "\\in"
+  Le -> "\\leq"
+  Ge -> "\\geq"
+  Ne -> "\\neq"
+  _ -> stCmpOp o
 
 data BoolOp = And | Impl deriving Show
 
 chAnd :: Char
 chAnd = '\x2227'
 
+stAnd :: String
+stAnd = "/\\"
+
+lAnd :: String
+lAnd = "\\land"
+
 chImpl :: Char
 chImpl = '\x21D2'
 
+stImpl :: String
+stImpl = "=>"
+
+lImpl :: String
+lImpl = "\\Rightarrow"
+
 keySigns :: String
 keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
-  ++ concatMap prAltCmpOp altCmpOps
+  ++ concatMap csCmpOp altCmpOps

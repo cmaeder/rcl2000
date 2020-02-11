@@ -18,13 +18,14 @@ main = do
     _ -> mapM_ parseFile args
 
 parseFile :: String -> IO ()
-parseFile file = parseFromFile parser file >>= reportParse
+parseFile file = parseFromFile (skip *> parser <* eof) file >>= reportParse
 
-reportParse :: Either ParseError Stmt -> IO ()
+reportParse :: Either ParseError [Stmt] -> IO ()
 reportParse eith = case eith of
     Left err -> do
         print err
         exitFailure
     Right ast -> do
+        print $ length ast
         print ast
         exitSuccess

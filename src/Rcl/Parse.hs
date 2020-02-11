@@ -1,16 +1,20 @@
-module Rcl.Parse where
+module Rcl.Parse (parser, skip) where
 
-import Data.Char
+import Data.Char (isLetter)
+import Data.Functor (void)
 import Rcl.Ast
 import Text.ParserCombinators.Parsec
 
-parser :: Parser Stmt
-parser = mayBe (BoolOp And)
-  <$> impl <*> optionMaybe (alts ["/\\", [chAnd]] *> parser)
+parser :: Parser [Stmt]
+parser = many1 stmt
+
+stmt :: Parser Stmt
+stmt = mayBe (BoolOp And)
+  <$> impl <*> optionMaybe (alts [stAnd, [chAnd], lAnd] *> stmt)
 
 impl :: Parser Stmt
 impl = mayBe (BoolOp Impl)
-  <$> cmp <*> optionMaybe (alts ["=>", [chImpl]] *> cmp)
+  <$> cmp <*> optionMaybe (alts [stImpl, [chImpl], lImpl] *> cmp)
 
 alts :: [String] -> GenParser Char () String
 alts = choice . map (pString id)
@@ -19,17 +23,22 @@ cmp :: Parser Stmt
 cmp = flip CmpOp <$> set <*> cmpOp <*> set
 
 cmpOp :: Parser CmpOp
-cmpOp = choice (map (pString prCmpOp) cmpOps)
-  <|> choice (map (pString prAltCmpOp) altCmpOps)
+cmpOp = choice (map (pString stCmpOp) cmpOps)
+  <|> choice (map (pString csCmpOp) altCmpOps)
 
 -- possibly a top-level union
 set :: Parser Set
-set = mayBe (BinOp Union)
-  <$> interSet <*> optionMaybe (oneCh (chUnion : "u") *> set)
+set = mayBe (BinOp Union) <$> interSet <*> optionMaybe (uOp *> set)
+
+uOp :: Parser Char
+uOp = oneCh (chUnion : "u") <|> pString (const lUnion) chUnion
 
 interSet :: Parser Set
 interSet = mayBe (BinOp Inter)
-  <$> applSet <*> optionMaybe (oneCh (chInter : "in") *> interSet)
+  <$> applSet <*> optionMaybe (iOp *> interSet)
+
+iOp :: Parser Char
+iOp = oneCh (chInter : "in") <|> pString (const lInter) chInter
 
 mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
@@ -38,7 +47,7 @@ applSet :: Parser Set
 applSet = primSet <|> cardSet <|> unOpSet
 
 unOpSet :: Parser Set
-unOpSet = UnOp <$> choice (map (pString prUnOp) unOps) <*> (primSet <|> unOpSet)
+unOpSet = UnOp <$> choice (map (pString stUnOp) unOps) <*> (primSet <|> unOpSet)
 
 cardSet :: Parser Set
 cardSet = pch '|' *> set <* pch '|'
@@ -47,10 +56,10 @@ parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'
 
 pch :: Char -> Parser Char
-pch c = char c <* spaces
+pch c = char c <* skip
 
 primSet :: Parser Set
-primSet = intSet <* spaces <|> emptySet
+primSet = intSet <* skip <|> emptySet
   <|> choice (map (pString show) primSets)
   <|> parenSet
 
@@ -58,7 +67,8 @@ intSet :: Parser Set
 intSet = Num . read <$> many1 digit
 
 emptySet :: Parser Set
-emptySet = EmptySet <$ oneCh (chEmpty : "e")
+emptySet = EmptySet <$
+  (oneCh (chEmpty : "e") <|> pString (const lEmpty) chEmpty)
 
 oneCh :: String -> Parser Char
 oneCh = choice . map (pString (: ""))
@@ -68,5 +78,21 @@ pString pr a = let s = pr a in
   a <$ try (string s <* notFollowedBy
        (case s of
          _ : _ | isLetter $ last s -> alphaNum
-         _ -> satisfy isSymbol)
-     <* spaces)
+               | last s == '*' -> char '*'
+         _ -> oneOf $ "<>=/*+-" ++ keySigns)
+     <* skip)
+
+skip :: Parser ()
+skip = skipMany $ void space <|> nestedComment "/*" "*/" <|> lineComment "//"
+
+-- | nested comments, open and closing strings must have at least one char
+nestedComment :: String -> String -> Parser ()
+nestedComment op cl =
+  let inComment = void (try $ string cl)
+        <|> (nestedComment op cl <|> void anyChar) *> inComment
+  in try (string op) *> inComment
+
+-- | line comments
+lineComment :: String -> Parser ()
+lineComment op =
+  try (string op) *> void (manyTill anyChar $ void newline <|> eof)

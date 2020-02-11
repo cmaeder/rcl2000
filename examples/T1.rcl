@@ -1,1 +1,37 @@
-OE OE CR ∈ roles OE U ⇒ AO OE CR ∩ roles OE U = ∅
+/* from Gail-Joon Ahn and Ravi Sandhu.
+   Role-based authorization constraints specification.
+   ACM Trans. Inf. Syst. Secur., 3(4):207–226, November 2000
+*/
+
+// examples p 214
+|roles(OE(U)) ∩ OE(CR)| ≤ 1 // SOD
+OE(OE(CR)) ∈ roles(OE(U)) ⇒ AO(OE(CR)) ∩ roles(OE(U)) = ∅ // alternative 1
+user(OE(OE(CR))) ∩ user(AO(OE(CR))) = ∅  // alternative 2
+|roles(OE(sessions(OE(U)))) ∩ OE(CR)| ≤ 1 // DSOD active roles in single session
+|roles(sessions(OE(U))) ∩ OE(CR)| ≤ 1 // DSOD for all sessions of a user
+roles(OE(OE(CP))) ∩ roles(AO(OE(CP))) = ∅ // permission-centric
+
+// Example 1 p 216
+OE(OE(CR)) ∈ roles(OE(U)) ⇒ AO(OE(CR)) ∩ roles(OE(U)) = ∅
+
+// Example 2 p 217 (see above)
+|roles(OE(U)) ∩ OE(CR)| ≤ 1 // SOD
+
+// Table I p 223
+|roles*(OE(U)) ∩ OE(CR)| ≤ 1 // 1. SOOD-CR
+|permissions(roles*(OE(U))) ∩ OE(CP)| ≤ 1 // 2. SOOD-CP
+|permissions(roles*(OE(U))) ∩ OE(CP)| ≤ 1
+  ∧ |permissions*(OE(R)) ∩ OE(CP)| ≤ 1 // 3. Var 2.
+|roles*(OE(U)) ∩ OE(CR)| ≤ 1
+  ∧ |permissions*(OE(R)) ∩ OE(CP)| ≤ 1 // 4. Var 1.
+|roles*(OE(U)) ∩ OE(CR)| ≤ 1
+  ∧ |user(OE(CR)) ∩ OE(CU)| ≤ 1 // 5. SSOD-CU
+|roles*(OE(U)) ∩ OE(CR)| ≤ 1
+  ∧ |permissions*(OE(R)) ∩ OE(CP)| ≤ 1 // 4. Var 1.
+  ∧ |user(OE(CR)) ∩ OE(CU)| ≤ 1 // 6. 4. /\ 5.
+
+// Table II p 224
+|roles*(sessions(OE(U))) ∩ OE(CR)| ≤ 1 // 1. User-based DSOD
+|roles*(sessions(OE(OE(CU)))) ∩ OE(CR)| ≤ 1 // 1-1. User-based DSOD with CU
+|roles*(OE(sessions(OE(U)))) ∩ OE(CR)| ≤ 1 // 2. Session-based DSOD
+|roles*(OE(sessions(OE(OE(CU))))) ∩ OE(CR)| ≤ 1 // 2-1. 2. with CU
