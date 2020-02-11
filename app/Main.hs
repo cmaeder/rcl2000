@@ -2,6 +2,7 @@ module Main where
 
 import Rcl.Ast
 import Rcl.Parse
+import Rcl.Print
 import System.Environment
 import System.Exit
 import Text.ParserCombinators.Parsec
@@ -18,7 +19,7 @@ main = do
     _ -> mapM_ parseFile args
 
 parseFile :: String -> IO ()
-parseFile file = parseFromFile (skip *> parser <* eof) file >>= reportParse
+parseFile file = parseFromFile parser file >>= reportParse
 
 reportParse :: Either ParseError [Stmt] -> IO ()
 reportParse eith = case eith of
@@ -26,6 +27,12 @@ reportParse eith = case eith of
         print err
         exitFailure
     Right ast -> do
+        let line = putStrLn "////////////////////"
         print $ length ast
-        print ast
+        line
+        putStrLn (pp ast)
+        line
+        putStrLn (pLaTeX ast)
+        line
+        putStrLn (pAscii ast)
         exitSuccess

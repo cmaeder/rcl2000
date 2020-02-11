@@ -10,7 +10,7 @@ chEmpty :: Char
 chEmpty = '\x2205'
 
 lEmpty :: String
-lEmpty = "\\0"
+lEmpty = "\\emptyset"
 
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
@@ -45,6 +45,11 @@ stUnOp o = let
   if l == 2 then s else
   if "Star" `isSuffixOf` s then take (l - 4) v ++ "*"
   else v
+
+lUnOp :: UnOp -> String
+lUnOp o = case stUnOp o of
+  s@(_ : _) | last s == '*' -> init s ++ "^{*}"
+  s -> s
 
 data Stmt = CmpOp CmpOp Set Set
   | BoolOp BoolOp Stmt Stmt deriving Show

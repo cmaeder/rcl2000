@@ -1,4 +1,4 @@
-module Rcl.Parse (parser, skip) where
+module Rcl.Parse (parser) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)
@@ -6,7 +6,7 @@ import Rcl.Ast
 import Text.ParserCombinators.Parsec
 
 parser :: Parser [Stmt]
-parser = many1 stmt
+parser = skip *> many1 stmt <* eof
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
@@ -25,6 +25,7 @@ cmp = flip CmpOp <$> set <*> cmpOp <*> set
 cmpOp :: Parser CmpOp
 cmpOp = choice (map (pString stCmpOp) cmpOps)
   <|> choice (map (pString csCmpOp) altCmpOps)
+  <|> choice (map (pString lCmpOp) altCmpOps)
 
 -- possibly a top-level union
 set :: Parser Set
@@ -47,10 +48,17 @@ applSet :: Parser Set
 applSet = primSet <|> cardSet <|> unOpSet
 
 unOpSet :: Parser Set
-unOpSet = UnOp <$> choice (map (pString stUnOp) unOps) <*> (primSet <|> unOpSet)
+unOpSet = UnOp <$> choice pUnOps <*> (primSet <|> unOpSet)
+
+pUnOps :: [Parser UnOp]
+pUnOps = map (pString lUnOp) [RolesStar, PermissionsStar]
+  ++ map (pString stUnOp) unOps
 
 cardSet :: Parser Set
-cardSet = pch '|' *> set <* pch '|'
+cardSet = UnOp Card <$> (bar *> set <* bar)
+
+bar :: Parser Char
+bar = pch '|'
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'
@@ -84,6 +92,7 @@ pString pr a = let s = pr a in
 
 skip :: Parser ()
 skip = skipMany $ void space <|> nestedComment "/*" "*/" <|> lineComment "//"
+  <|> void (oneOf "$~")
 
 -- | nested comments, open and closing strings must have at least one char
 nestedComment :: String -> String -> Parser ()
