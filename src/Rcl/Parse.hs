@@ -86,7 +86,6 @@ pString pr a = let s = pr a in
   a <$ try (string s <* notFollowedBy
        (case s of
          _ : _ | isLetter $ last s -> alphaNum
-               | last s == '*' -> char '*'
          _ -> oneOf $ "<>=/*+-" ++ keySigns)
      <* skip)
 

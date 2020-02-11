@@ -9,7 +9,6 @@ import Text.ParserCombinators.Parsec
 
 main :: IO ()
 main = do
-  putStrLn keySigns
   args <- getArgs
   case args of
     [] -> do
@@ -28,11 +27,16 @@ reportParse eith = case eith of
         exitFailure
     Right ast -> do
         let line = putStrLn "////////////////////"
-        print $ length ast
         line
-        putStrLn (pp ast)
+        putStrLn (pp True ast)
         line
-        putStrLn (pLaTeX ast)
+        putStrLn (pLaTeX True ast)
         line
-        putStrLn (pAscii ast)
+        putStrLn (pAscii True ast)
+        line
+        putStrLn (pp False ast)
+        line
+        putStrLn (pLaTeX False ast)
+        line
+        putStrLn (pAscii False ast)
         exitSuccess

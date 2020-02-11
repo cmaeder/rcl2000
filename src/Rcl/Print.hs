@@ -3,19 +3,21 @@ module Rcl.Print (pLaTeX, pAscii, pp) where
 import Rcl.Ast
 import Text.PrettyPrint
 
-data Form = Ascii | Uni | LaTeX
+data Format = Ascii | Uni | LaTeX
 
-pLaTeX :: [Stmt] -> String
-pLaTeX = render . pStmts LaTeX
+data Form = Form { format :: Format, prParen :: Bool }
 
-pAscii :: [Stmt] -> String
-pAscii = render . pStmts Ascii
+pLaTeX :: Bool -> [Stmt] -> String
+pLaTeX b = render . pStmts (Form LaTeX b)
 
-pp :: [Stmt] -> String
-pp = render . pStmts Uni
+pAscii :: Bool -> [Stmt] -> String
+pAscii b = render . pStmts (Form Ascii b)
+
+pp :: Bool -> [Stmt] -> String
+pp b = render . pStmts (Form Uni b)
 
 pStmts :: Form -> [Stmt] -> Doc
-pStmts m = (case m of
+pStmts m = (case format m of
   LaTeX -> vsep
   _ -> vcat) . map (lStmt m)
 
@@ -26,7 +28,7 @@ vsep :: [Doc] -> Doc
 vsep = foldr ($++$) empty
 
 lStmt :: Form -> Stmt -> Doc
-lStmt m s = let d = pStmt m s in case m of
+lStmt m s = let d = pStmt m s in case format m of
   LaTeX -> hcat [dollar, d, dollar]
   _ -> d
 
@@ -57,7 +59,7 @@ pRightStmt o m s = (case s of
   _ -> id) $ pStmt m s
 
 pBoolOp :: Form -> BoolOp -> Doc
-pBoolOp m o = text $ case m of
+pBoolOp m o = text $ case format m of
   Ascii -> case o of
     And -> stAnd
     Impl -> stImpl
@@ -69,7 +71,7 @@ pBoolOp m o = text $ case m of
     Impl -> lImpl
 
 pCmpOp :: Form -> CmpOp -> Doc
-pCmpOp m = text . case m of
+pCmpOp m = text . case format m of
   Ascii -> stCmpOp
   Uni -> csCmpOp
   LaTeX -> lCmpOp
@@ -80,7 +82,15 @@ pSet m s = case s of
     sep [pParenSet o m s1, pBinOp m o <+> pParenSet o m s2]
   UnOp o t -> case o of
      Card -> hcat [pBar, pSet m t, pBar]
-     _ -> cat [pUnOp m o, parens (pSet m t)]
+     _ -> let
+       b = case t of
+         BinOp {} -> True
+         _ -> prParen m
+       c = case format m of
+         LaTeX -> True
+         _ -> b
+       d = pSet m t
+       in (if c then cat else sep) [pUnOp m o, if b then parens d else d]
   Num i -> int i
   EmptySet -> pEmpty m
   _ -> text (show s)
@@ -95,7 +105,7 @@ pParenSet o m s = (case s of
   _ -> id) $ pSet m s
 
 pBinOp :: Form -> BinOp -> Doc
-pBinOp m o = text $ case m of
+pBinOp m o = text $ case format m of
   LaTeX -> case o of
     Union -> lUnion
     Inter -> lInter
@@ -110,12 +120,12 @@ pBar :: Doc
 pBar = text "|"
 
 pUnOp :: Form -> UnOp -> Doc
-pUnOp m = text . case m of
-  LaTeX -> lUnOp
+pUnOp m = text . case format m of
+  LaTeX -> (if prParen m then id else (++ "~")) . lUnOp
   _ -> stUnOp
 
 pEmpty :: Form -> Doc
-pEmpty m = text $ case m of
+pEmpty m = text $ case format m of
   LaTeX -> lEmpty
   Uni -> [chEmpty]
   Ascii -> "e"
