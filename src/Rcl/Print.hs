@@ -1,4 +1,4 @@
-module Rcl.Print (pLaTeX, pAscii, pp) where
+module Rcl.Print (pLaTeX, pAscii, pp, ppStmt, ppSet) where
 
 import Rcl.Ast
 import Text.PrettyPrint
@@ -15,6 +15,15 @@ pAscii b = render . pStmts (Form Ascii b)
 
 pp :: Bool -> [Stmt] -> String
 pp b = render . pStmts (Form Uni b)
+
+ppStmt :: Stmt -> String
+ppStmt = render . pStmt form
+
+ppSet :: Set -> String
+ppSet = render . pSet form
+
+form :: Form
+form = Form Uni True
 
 pStmts :: Form -> [Stmt] -> Doc
 pStmts m = (case format m of

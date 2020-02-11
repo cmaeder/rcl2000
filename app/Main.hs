@@ -3,6 +3,7 @@ module Main where
 import Rcl.Ast
 import Rcl.Parse
 import Rcl.Print
+import Rcl.Type
 import System.Environment
 import System.Exit
 import Text.ParserCombinators.Parsec
@@ -39,4 +40,5 @@ reportParse eith = case eith of
         putStrLn (pLaTeX False ast)
         line
         putStrLn (pAscii False ast)
+        print $ exec ast
         exitSuccess
