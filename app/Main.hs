@@ -40,5 +40,5 @@ reportParse eith = case eith of
         putStrLn (pLaTeX False ast)
         line
         putStrLn (pAscii False ast)
-        print $ exec ast
+        putStrLn $ exec ast
         exitSuccess

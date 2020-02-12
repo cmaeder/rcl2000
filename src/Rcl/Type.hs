@@ -10,31 +10,36 @@ data SetType = ElemTy ElementType | Set SetType deriving Eq
 
 data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving Eq
 
-exec :: [Stmt] -> [String]
-exec l = execState (tys l) []
+exec :: [Stmt] -> String
+exec l = unlines . reverse $ execState (tys l) []
 
 tys :: [Stmt] -> State [String] ()
 tys = mapM_ ty
 
 ty :: Stmt -> State [String] ()
 ty s = case s of
-  BoolOp _ s1 s2 -> do
-    t1 <- ty s1
-    t2 <- ty s2
-    pure ()
+  BoolOp _ s1 s2 -> ty s1 >> ty s2
   CmpOp o s1 s2 -> do
     t1 <- tySet s1
     t2 <- tySet s2
-    -- check type compatibility
-    pure ()
+    unless (Error `elem` [t1, t2] || compatCmp o t1 t2)
+      $ modify (("wrongly typed relation: " ++ ppStmt s) :)
+
+compatCmp :: CmpOp -> Type -> Type -> Bool
+compatCmp o t1 t2 = case o of
+  Elem -> isSet t2 && elemTy t2 == t1
+  _ -> t1 == t2 || compatSetTys t1 t2 /= Error
 
 tySet :: Set -> State [String] Type
 tySet s = case s of
-  BinOp o s1 s2 -> do
+  BinOp _ s1 s2 -> do
     t1 <- tySet s1
     t2 <- tySet s2
-    -- check type compatibility
-    pure t1 -- or the better type
+    if Error `elem` [t1, t2] then pure Error else do
+      let t = compatSetTys t1 t2
+      when (t == Error)
+          $ modify (("wrongly typed set operation: " ++ ppSet s) :)
+      pure t
   UnOp o s1 -> do
     t1 <- tySet s1
     case t1 of
@@ -52,39 +57,47 @@ tySet s = case s of
        Just e -> pure . SetTy . Set $ setTy e
        _ -> error $ "unexpected input set: " ++ ppSet s
 
+compatSetTys :: Type -> Type -> Type
+compatSetTys t1 t2 = case (t1, t2) of
+  (EmptySetTy, _) | isSet t2 -> t2
+  (_, EmptySetTy) | isSet t1 -> t1
+  _ | isSet t1 && t1 == t2 -> t1
+  _ -> Error
+
 tyAppl :: UnOp -> Type -> Type
 tyAppl o t = case o of
-  Card | isSet t -> NatTy
+  Card | isSet t || t == EmptySetTy -> NatTy
   OE -> elemTy t
   AO | isSet t -> t
   User -> case t of
     SetTy (ElemTy Sty) -> SetTy (ElemTy Uty) -- S -> U
-    SetTy (ElemTy Rty) -> SetTy $ setTy Uty  -- R -> 2^U
+    _ | isElemOrSetOf Rty t -> SetTy $ setTy Uty  -- R -> 2^U
     _ -> Error
   Roles -> rolesAppl t
   RolesStar -> rolesAppl t
-  Sessions -> case t of
-    SetTy (ElemTy Uty) -> SetTy $ setTy Sty  -- U -> 2^S
+  Sessions | isElemOrSetOf Uty t -> SetTy $ setTy Sty  -- U -> 2^S
   Permissions -> permAppl t
   PermissionsStar -> permAppl t
-  Operations -> case t of
-    SetTy (ElemTy e) | elem e [Rty, OBJty] -> -- "R x OBJ" not supported!
-      SetTy $ setTy OPty -- R x OBJ -> 2^OP
-    _ -> Error
-  Object -> case t of
-    SetTy (ElemTy Pty) -> SetTy $ setTy OBJty  -- P -> 2^OBJ
-    _ -> Error
+  Operations | any (`isElemOrSetOf` t) [Rty, OBJty]
+    -- "R x OBJ" not supported!
+    -> SetTy $ setTy OPty -- R x OBJ -> 2^OP
+  Object | isElemOrSetOf Pty t -> SetTy $ setTy OBJty  -- P -> 2^OBJ
+  _ -> Error
 
 rolesAppl :: Type -> Type
-rolesAppl t = case t of
-  SetTy (ElemTy e) | elem e [Uty, Pty, Sty] ->
-    SetTy $ setTy Rty -- U + P + S -> 2^R
-  _ -> Error
+rolesAppl t = if any (`isElemOrSetOf` t) [Uty, Pty, Sty]
+  then SetTy $ setTy Rty -- U + P + S -> 2^R
+  else Error
 
 permAppl :: Type -> Type
-permAppl t = case t of
-  SetTy (ElemTy Rty) -> SetTy $ setTy Pty -- R -> 2^P
-  _ -> Error
+permAppl t = if isElemOrSetOf Rty t then SetTy $ setTy Pty -- R -> 2^P
+  else Error
+
+isElemOrSetOf :: ElementType -> Type -> Bool
+isElemOrSetOf e t = case t of
+  SetTy (ElemTy i) | i == e -> True
+  SetTy (Set (ElemTy i)) | i == e -> True
+  _ -> False
 
 isSet :: Type -> Bool
 isSet = (/= Error) . elemTy
