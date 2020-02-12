@@ -16,9 +16,6 @@ impl :: Parser Stmt
 impl = mayBe (BoolOp Impl)
   <$> cmp <*> optionMaybe (alts [stImpl, [chImpl], lImpl] *> cmp)
 
-alts :: [String] -> GenParser Char () String
-alts = choice . map (pString id)
-
 cmp :: Parser Stmt
 cmp = flip CmpOp <$> set <*> cmpOp <*> set
 
@@ -31,15 +28,15 @@ cmpOp = choice (map (pString stCmpOp) cmpOps)
 set :: Parser Set
 set = mayBe (BinOp Union) <$> interSet <*> optionMaybe (uOp *> set)
 
-uOp :: Parser Char
-uOp = oneCh (chUnion : "u") <|> pString (const lUnion) chUnion
+uOp :: Parser String
+uOp = alts [stUnion, [chUnion], lUnion]
 
 interSet :: Parser Set
 interSet = mayBe (BinOp Inter)
   <$> applSet <*> optionMaybe (iOp *> interSet)
 
-iOp :: Parser Char
-iOp = oneCh (chInter : "in") <|> pString (const lInter) chInter
+iOp :: Parser String
+iOp = alts [stInter, [chInter], lInter]
 
 mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
@@ -75,18 +72,17 @@ intSet :: Parser Set
 intSet = Num . read <$> many1 digit
 
 emptySet :: Parser Set
-emptySet = EmptySet <$
-  (oneCh (chEmpty : "e") <|> pString (const lEmpty) chEmpty)
+emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]
 
-oneCh :: String -> Parser Char
-oneCh = choice . map (pString (: ""))
+alts :: [String] -> GenParser Char () String
+alts = choice . map (pString id)
 
 pString :: (a -> String) -> a -> Parser a
 pString pr a = let s = pr a in
   a <$ try (string s <* notFollowedBy
        (case s of
          _ : _ | isLetter $ last s -> alphaNum
-         _ -> oneOf $ "<>=/*+-" ++ keySigns)
+         _ -> oneOf $ "&*+-/<=>" ++ keySigns)
      <* skip)
 
 skip :: Parser ()

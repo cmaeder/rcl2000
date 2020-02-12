@@ -12,6 +12,9 @@ chEmpty = '\x2205'
 lEmpty :: String
 lEmpty = "\\emptyset"
 
+stEmpty :: String
+stEmpty = "{}"
+
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
 
@@ -23,11 +26,17 @@ chUnion = '\x222A'
 lUnion :: String
 lUnion = "\\cup"
 
+stUnion :: String
+stUnion = "+"
+
 chInter :: Char
 chInter = '\x2229'
 
 lInter :: String
 lInter = "\\cap"
+
+stInter :: String
+stInter = "&"
 
 data UnOp = AO | OE | User | Roles | RolesStar | Sessions
   | Permissions | PermissionsStar | Operations | Object | Card deriving Show

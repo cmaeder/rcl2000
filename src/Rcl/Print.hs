@@ -48,22 +48,23 @@ pStmt :: Form -> Stmt -> Doc
 pStmt m s = case s of
   BoolOp o s1 s2 ->
     sep [pLeftStmt o m s1, pBoolOp m o <+> pRightStmt o m s2]
+    -- the original input language does not allow parentheses!
   CmpOp o s1 s2 ->
     sep [pSet m s1, pCmpOp m o <+> pSet m s2]
 
 pLeftStmt :: BoolOp -> Form -> Stmt -> Doc
 pLeftStmt o m s = (case s of
   BoolOp {} -> case o of
-    Impl -> parens
-    And -> id
+    Impl -> parens  -- Impl binds stronger than And and is not nested
+    And -> id -- we have only top-level Ands without parens
   _ -> id) $ pStmt m s
 
 pRightStmt :: BoolOp -> Form -> Stmt -> Doc
 pRightStmt o m s = (case s of
   BoolOp i _ _ -> case o of
     Impl -> case i of
-      And -> parens
-      Impl -> id
+      And -> parens -- as above
+      Impl -> id  -- Impl is usually right associative if nested
     And -> id
   _ -> id) $ pStmt m s
 
@@ -99,7 +100,8 @@ pSet m s = case s of
          LaTeX -> True
          _ -> b
        d = pSet m t
-       in (if c then cat else sep) [pUnOp m o, if b then parens d else d]
+       in (if c then cat else sep)
+          [pUnOp m { prParen = b } o, if b then parens d else d]
   Num i -> int i
   EmptySet -> pEmpty m
   _ -> text (show s)
@@ -122,8 +124,8 @@ pBinOp m o = text $ case format m of
     Union -> [chUnion]
     Inter -> [chInter]
   Ascii -> case o of
-    Union -> "u"
-    Inter -> "n"
+    Union -> stUnion
+    Inter -> stInter
 
 pBar :: Doc
 pBar = text "|"
@@ -137,4 +139,4 @@ pEmpty :: Form -> Doc
 pEmpty m = text $ case format m of
   LaTeX -> lEmpty
   Uni -> [chEmpty]
-  Ascii -> "e"
+  Ascii -> stEmpty
