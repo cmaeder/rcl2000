@@ -4,7 +4,7 @@ import Data.Char
 import Data.List
 
 data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
-  | UnOp UnOp Set | BinOp BinOp Set Set deriving Show
+  | UnOp UnOp Set | BinOp BinOp Set Set deriving (Eq, Show)
 
 chEmpty :: Char
 chEmpty = '\x2205'
@@ -18,7 +18,7 @@ stEmpty = "{}"
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
 
-data BinOp = Union | Inter deriving Show
+data BinOp = Union | Inter deriving (Eq, Show)
 
 chUnion :: Char
 chUnion = '\x222A'
@@ -39,7 +39,8 @@ stInter :: String
 stInter = "&"
 
 data UnOp = AO | OE | User | Roles | RolesStar | Sessions
-  | Permissions | PermissionsStar | Operations | Object | Card deriving Show
+  | Permissions | PermissionsStar | Operations | Object | Card
+  deriving (Eq, Show)
 -- AO: all other, OE: one element
 
 unOps :: [UnOp]
