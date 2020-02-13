@@ -105,6 +105,7 @@ pSet m s = case s of
           [pUnOp m { prParen = b } o, if b then parens d else d]
   Num i -> int i
   EmptySet -> pEmpty m
+  Var i -> text $ 'v' : show i
   _ -> text (show s)
 
 pParenSet :: BinOp -> Form -> Set -> Doc

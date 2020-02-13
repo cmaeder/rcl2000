@@ -4,7 +4,7 @@ import Data.Char
 import Data.List
 
 data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
-  | UnOp UnOp Set | BinOp BinOp Set Set deriving (Eq, Show)
+  | UnOp UnOp Set | BinOp BinOp Set Set | Var Int deriving (Eq, Show)
 
 chEmpty :: Char
 chEmpty = '\x2205'

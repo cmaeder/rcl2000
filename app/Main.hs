@@ -39,4 +39,4 @@ reportParse eith = case eith of
         line
         putStrLn (pAscii False ast)
         putStrLn $ exec ast
-        mapM_ (putStrLn . ppStmt . replaceAO) ast
+        mapM_ (putStrLn . printReduce) ast

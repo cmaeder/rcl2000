@@ -59,6 +59,9 @@ tySet s = case s of
   Num n -> do
     unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
+  Var _ -> do
+    modify (("unknown variable: " ++ ppSet s) :)
+    pure Error
   _ -> case lookup s bases of
      Just e -> pure . SetTy $ setTy e
      _ -> case lookup s conflicts of
