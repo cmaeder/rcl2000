@@ -33,14 +33,19 @@ compatCmp o t1 t2 = case o of
 
 tySet :: Set -> State [String] Type
 tySet s = case s of
-  BinOp _ s1 s2 -> do
+  BinOp o s1 s2 -> do
     t1 <- tySet s1
     t2 <- tySet s2
-    if Error `elem` [t1, t2] then pure Error else do
-      let t = compatSetTys t1 t2
-      when (t == Error)
+    if Error `elem` [t1, t2] then pure Error else case o of
+      Minus -> do
+        unless (compatCmp Elem t2 t1)
+          $ modify (("wrongly typed set minus element: " ++ ppSet s) :)
+        pure t1
+      _ -> do
+        let t = compatSetTys t1 t2
+        when (t == Error)
           $ modify (("wrongly typed set operation: " ++ ppSet s) :)
-      pure t
+        pure t
   UnOp o s1 -> do
     t1 <- tySet s1
     case t1 of

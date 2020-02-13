@@ -18,7 +18,7 @@ stEmpty = "{}"
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
 
-data BinOp = Union | Inter deriving (Eq, Show)
+data BinOp = Union | Inter | Minus deriving (Eq, Show)
 
 chUnion :: Char
 chUnion = '\x222A'

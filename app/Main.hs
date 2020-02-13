@@ -3,6 +3,7 @@ module Main where
 import Rcl.Ast
 import Rcl.Parse
 import Rcl.Print
+import Rcl.Reduce
 import Rcl.Type
 import System.Environment
 import Text.ParserCombinators.Parsec
@@ -38,3 +39,4 @@ reportParse eith = case eith of
         line
         putStrLn (pAscii False ast)
         putStrLn $ exec ast
+        mapM_ (putStrLn . ppStmt . replaceAO) ast
