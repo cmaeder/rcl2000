@@ -17,14 +17,35 @@ impl = mayBe (BoolOp Impl)
   <$> cmp <*> optionMaybe (alts [stImpl, [chImpl], lImpl] *> cmp)
 
 cmp :: Parser Stmt
-cmp = flip CmpOp <$> set <*> cmpOp <*> set
+cmp = cmpSet <|> cmpCard
+
+cmpCard :: Parser Stmt
+cmpCard = flip CmpOp <$> cardSet <*> cmpOp <*> (cardSet <|> nat)
+
+cmpSet :: Parser Stmt
+cmpSet = do
+  s <- set
+  o <- setCmpOp
+  CmpOp o s <$> case o of
+    Elem -> set
+    _ -> emptySet <|> set
+
+setCmpOp :: Parser CmpOp
+setCmpOp = let
+  lOps = [Elem, Ne]
+  aOps = Eq : lOps
+  in choice $ map (pString stCmpOp) aOps
+  ++ map (pString csCmpOp) lOps
+  ++ map (pString lCmpOp) lOps
 
 cmpOp :: Parser CmpOp
-cmpOp = choice (map (pString stCmpOp) cmpOps)
-  <|> choice (map (pString csCmpOp) altCmpOps)
-  <|> choice (map (pString lCmpOp) altCmpOps)
+cmpOp = let
+  cmpOps = [Eq, Le, Lt, Ge, Gt, Ne]
+  altCmpOps = [Le, Ge, Ne]
+  in choice $ map (pString stCmpOp) cmpOps
+  ++ map (pString csCmpOp) altCmpOps
+  ++ map (pString lCmpOp) altCmpOps
 
--- possibly a top-level union
 set :: Parser Set
 set = mayBe (BinOp Union) <$> interSet <*> optionMaybe (uOp *> set)
 
@@ -42,10 +63,10 @@ mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
 
 applSet :: Parser Set
-applSet = primSet <|> cardSet <|> unOpSet
+applSet = primSet <|> unOpSet
 
 unOpSet :: Parser Set
-unOpSet = UnOp <$> choice pUnOps <*> (primSet <|> unOpSet)
+unOpSet = UnOp <$> choice pUnOps <*> applSet
 
 pUnOps :: [Parser UnOp]
 pUnOps = map (pString lUnOp) [RolesStar, PermissionsStar]
@@ -64,12 +85,14 @@ pch :: Char -> Parser Char
 pch c = char c <* skip
 
 primSet :: Parser Set
-primSet = intSet <* skip <|> emptySet
-  <|> choice (map (pString show) primSets)
-  <|> parenSet
+primSet = choice (map (pString show) primSets) <|> parenSet
 
-intSet :: Parser Set
-intSet = Num . read <$> many1 digit
+nat :: Parser Set
+nat = Num . read <$> digits <* skip
+
+-- no leading zero
+digits :: Parser String
+digits = (:) <$> oneOf "123456789" <*> many digit
 
 emptySet :: Parser Set
 emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]

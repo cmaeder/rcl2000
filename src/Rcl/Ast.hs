@@ -64,10 +64,7 @@ lUnOp o = case stUnOp o of
 data Stmt = CmpOp CmpOp Set Set
   | BoolOp BoolOp Stmt Stmt deriving Show
 
-data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving Show
-
-cmpOps :: [CmpOp]
-cmpOps = [Elem, Eq, Le, Lt, Ge, Gt, Ne]
+data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 
 stCmpOp :: CmpOp -> String
 stCmpOp o = case o of
@@ -78,9 +75,6 @@ stCmpOp o = case o of
   Ge -> ">="
   Gt -> ">"
   Ne -> "/="
-
-altCmpOps :: [CmpOp]
-altCmpOps = [Elem, Le, Ge, Ne]
 
 csCmpOp :: CmpOp -> String
 csCmpOp o = case o of
@@ -120,4 +114,4 @@ lImpl = "\\Rightarrow"
 
 keySigns :: String
 keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
-  ++ concatMap csCmpOp altCmpOps
+  ++ concatMap csCmpOp [Elem, Le, Ge, Ne]

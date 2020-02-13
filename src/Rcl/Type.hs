@@ -28,7 +28,8 @@ ty s = case s of
 compatCmp :: CmpOp -> Type -> Type -> Bool
 compatCmp o t1 t2 = case o of
   Elem -> isSet t2 && elemTy t2 == t1
-  _ -> t1 == t2 || compatSetTys t1 t2 /= Error
+  _ -> t1 == NatTy && t1 == t2
+    || compatSetTys t1 t2 /= Error && o `elem` [Eq, Ne]
 
 tySet :: Set -> State [String] Type
 tySet s = case s of
@@ -50,7 +51,9 @@ tySet s = case s of
           $ modify (("wrongly typed application: " ++ ppSet s) :)
         pure t
   EmptySet -> pure EmptySetTy
-  Num _ -> pure NatTy
+  Num n -> do
+    unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
+    pure NatTy
   _ -> case lookup s bases of
      Just e -> pure . SetTy $ setTy e
      _ -> case lookup s conflicts of

@@ -1,4 +1,4 @@
-|{}|=0
+|U|=1
 // (U=U∧U=U)⇒(U=U∧U=U)
 U=U∧U=U⇒U=U∧U=U
 U=U⇒U=U∧U=U⇒U=U
