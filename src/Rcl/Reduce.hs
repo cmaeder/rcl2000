@@ -1,6 +1,7 @@
 module Rcl.Reduce where
 
 import Control.Applicative
+import Control.Exception
 import Control.Monad.State
 import Rcl.Ast
 import Rcl.Print
@@ -87,7 +88,30 @@ reduce i s = case findSimpleOE s of
 runReduce :: Stmt -> (Stmt, Vars)
 runReduce s = runState (reduce 1 $ replaceAO s) []
 
+construct :: Stmt -> Vars -> Stmt
+construct = foldl (\ r (i, t) -> replaceVar i t r)
+
+replaceVar :: Int -> Set -> Stmt -> Stmt
+replaceVar i = foldStmt mapStmt . replVar i
+
+replVar :: Int -> Set -> Set -> Set
+replVar i r = foldSet mapSet $ \ s -> case s of
+  Var j t | i == j -> assert (typeOfSet r == t) $ UnOp OE r
+  _ -> s
+
+replaceMinus :: Stmt -> Stmt
+replaceMinus = foldStmt mapStmt replMinus
+
+replMinus :: Set -> Set
+replMinus = foldSet mapSet
+  { foldBin = \ _ o s1 s2 -> case o of
+      Minus -> assert (s2 == UnOp OE s1) $ UnOp AO s1
+      _ -> BinOp o s1 s2 } id
+
 printReduce :: Stmt -> String
-printReduce s = let (r, vs) = runReduce s in
-  concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet e ++ ";")
+printReduce s = let
+  (r, vs) = runReduce s
+  n = replaceMinus (construct r vs)
+  in assert (n == s)
+  $ concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet e ++ ";")
     (reverse vs) ++ ppStmt r

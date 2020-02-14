@@ -4,11 +4,11 @@ import Data.Char
 import Data.List
 
 data Stmt = CmpOp CmpOp Set Set
-  | BoolOp BoolOp Stmt Stmt deriving Show
+  | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
 
 data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 
-data BoolOp = And | Impl deriving Show
+data BoolOp = And | Impl deriving (Eq, Show)
 
 data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
   | UnOp UnOp Set | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
