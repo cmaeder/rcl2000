@@ -1,6 +1,7 @@
 module Rcl.Type where
 
 import Control.Monad.State
+import Data.List (find, isSuffixOf)
 import Rcl.Ast
 import Rcl.Print
 
@@ -57,11 +58,13 @@ tySet s = case s of
     unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
   Var _ t -> pure t
-  _ -> case lookup s bases of
-     Just e -> pure . SetTy $ setTy e
-     _ -> case lookup s conflicts of
-       Just e -> pure . SetTy . Set $ setTy e
-       _ -> error $ "unexpected input set: " ++ ppSet s
+  PrimSet p -> case find (`isSuffixOf` p) primTypes of
+    Just b -> if b == p then pure $ mkType p
+      else pure . SetTy . Set $ setTy b
+      -- assume the base type is a suffix of a nested set like CR, CU, CP
+    _ -> do
+     modify (("unknown base set: " ++ ppSet s) :)
+     pure Error
 
 compatSetTys :: Type -> Type -> Type
 compatSetTys t1 t2 = case (t1, t2) of
@@ -76,34 +79,40 @@ tyAppl o t = case o of
   OE -> elemTy t
   AO | isSet t -> t
   User -> case t of
-    SetTy (ElemTy Sty) -> SetTy (ElemTy Uty) -- S -> U
-    _ | isElemOrSetOf Rty t -> SetTy $ setTy Uty  -- R -> 2^U
+    SetTy (ElemTy "S") -> SetTy (ElemTy "U") -- S -> U
+    _ | isElemOrSetOf "R" t -> mkType "U"  -- R -> 2^U
     _ -> Error
   Roles -> rolesAppl t
   RolesStar -> rolesAppl t
-  Sessions | isElemOrSetOf Uty t -> SetTy $ setTy Sty  -- U -> 2^S
+  Sessions | isElemOrSetOf "U" t -> mkType "S"  -- U -> 2^S
   Permissions -> permAppl t
   PermissionsStar -> permAppl t
-  Operations | any (`isElemOrSetOf` t) [Rty, OBJty]
+  Operations | any (`isElemOrSetOf` t) ["R", "OBJ"]
     -- "R x OBJ" not supported!
-    -> SetTy $ setTy OPty -- R x OBJ -> 2^OP
-  Object | isElemOrSetOf Pty t -> SetTy $ setTy OBJty  -- P -> 2^OBJ
+    -> SetTy $ ElemTy "OP" -- R x OBJ -> 2^OP
+  Object | isElemOrSetOf "P" t -> mkType "OBJ"  -- P -> 2^OBJ
   _ -> Error
 
 rolesAppl :: Type -> Type
-rolesAppl t = if any (`isElemOrSetOf` t) [Uty, Pty, Sty]
-  then SetTy $ setTy Rty -- U + P + S -> 2^R
+rolesAppl t = if any (`isElemOrSetOf` t) $ map (: []) "UPS"
+  then mkType "R" -- U + P + S -> 2^R
   else Error
 
 permAppl :: Type -> Type
-permAppl t = if isElemOrSetOf Rty t then SetTy $ setTy Pty -- R -> 2^P
+permAppl t = if isElemOrSetOf "R" t then mkType "P" -- R -> 2^P
   else Error
 
-isElemOrSetOf :: ElementType -> Type -> Bool
+isElemOrSetOf :: String -> Type -> Bool
 isElemOrSetOf e t = case t of
   SetTy (ElemTy i) | i == e -> True
   SetTy (Set (ElemTy i)) | i == e -> True -- p 215 "general notation device"
   _ -> False
+
+setTy :: String -> SetType
+setTy = Set . ElemTy
+
+mkType :: String -> Type
+mkType = SetTy . setTy
 
 isSet :: Type -> Bool
 isSet = (/= Error) . elemTy
@@ -112,12 +121,3 @@ elemTy :: Type -> Type
 elemTy t = case t of
   SetTy (Set s) -> SetTy s
   _ -> Error
-
-setTy :: ElementType -> SetType
-setTy = Set . ElemTy
-
-bases :: [(Set, ElementType)]
-bases = [(U, Uty), (R, Rty), (OP, OPty), (OBJ, OBJty), (P, Pty), (S, Sty)]
-
-conflicts :: [(Set, ElementType)]
-conflicts = [(CR, Rty), (CU, Uty), (CP, Pty)]

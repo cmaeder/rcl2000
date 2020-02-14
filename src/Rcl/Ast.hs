@@ -10,8 +10,8 @@ data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 
 data BoolOp = And | Impl deriving (Eq, Show)
 
-data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
-  | UnOp UnOp Set | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
+data Set = PrimSet { stPrim :: String } | EmptySet | Num Int | UnOp UnOp Set
+  | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
 
 data BinOp = Union | Inter | Minus deriving (Eq, Show)
 
@@ -20,9 +20,7 @@ data UnOp = AO | OE | User | Roles | RolesStar | Sessions
   deriving (Eq, Show)
 -- AO: all other, OE: one element
 
-data ElementType = Uty | Rty | OPty | OBJty | Pty | Sty deriving (Eq, Show)
-
-data SetType = ElemTy ElementType | Set SetType deriving (Eq, Show)
+data SetType = ElemTy String | Set SetType deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
 
@@ -35,8 +33,11 @@ lEmpty = "\\emptyset"
 stEmpty :: String
 stEmpty = "{}"
 
+primTypes :: [String]
+primTypes = ["U", "R", "OP", "OBJ", "P", "S"]
+
 primSets :: [Set]
-primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
+primSets = map PrimSet $ primTypes ++ ["CR", "CU", "CP"]
 
 chUnion :: Char
 chUnion = '\x222A'

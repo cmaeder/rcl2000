@@ -85,7 +85,7 @@ pch :: Char -> Parser Char
 pch c = char c <* skip
 
 primSet :: Parser Set
-primSet = choice (map (pString show) primSets) <|> parenSet
+primSet = choice (map (pString stPrim) primSets) <|> parenSet
 
 nat :: Parser Set
 nat = Num . read <$> digits <* skip

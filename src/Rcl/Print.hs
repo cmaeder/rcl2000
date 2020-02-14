@@ -102,10 +102,10 @@ pSet m s = case s of
        d = pSet m t
        in (if c then cat else sep)
           [pUnOp m { prParen = b } o, if b then parens d else d]
-  Num i -> int i
+  PrimSet t -> text t
   EmptySet -> pEmpty m
+  Num i -> int i
   Var i _ -> text $ 'v' : show i
-  _ -> text (show s)
 
 pParenSet :: BinOp -> Form -> Set -> Doc
 pParenSet o m s = (case s of
