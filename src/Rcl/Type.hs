@@ -1,6 +1,7 @@
 module Rcl.Type where
 
 import Control.Monad.State
+import Data.Char (toUpper)
 import Data.List (find, isSuffixOf)
 import Rcl.Ast
 import Rcl.Print
@@ -63,8 +64,8 @@ tySet s = case s of
     unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
   Var _ t -> pure t
-  PrimSet p -> case find (`isSuffixOf` p) primTypes of
-    Just b -> if b == p then pure $ mkType p
+  PrimSet p -> case find (`isSuffixOf` map toUpper p) primTypes of
+    Just b -> if b == p || p `elem` subTypes then pure $ mkType b
       else pure . SetTy . Set $ setTy b
       -- assume the base type is a suffix of a nested set like CR, CU, CP
     _ -> do

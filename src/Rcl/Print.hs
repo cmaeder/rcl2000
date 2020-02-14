@@ -122,7 +122,7 @@ pParenSet o m s = (case s of
 
 pBinOp :: Form -> BinOp -> Doc
 pBinOp m o = text $ case o of
-  Pair -> ", "
+  Pair -> ","
   Minus -> "-"
   Union -> case format m of
     LaTeX -> lUnion

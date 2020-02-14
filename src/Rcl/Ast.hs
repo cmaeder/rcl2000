@@ -37,8 +37,12 @@ stEmpty = "{}"
 primTypes :: [String]
 primTypes = ["U", "R", "OP", "OBJ", "P", "S"]
 
+subTypes :: [String]
+subTypes = ["RR", "WR", "wp", "rp"]
+
 primSets :: [Set]
-primSets = map PrimSet $ primTypes ++ ["CR", "CU", "CP"]
+primSets = map PrimSet $ primTypes ++ subTypes
+  ++ ["CR", "CU", "CP", "AR", "ASR", "SR"]
 
 chUnion :: Char
 chUnion = '\x222A'

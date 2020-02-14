@@ -1,11 +1,41 @@
 // PhD thesis Gail-Joon Ahn
 
 // Example 2 p 27
-OE(OE(CR)) in roles(OE(sessions(OE(U))))
-  => AO(OE(CR)) & roles(OE(sessions(OE(U)))) = {}  
+OE(OE(CR)) ∈ roles(OE(sessions(OE(U))))
+  ⇒ AO(OE(CR)) ∩ roles(OE(sessions(OE(U)))) = ∅
 
-// p 41
-operations(OE(OE(CR)), OE(OBJ)) & operations(AO(OE(CR)), OE(OBJ)) = {}
+// p 41 2.
+operations(OE(OE(CR)),OE(OBJ)) ∩ operations(AO(OE(CR)),OE(OBJ)) = ∅
+
+// p 42
+|operations(OE(OE(CR)),OE(OBJ))| ≤ 1 // 3.
+
+// p 43 corrected
+|operations(OE(CR) ∩ roles(OE(U)),OE(OBJ))| ≤ 1 // 6.
+
+// p 44
+|operations(OE(OE(CR)),OBJ)| < |OP| // 9.
+
+// p 45
+roles(OE(OE(CU))) ∩ roles(AO(OE(CU))) = ∅ // 10.
+roles(sessions(OE(OE(CU)))) ∩ roles(sessions(AO(OE(CU)))) = ∅ // 11.
+
+// p 46
+|permissions(roles(sessions(OE(U)))) ∩ OE(CP)| ≤ 1 // 13.
+
+// p 62
+roles(OE(U)) = OE(ASR)
+roles(OE(sessions(OE(U)))) = OE(AR)
+object(OE(wp)) = object(OE(rp))  // "objects" is used
+  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(AR)
+  ∧ roles(OE(rp)) ∩ WR = ∅ ∧ |roles(OE(rp)) ∩ RR| = 1
+
+// p 67 maybe it should be AR instead of SR
+roles(sessions(OE(U))) = OE(SR)
+roles(sessions(OE(U))) = OE(AR)
+
+// p 80
+permissions(OE(R)) ∩ OE(CP) ≠ ∅
 
 //wrongly typed
-roles(sessions(OE(U))) = OE(U) 
+roles(sessions(OE(U))) = OE(U)
