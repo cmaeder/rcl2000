@@ -35,6 +35,11 @@ tySet s = case s of
     t1 <- tySet s1
     t2 <- tySet s2
     if Error `elem` [t1, t2] then pure Error else case o of
+      Pair -> case (t1, t2) of
+        (SetTy p1, SetTy p2) -> pure . SetTy $ PairTy p1 p2
+        _ -> do
+          modify (("expected set components: " ++ ppSet s) :)
+          pure Error
       Minus -> do
         unless (compatCmp Elem t2 t1)
           $ modify (("wrongly typed set minus element: " ++ ppSet s) :)
@@ -79,7 +84,7 @@ tyAppl o t = case o of
   OE -> elemTy t
   AO | isSet t -> t
   User -> case t of
-    SetTy (ElemTy "S") -> SetTy (ElemTy "U") -- S -> U
+    SetTy (ElemTy "S") -> SetTy $ ElemTy "U" -- S -> U
     _ | isElemOrSetOf "R" t -> mkType "U"  -- R -> 2^U
     _ -> Error
   Roles -> rolesAppl t
@@ -87,9 +92,10 @@ tyAppl o t = case o of
   Sessions | isElemOrSetOf "U" t -> mkType "S"  -- U -> 2^S
   Permissions -> permAppl t
   PermissionsStar -> permAppl t
-  Operations | any (`isElemOrSetOf` t) ["R", "OBJ"]
-    -- "R x OBJ" not supported!
-    -> SetTy $ ElemTy "OP" -- R x OBJ -> 2^OP
+  Operations -> case t of
+    SetTy (PairTy l r) | isElemOrSet "R" l && isElemOrSet "OBJ" r
+      -> mkType "OP" -- R x OBJ -> 2^OP
+    _ -> Error
   Object | isElemOrSetOf "P" t -> mkType "OBJ"  -- P -> 2^OBJ
   _ -> Error
 
@@ -104,8 +110,13 @@ permAppl t = if isElemOrSetOf "R" t then mkType "P" -- R -> 2^P
 
 isElemOrSetOf :: String -> Type -> Bool
 isElemOrSetOf e t = case t of
-  SetTy (ElemTy i) | i == e -> True
-  SetTy (Set (ElemTy i)) | i == e -> True -- p 215 "general notation device"
+  SetTy s -> isElemOrSet e s
+  _ -> False
+
+isElemOrSet :: String -> SetType -> Bool
+isElemOrSet e t = case t of
+  ElemTy i | i == e -> True
+  Set (ElemTy i) | i == e -> True -- p 215 "general notation device"
   _ -> False
 
 setTy :: String -> SetType

@@ -88,17 +88,20 @@ pCmpOp m = text . case format m of
 pSet :: Form -> Set -> Doc
 pSet m s = case s of
   BinOp o s1 s2 -> case o of
+    Pair -> parens $ hcat [pSet m s1, pBinOp m o, pSet m s2]
     Minus -> cat [pParenSet o m s1, hcat [pBinOp m o, braces $ pSet m s2]]
     _ -> sep [pParenSet o m s1, pBinOp m o <+> pParenSet o m s2]
   UnOp o t -> case o of
      Card -> hcat [pBar, pSet m t, pBar]
      _ -> let
        b = case t of
-         BinOp {} -> True
+         BinOp i _ _ -> i /= Pair
          _ -> prParen m
        c = case format m of
          LaTeX -> True
-         _ -> b
+         _ -> case t of
+           BinOp Pair _ _ -> True
+           _ -> b
        d = pSet m t
        in (if c then cat else sep)
           [pUnOp m { prParen = b } o, if b then parens d else d]
@@ -114,11 +117,12 @@ pParenSet o m s = (case s of
     Inter -> case i of
       Union -> parens
       _ -> id
-    Union -> id
+    _ -> id
   _ -> id) $ pSet m s
 
 pBinOp :: Form -> BinOp -> Doc
 pBinOp m o = text $ case o of
+  Pair -> ", "
   Minus -> "-"
   Union -> case format m of
     LaTeX -> lUnion

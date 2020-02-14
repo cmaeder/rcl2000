@@ -79,7 +79,11 @@ bar :: Parser Char
 bar = pch '|'
 
 parenSet :: Parser Set
-parenSet = pch '(' *> set <* pch ')'
+parenSet = pch '(' *> setOrPair <* pch ')'
+
+setOrPair :: Parser Set
+setOrPair = mayBe (BinOp Pair)
+  <$> set <*> optionMaybe (pch ',' *> set)
 
 pch :: Char -> Parser Char
 pch c = char c <* skip

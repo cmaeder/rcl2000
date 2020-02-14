@@ -13,14 +13,15 @@ data BoolOp = And | Impl deriving (Eq, Show)
 data Set = PrimSet { stPrim :: String } | EmptySet | Num Int | UnOp UnOp Set
   | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
 
-data BinOp = Union | Inter | Minus deriving (Eq, Show)
+data BinOp = Union | Inter | Minus | Pair deriving (Eq, Show)
 
 data UnOp = AO | OE | User | Roles | RolesStar | Sessions
   | Permissions | PermissionsStar | Operations | Object | Card
   deriving (Eq, Show)
 -- AO: all other, OE: one element
 
-data SetType = ElemTy String | Set SetType deriving (Eq, Show)
+data SetType = ElemTy String | Set SetType | PairTy SetType SetType
+  deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
 

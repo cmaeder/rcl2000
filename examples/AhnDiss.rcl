@@ -1,0 +1,11 @@
+// PhD thesis Gail-Joon Ahn
+
+// Example 2 p 27
+OE(OE(CR)) in roles(OE(sessions(OE(U))))
+  => AO(OE(CR)) & roles(OE(sessions(OE(U)))) = {}  
+
+// p 41
+operations(OE(OE(CR)), OE(OBJ)) & operations(AO(OE(CR)), OE(OBJ)) = {}
+
+//wrongly typed
+roles(sessions(OE(U))) = OE(U) 
