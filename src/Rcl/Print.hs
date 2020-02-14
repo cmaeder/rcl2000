@@ -69,16 +69,15 @@ pRightStmt o m s = (case s of
   _ -> id) $ pStmt m s
 
 pBoolOp :: Form -> BoolOp -> Doc
-pBoolOp m o = text $ case format m of
-  Ascii -> case o of
-    And -> stAnd
-    Impl -> stImpl
-  Uni -> case o of
-    And -> [chAnd]
-    Impl -> [chImpl]
-  LaTeX -> case o of
-    And -> lAnd
-    Impl -> lImpl
+pBoolOp m o = text $ case o of
+  And -> case format m of
+    LaTeX -> lAnd
+    Uni -> [chAnd]
+    Ascii -> stAnd
+  Impl -> case format m of
+    LaTeX -> lImpl
+    Uni -> [chImpl]
+    Ascii -> stImpl
 
 pCmpOp :: Form -> CmpOp -> Doc
 pCmpOp m = text . case format m of
@@ -119,19 +118,16 @@ pParenSet o m s = (case s of
   _ -> id) $ pSet m s
 
 pBinOp :: Form -> BinOp -> Doc
-pBinOp m o = text $ case format m of
-  LaTeX -> case o of
-    Union -> lUnion
-    Inter -> lInter
-    Minus -> "-"
-  Uni -> case o of
-    Union -> [chUnion]
-    Inter -> [chInter]
-    Minus -> "-"
-  Ascii -> case o of
-    Union -> stUnion
-    Inter -> stInter
-    Minus -> "-"
+pBinOp m o = text $ case o of
+  Minus -> "-"
+  Union -> case format m of
+    LaTeX -> lUnion
+    Uni -> [chUnion]
+    Ascii -> stUnion
+  Inter -> case format m of
+    LaTeX -> lInter
+    Uni -> [chInter]
+    Ascii -> stInter
 
 pBar :: Doc
 pBar = text "|"
