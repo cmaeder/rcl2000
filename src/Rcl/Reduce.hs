@@ -4,6 +4,7 @@ import Control.Applicative
 import Control.Monad.State
 import Rcl.Ast
 import Rcl.Print
+import Rcl.Type
 
 replaceAO :: Stmt -> Stmt
 replaceAO s = case s of
@@ -53,12 +54,12 @@ reduce i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
     modify ((i, r) :)
-    reduce (i + 1) $ replaceOE r (Var i) s
+    reduce (i + 1) $ replaceOE r (Var i $ typeOfSet r) s
 
 runReduce :: Stmt -> (Stmt, Vars)
 runReduce s = runState (reduce 1 $ replaceAO s) []
 
 printReduce :: Stmt -> String
 printReduce s = let (r, vs) = runReduce s in
-  concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet (UnOp OE e) ++ ";")
+  concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet e ++ ";")
     (reverse vs) ++ ppStmt r

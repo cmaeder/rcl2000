@@ -4,17 +4,14 @@ import Control.Monad.State
 import Rcl.Ast
 import Rcl.Print
 
-data ElementType = Uty | Rty | OPty | OBJty | Pty | Sty deriving Eq
-
-data SetType = ElemTy ElementType | Set SetType deriving Eq
-
-data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving Eq
-
 exec :: [Stmt] -> String
 exec l = unlines . reverse $ execState (tys l) []
 
 tys :: [Stmt] -> State [String] ()
 tys = mapM_ ty
+
+typeOfSet :: Set -> Type
+typeOfSet s = evalState (tySet s) []
 
 ty :: Stmt -> State [String] ()
 ty s = case s of
@@ -59,9 +56,7 @@ tySet s = case s of
   Num n -> do
     unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
-  Var _ -> do
-    modify (("unknown variable: " ++ ppSet s) :)
-    pure Error
+  Var _ t -> pure t
   _ -> case lookup s bases of
      Just e -> pure . SetTy $ setTy e
      _ -> case lookup s conflicts of
@@ -107,7 +102,7 @@ permAppl t = if isElemOrSetOf Rty t then SetTy $ setTy Pty -- R -> 2^P
 isElemOrSetOf :: ElementType -> Type -> Bool
 isElemOrSetOf e t = case t of
   SetTy (ElemTy i) | i == e -> True
-  SetTy (Set (ElemTy i)) | i == e -> True
+  SetTy (Set (ElemTy i)) | i == e -> True -- p 215 "general notation device"
   _ -> False
 
 isSet :: Type -> Bool

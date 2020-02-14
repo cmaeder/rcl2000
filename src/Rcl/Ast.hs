@@ -3,8 +3,28 @@ module Rcl.Ast where
 import Data.Char
 import Data.List
 
+data Stmt = CmpOp CmpOp Set Set
+  | BoolOp BoolOp Stmt Stmt deriving Show
+
+data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
+
+data BoolOp = And | Impl deriving Show
+
 data Set = U | R | OP | OBJ | P | S | CR | CU | CP | EmptySet | Num Int
-  | UnOp UnOp Set | BinOp BinOp Set Set | Var Int deriving (Eq, Show)
+  | UnOp UnOp Set | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
+
+data BinOp = Union | Inter | Minus deriving (Eq, Show)
+
+data UnOp = AO | OE | User | Roles | RolesStar | Sessions
+  | Permissions | PermissionsStar | Operations | Object | Card
+  deriving (Eq, Show)
+-- AO: all other, OE: one element
+
+data ElementType = Uty | Rty | OPty | OBJty | Pty | Sty deriving (Eq, Show)
+
+data SetType = ElemTy ElementType | Set SetType deriving (Eq, Show)
+
+data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
 
 chEmpty :: Char
 chEmpty = '\x2205'
@@ -17,8 +37,6 @@ stEmpty = "{}"
 
 primSets :: [Set]
 primSets = [U, R, OP, OBJ, P, S, CR, CU, CP]
-
-data BinOp = Union | Inter | Minus deriving (Eq, Show)
 
 chUnion :: Char
 chUnion = '\x222A'
@@ -38,11 +56,6 @@ lInter = "\\cap"
 stInter :: String
 stInter = "&"
 
-data UnOp = AO | OE | User | Roles | RolesStar | Sessions
-  | Permissions | PermissionsStar | Operations | Object | Card
-  deriving (Eq, Show)
--- AO: all other, OE: one element
-
 unOps :: [UnOp]
 unOps = [AO, OE, User, RolesStar, Roles, Sessions
   , PermissionsStar, Permissions, Operations, Object]
@@ -60,11 +73,6 @@ lUnOp :: UnOp -> String
 lUnOp o = case stUnOp o of
   s@(_ : _) | last s == '*' -> init s ++ "^{*}"
   s -> s
-
-data Stmt = CmpOp CmpOp Set Set
-  | BoolOp BoolOp Stmt Stmt deriving Show
-
-data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 
 stCmpOp :: CmpOp -> String
 stCmpOp o = case o of
@@ -91,8 +99,6 @@ lCmpOp o = case o of
   Ge -> "\\geq"
   Ne -> "\\neq"
   _ -> stCmpOp o
-
-data BoolOp = And | Impl deriving Show
 
 chAnd :: Char
 chAnd = '\x2227'
