@@ -6,46 +6,74 @@ import Rcl.Ast
 import Rcl.Print
 import Rcl.Type
 
+data FoldSet a = FoldSet
+  { foldBin :: Set -> BinOp -> a -> a -> a
+  , foldUn :: Set -> UnOp -> a -> a }
+
+mapSet :: FoldSet Set
+mapSet = FoldSet
+  { foldBin = const BinOp
+  , foldUn = const UnOp }
+
+const2 :: a -> b -> c -> a
+const2 = const . const
+
+constSet :: (a -> a -> a) -> FoldSet a
+constSet f = FoldSet
+  { foldBin = const2 f
+  , foldUn = const2 id }
+
+foldSet :: FoldSet a -> (Set -> a) -> Set -> a
+foldSet r f s = case s of
+  BinOp o s1 s2 -> foldBin r s o (foldSet r f s1) $ foldSet r f s2
+  UnOp o p -> foldUn r s o $ foldSet r f p
+  _ -> f s
+
+data FoldStmt a b = FoldStmt
+  { foldBool :: Stmt -> BoolOp -> b -> b -> b
+  , foldCmp :: Stmt -> CmpOp -> a -> a -> b }
+
+mapStmt :: FoldStmt Set Stmt
+mapStmt = FoldStmt
+  { foldBool = const BoolOp
+  , foldCmp = const CmpOp }
+
+constStmt :: (b -> b -> b) -> (a -> a -> b) -> FoldStmt a b
+constStmt f g = FoldStmt
+  { foldBool = const2 f
+  , foldCmp = const2 g }
+
+foldStmt :: FoldStmt a b -> (Set -> a) -> Stmt -> b
+foldStmt r f s = case s of
+  BoolOp o s1 s2 -> foldBool r s o (foldStmt r f s1) $ foldStmt r f s2
+  CmpOp o s1 s2 -> foldCmp r s o (f s1) $ f s2
+
 replaceAO :: Stmt -> Stmt
-replaceAO s = case s of
-  CmpOp o s1 s2 -> CmpOp o (replAO s1) $ replAO s2
-  BoolOp o s1 s2 -> BoolOp o (replaceAO s1) $ replaceAO s2
+replaceAO = foldStmt mapStmt replAO
 
 replAO :: Set -> Set
-replAO s = case s of
-  BinOp o s1 s2 -> BinOp o (replAO s1) $ replAO s2
-  UnOp o r -> let p = replAO r in
-    case o of
+replAO = foldSet mapSet
+  { foldUn = \ _ o p -> case o of
       AO -> BinOp Minus p (UnOp OE p)
-      _ -> UnOp o p
-  _ -> s
+      _ -> UnOp o p } id
 
 findSimpleOE :: Stmt -> Maybe Set
-findSimpleOE s = case s of
-  CmpOp _ s1 s2 -> findOE s1 <|> findOE s2
-  BoolOp _ s1 s2 -> findSimpleOE s1 <|> findSimpleOE s2
+findSimpleOE = foldStmt (constStmt (<|>) (<|>)) findOE
 
 findOE :: Set -> Maybe Set
-findOE s = case s of
-  BinOp _ s1 s2 -> findOE s1 <|> findOE s2
-  UnOp o r -> findOE r <|> case o of
-    OE -> Just r -- we omit the outer OE
-    _ -> Nothing
-  _ -> Nothing
+findOE = foldSet (constSet (<|>))
+  { foldUn = \ s _ r -> r <|> case s of
+      UnOp OE p -> Just p -- we omit the outer OE
+      _ -> Nothing } $ const Nothing
 
 replaceOE :: Set -> Set -> Stmt -> Stmt
-replaceOE e r s = case s of
-  CmpOp o s1 s2 -> CmpOp o (replOE e r s1) $ replOE e r s2
-  BoolOp o s1 s2 -> BoolOp o (replaceOE e r s1) $ replaceOE e r s2
+replaceOE e = foldStmt mapStmt . replOE e
 
 replOE :: Set -> Set -> Set -> Set
-replOE e r s = case s of
-  BinOp o s1 s2 -> BinOp o (replOE e r s1) $ replOE e r s2
-  UnOp o t -> let p = replOE e r t in
-    case o of
+replOE e r = foldSet mapSet
+  { foldUn = \ _ o p -> case o of
       OE | p == e -> r
-      _ -> UnOp o p
-  _ -> s
+      _ -> UnOp o p } id
 
 type Vars = [(Int, Set)]
 
