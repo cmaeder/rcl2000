@@ -5,7 +5,7 @@ import Control.Monad.State (State, modify, evalState, execState)
 import Data.Char (toUpper)
 import Data.List (find, isSuffixOf)
 import Rcl.Ast
-import Rcl.Print
+import Rcl.Print (ppStmt, ppSet)
 
 typeErrors :: [Stmt] -> String
 typeErrors l = unlines . reverse $ execState (tys l) []

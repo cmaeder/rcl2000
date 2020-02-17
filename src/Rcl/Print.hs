@@ -3,6 +3,8 @@ module Rcl.Print (ppStmts, ppStmt, ppSet,
 
 import Rcl.Ast
 import Text.PrettyPrint
+  ( Doc, render, vcat, cat, sep, (<+>), hcat
+  , text, int, empty, parens, braces)
 
 data Format = Ascii | Uni | LaTeX
 
@@ -26,7 +28,7 @@ pStmts m = (case format m of
   _ -> vcat) . map (lStmt m)
 
 ($++$) :: Doc -> Doc -> Doc
-d1 $++$ d2 = d1 $+$ text "" $+$ d2
+d1 $++$ d2 = vcat [d1, text "", d2]
 
 vsep :: [Doc] -> Doc
 vsep = foldr ($++$) empty
@@ -37,7 +39,7 @@ lStmt m s = let d = pStmt m s in case format m of
   _ -> d
 
 dollar :: Doc
-dollar = char '$'
+dollar = text "$"
 
 pStmt :: Form -> Stmt -> Doc
 pStmt m s = case s of
