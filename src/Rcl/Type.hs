@@ -1,13 +1,14 @@
-module Rcl.Type where
+module Rcl.Type (typeErrors, typeOfSet) where
 
-import Control.Monad.State
+import Control.Monad (when, unless)
+import Control.Monad.State (State, modify, evalState, execState)
 import Data.Char (toUpper)
 import Data.List (find, isSuffixOf)
 import Rcl.Ast
 import Rcl.Print
 
-exec :: [Stmt] -> String
-exec l = unlines . reverse $ execState (tys l) []
+typeErrors :: [Stmt] -> String
+typeErrors l = unlines . reverse $ execState (tys l) []
 
 tys :: [Stmt] -> State [String] ()
 tys = mapM_ ty

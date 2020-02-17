@@ -1,8 +1,8 @@
-module Rcl.Reduce where
+module Rcl.Reduce (reduction) where
 
-import Control.Applicative
-import Control.Exception
-import Control.Monad.State
+import Control.Applicative ((<|>))
+import Control.Exception (assert)
+import Control.Monad.State (State, modify, runState)
 import Rcl.Ast
 import Rcl.Print
 import Rcl.Type
@@ -108,10 +108,13 @@ replMinus = foldSet mapSet
       Minus -> assert (s2 == UnOp OE s1) $ UnOp AO s1
       _ -> BinOp o s1 s2 } id
 
-printReduce :: Stmt -> String
-printReduce s = let
+reduceAndReconstruct :: Stmt -> String
+reduceAndReconstruct s = let
   (r, vs) = runReduce s
   n = replaceMinus (construct r vs)
   in assert (n == s)
   $ concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet e ++ ";")
     (reverse vs) ++ ppStmt r
+
+reduction :: [Stmt] -> String
+reduction = unlines . map reduceAndReconstruct

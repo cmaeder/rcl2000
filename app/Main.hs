@@ -25,18 +25,6 @@ reportParse :: Either ParseError [Stmt] -> IO ()
 reportParse eith = case eith of
     Left err -> print err
     Right ast -> do
-        let line = putStrLn "////////////////////"
-        line
-        putStrLn (pp True ast)
-        line
-        putStrLn (pLaTeX True ast)
-        line
-        putStrLn (pAscii True ast)
-        line
-        putStrLn (pp False ast)
-        line
-        putStrLn (pLaTeX False ast)
-        line
-        putStrLn (pAscii False ast)
-        putStrLn $ exec ast
-        mapM_ (putStrLn . printReduce) ast
+        putStrLn $ ppStmts ast
+        putStrLn $ typeErrors ast
+        putStrLn $ reduction ast

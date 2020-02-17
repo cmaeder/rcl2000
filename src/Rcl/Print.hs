@@ -1,4 +1,5 @@
-module Rcl.Print (pLaTeX, pAscii, pp, ppStmt, ppSet) where
+module Rcl.Print (ppStmts, ppStmt, ppSet,
+  Form (..), Format (..), pStmts, pStmt, pSet, Doc, render) where
 
 import Rcl.Ast
 import Text.PrettyPrint
@@ -7,14 +8,8 @@ data Format = Ascii | Uni | LaTeX
 
 data Form = Form { format :: Format, prParen :: Bool }
 
-pLaTeX :: Bool -> [Stmt] -> String
-pLaTeX b = render . pStmts (Form LaTeX b)
-
-pAscii :: Bool -> [Stmt] -> String
-pAscii b = render . pStmts (Form Ascii b)
-
-pp :: Bool -> [Stmt] -> String
-pp b = render . pStmts (Form Uni b)
+ppStmts :: [Stmt] -> String
+ppStmts = render . pStmts form
 
 ppStmt :: Stmt -> String
 ppStmt = render . pStmt form
