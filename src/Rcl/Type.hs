@@ -65,19 +65,38 @@ tySet s = case s of
     pure NatTy
   Var _ t -> pure t
   PrimSet p -> case find (`isSuffixOf` map toUpper p) primTypes of
-    Just b -> if b == p || p `elem` subTypes then pure $ mkType b
-      else pure . SetTy . Set $ setTy b
+    Just b | b == p || p `elem` subTypes -> pure $ mkType b
+      | p `elem` setOfSets -> pure . SetTy . Set $ setTy b
+      | p == "GR" -> pure . SetTy . Set . Set $ setTy b
       -- assume the base type is a suffix of a nested set like CR, CU, CP
-    _ -> do
-     modify (("unknown base set: " ++ ppSet s) :)
-     pure Error
+    _ -> case find ((p `elem`) . fst) userTypes of
+      Just (_, t) -> pure $ SetTy t
+      _ -> do
+        modify (("unknown base set: " ++ ppSet s) :)
+        pure Error
+
+primTypes :: [String]
+primTypes = ["U", "R", "OP", "OBJ", "P", "S"]
+
+subTypes :: [String]
+subTypes = ["RR", "WR", "wp", "rp"]
+
+setOfSets :: [String]
+setOfSets = ["CR", "CU", "CP", "AR", "ASR", "SR"]
+
+userTypes :: [([String], SetType)]
+userTypes = [(["read", "write"], Set $ setTy "R")
+  , (["OWN", "PARENTGRANT", "PARENT", "READ"], setTy "R")
+  , (["OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy "P")]
 
 compatSetTys :: Type -> Type -> Type
 compatSetTys t1 t2 = case (t1, t2) of
   (EmptySetTy, _) | isSet t2 -> t2
   (_, EmptySetTy) | isSet t1 -> t1
   _ | isSet t1 && t1 == t2 -> t1
-  _ -> Error
+  _ -> case (mElemOrSetOf t1, mElemOrSetOf t2) of
+    (Just s1, Just s2) | s1 == s2 -> mkType s1 -- treat elements as sets
+    _ -> Error
 
 tyAppl :: UnOp -> Type -> Type
 tyAppl o t = case o of
@@ -110,15 +129,21 @@ permAppl t = if isElemOrSetOf "R" t then mkType "P" -- R -> 2^P
   else Error
 
 isElemOrSetOf :: String -> Type -> Bool
-isElemOrSetOf e t = case t of
-  SetTy s -> isElemOrSet e s
-  _ -> False
+isElemOrSetOf s = maybe False (== s) . mElemOrSetOf
+
+mElemOrSetOf :: Type -> Maybe String
+mElemOrSetOf t = case t of
+  SetTy s -> mElemOrSet s
+  _ -> Nothing
 
 isElemOrSet :: String -> SetType -> Bool
-isElemOrSet e t = case t of
-  ElemTy i | i == e -> True
-  Set (ElemTy i) | i == e -> True -- p 215 "general notation device"
-  _ -> False
+isElemOrSet s = maybe False (== s) . mElemOrSet
+
+mElemOrSet :: SetType -> Maybe String
+mElemOrSet t = case t of
+  ElemTy i -> Just i
+  Set (ElemTy i) -> Just i -- p 215 "general notation device"
+  _ -> Nothing
 
 setTy :: String -> SetType
 setTy = Set . ElemTy

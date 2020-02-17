@@ -10,7 +10,7 @@ parser = skip *> many1 stmt <* eof
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
-  <$> impl <*> optionMaybe (alts [stAnd, [chAnd], lAnd] *> stmt)
+  <$> impl <*> optionMaybe (alts [stAnd, [chAnd], lAnd, "^"] *> stmt)
 
 impl :: Parser Stmt
 impl = mayBe (BoolOp Impl)
@@ -63,7 +63,10 @@ mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
 
 applSet :: Parser Set
-applSet = primSet <|> unOpSet
+applSet = unOpSet <|> primSet
+
+primSet :: Parser Set
+primSet = (PrimSet <$> many1 letter <* skip) <|> parenSet
 
 unOpSet :: Parser Set
 unOpSet = UnOp <$> choice pUnOps <*> applSet
@@ -88,15 +91,12 @@ setOrPair = mayBe (BinOp Pair)
 pch :: Char -> Parser Char
 pch c = char c <* skip
 
-primSet :: Parser Set
-primSet = choice (map (pString stPrim) primSets) <|> parenSet
-
 nat :: Parser Set
 nat = Num . read <$> digits <* skip
 
--- no leading zero
+-- allow leading zero
 digits :: Parser String
-digits = (:) <$> oneOf "123456789" <*> many digit
+digits = many1 digit
 
 emptySet :: Parser Set
 emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]

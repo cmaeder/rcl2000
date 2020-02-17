@@ -13,7 +13,7 @@ operations(OE(OE(CR)),OE(OBJ)) ∩ operations(AO(OE(CR)),OE(OBJ)) = ∅
 // p 43 corrected
 |operations(OE(CR) ∩ roles(OE(U)),OE(OBJ))| ≤ 1 // 6.
 
-// p 44
+// p 44 also p 80
 |operations(OE(OE(CR)),OBJ)| < |OP| // 9.
 
 // p 45
@@ -27,15 +27,66 @@ roles(sessions(OE(OE(CU)))) ∩ roles(sessions(AO(OE(CU)))) = ∅ // 11.
 roles(OE(U)) = OE(ASR)
 roles(OE(sessions(OE(U)))) = OE(AR)
 object(OE(wp)) = object(OE(rp))  // "objects" is used
-  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(AR)
+  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(AR)  // compare p 81 SR
   ∧ roles(OE(rp)) ∩ WR = ∅ ∧ |roles(OE(rp)) ∩ RR| = 1
 
-// p 67 maybe it should be AR instead of SR
+// p 66 wrongly typed
+roles(sessions(OE(U))) = OE(R)
+
+// corrected types (unintended semantics?)
+roles(sessions(OE(U))) = R
+
+// p 67
 roles(sessions(OE(U))) = OE(SR)
-roles(sessions(OE(U))) = OE(AR)
+
+// p 69 wrongly typed
+roles(sessions(OE(U))) = OE(OE(read)) ∪ OE(AO(read))
+  ∧ roles(sessions(OE(U))) ∩ OE(OE(write)) = ∅
+roles(sessions(OE(U))) = OE(GR)
+
+// corrected types
+roles(sessions(OE(U))) = OE(read) ∪ OE(AO(read))
+  ∧ roles(sessions(OE(U))) ∩ OE(write) = ∅
+roles(sessions(OE(U))) = OE(OE(GR))
+
+// p 74 untypable
+|OE(PARENTGRANT) ∪ AO(PARENTGRANT)| = 0
+∧ |OE(PARENT) ∪ AO(PARENT)| = 0
+permissions(OE(OWN)) = OE(PPM) ∪ OE(OWNRPM)
+∧ object(permissions(OE(OWN))) = object(OE(PPM))
+  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+    ∧ permissions(OE(READ)) = OE(RPM)
+      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+
+PARENTGRANT ∪ AO(PARENTGRANT) = ∅ // wrong
+permissions(OE(OWN)) = PPM ∪ OWNRPM
+∧ object(permissions(OE(OWN))) = object(OE(PPM))
+  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+    ∧ permissions(OE(READ)) = RPM
+      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+
+// p 75 compare p 74
+|OE(PARENTGRANT) ∪ AO(PARENTGRANT)| = 0
+permissions(OE(OWN)) = OE(PGPM) ∪ OE(OWNRPM)
+∧ object(permissions(OE(OWN))) = object(OE(PGPM))
+  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+    ∧ permissions(OE(READ)) = OE(RPM)
+      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+
+// at least type correct
+permissions(OE(OWN)) = PGPM ∪ OWNRPM
+∧ object(permissions(OE(OWN))) = object(OE(PGPM))
+  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+    ∧ permissions(OE(READ)) = RPM
+      ∧ object(permissions(OE(READ))) = object(OE(RPM))
 
 // p 80
-permissions(OE(R)) ∩ OE(CP) ≠ ∅
+permissions(OE(R)) ∩ OE(CP) ≠ ∅ // Type 1
 
-//wrongly typed
-roles(sessions(OE(U))) = OE(U)
+// p 81
+roles(OE(U)) = OE(PR) // Type 2 // PR unknown
+
+object(OE(wp)) = object(OE(rp))  // compare p 62
+  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(SR) // Type 3
+
+|roles(OE(wp)) ∩ WR| = 1  // Type 4
