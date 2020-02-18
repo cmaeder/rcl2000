@@ -36,7 +36,7 @@ setToOcl :: Set -> Doc
 setToOcl = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 _) o d1 d2 -> case o of
       Pair -> parens $ cat [hcat [d1, pBinOp o], d2]
-      Minus -> sep [parenSet s1 d1, pBinOp o <+> d2]
+      Minus -> cat [parenSet s1 d1, cat [pBinOp o, text "Set", braces d2]]
       _ -> cat [hcat [parenSet s1 d1, arr, pBinOp o], parens d2]
   , foldUn = \ (UnOp _ s) o d -> case o of
       Card -> hcat [parenSet s d, arr, text "size()"]
@@ -75,4 +75,4 @@ pBinOp o = text $ case o of
   Pair -> ","
 
 pUnOp :: UnOp -> Doc
-pUnOp = text . stUnOp
+pUnOp = text . map (\ c -> if c == '*' then '_' else c) . stUnOp
