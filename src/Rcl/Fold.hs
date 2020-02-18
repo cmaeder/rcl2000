@@ -13,15 +13,6 @@ mapSet = FoldSet
   , foldUn = const UnOp
   , foldPrim = id }
 
-const2 :: a -> b -> c -> a
-const2 = const . const
-
-constSet :: (a -> a -> a) -> a -> FoldSet a
-constSet f a = FoldSet
-  { foldBin = const2 f
-  , foldUn = const2 id
-  , foldPrim = const a }
-
 foldSet :: FoldSet a -> Set -> a
 foldSet r s = case s of
   BinOp o s1 s2 -> foldBin r s o (foldSet r s1) $ foldSet r s2
@@ -36,11 +27,6 @@ mapStmt :: FoldStmt Set Stmt
 mapStmt = FoldStmt
   { foldBool = const BoolOp
   , foldCmp = const CmpOp }
-
-constStmt :: (b -> b -> b) -> (a -> a -> b) -> FoldStmt a b
-constStmt f g = FoldStmt
-  { foldBool = const2 f
-  , foldCmp = const2 g }
 
 foldStmt :: FoldStmt a b -> (Set -> a) -> Stmt -> b
 foldStmt r f s = case s of

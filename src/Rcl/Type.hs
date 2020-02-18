@@ -130,7 +130,7 @@ permAppl t = if isElemOrSetOf "R" t then mkType "P" -- R -> 2^P
   else Error
 
 isElemOrSetOf :: String -> Type -> Bool
-isElemOrSetOf s = maybe False (== s) . mElemOrSetOf
+isElemOrSetOf s = (== Just s) . mElemOrSetOf
 
 mElemOrSetOf :: Type -> Maybe String
 mElemOrSetOf t = case t of
@@ -138,7 +138,7 @@ mElemOrSetOf t = case t of
   _ -> Nothing
 
 isElemOrSet :: String -> SetType -> Bool
-isElemOrSet s = maybe False (== s) . mElemOrSet
+isElemOrSet s = (== Just s) . mElemOrSet
 
 mElemOrSet :: SetType -> Maybe String
 mElemOrSet t = case t of

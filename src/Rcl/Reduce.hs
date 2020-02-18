@@ -17,14 +17,21 @@ replAO = foldSet mapSet
       AO -> BinOp Minus p (UnOp OE p)
       _ -> UnOp o p }
 
+const2 :: a -> b -> c -> a
+const2 = const . const
+
 findSimpleOE :: Stmt -> Maybe Set
-findSimpleOE = foldStmt (constStmt (<|>) (<|>)) findOE
+findSimpleOE = foldStmt FoldStmt
+  { foldBool = const2 (<|>)
+  , foldCmp = const2 (<|>) } findOE
 
 findOE :: Set -> Maybe Set
-findOE = foldSet (constSet (<|>) Nothing)
-  { foldUn = \ s _ r -> r <|> case s of
+findOE = foldSet FoldSet
+  { foldBin = const2 (<|>)
+  , foldUn = \ s _ r -> r <|> case s of
       UnOp OE p -> Just p -- we omit the outer OE
-      _ -> Nothing }
+      _ -> Nothing
+  , foldPrim = const Nothing }
 
 replaceOE :: Set -> Set -> Stmt -> Stmt
 replaceOE e = foldStmt mapStmt . replOE e

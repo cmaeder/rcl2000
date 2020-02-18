@@ -3,7 +3,7 @@ module Rcl.Print (ppStmts, ppStmt, ppSet,
 
 import Rcl.Ast
 import Rcl.Fold
-import Text.PrettyPrint(Doc, render, vcat, cat, sep, (<+>), hcat,
+import Text.PrettyPrint (Doc, render, vcat, cat, sep, (<+>), hcat,
   text, int, empty, parens, braces)
 
 data Format = Ascii | Uni | LaTeX
@@ -85,12 +85,15 @@ pSet m = foldSet FoldSet
           _ -> b
       in (if c then cat else sep)
           [pUnOp m { prParen = b } o, if b then parens d else d]
-  , foldPrim = \ s -> case s of
-      PrimSet t -> text t
-      EmptySet -> pEmpty m
-      Num i -> int i
-      Var i _ -> text $ 'v' : show i
-      _ -> error "pSet" }
+  , foldPrim = pPrimSet m }
+
+pPrimSet :: Form -> Set -> Doc
+pPrimSet m s = case s of
+  PrimSet t -> text t
+  EmptySet -> pEmpty m
+  Num i -> int i
+  Var i _ -> text $ 'v' : show i
+  _ -> pSet m s
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
 pParenSet o s = case s of
