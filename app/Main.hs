@@ -1,12 +1,13 @@
 module Main where
 
 import Rcl.Ast
-import Rcl.Parse
+import Rcl.Parse (parser)
 import Rcl.Print
-import Rcl.Reduce
-import Rcl.Type
-import System.Environment
-import Text.ParserCombinators.Parsec
+import Rcl.Reduce (reduction)
+import Rcl.ToOcl (ocl)
+import Rcl.Type (typeErrors)
+import System.Environment (getArgs)
+import Text.ParserCombinators.Parsec (parse, parseFromFile, ParseError)
 
 main :: IO ()
 main = do
@@ -26,5 +27,7 @@ reportParse eith = case eith of
     Left err -> print err
     Right ast -> do
         putStrLn $ ppStmts ast
+        putStrLn . render $ pStmts (Form LaTeX True) ast
         putStrLn $ typeErrors ast
         putStrLn $ reduction ast
+        putStrLn $ ocl ast
