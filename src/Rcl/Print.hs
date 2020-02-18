@@ -1,10 +1,10 @@
 module Rcl.Print (ppStmts, ppStmt, ppSet,
-  Form (..), Format (..), pStmts, pStmt, pSet, Doc, render) where
+  Form (..), Format (..), pStmts, Doc, render) where
 
 import Rcl.Ast
-import Text.PrettyPrint
-  ( Doc, render, vcat, cat, sep, (<+>), hcat
-  , text, int, empty, parens, braces)
+import Rcl.Fold
+import Text.PrettyPrint(Doc, render, vcat, cat, sep, (<+>), hcat,
+  text, int, empty, parens, braces)
 
 data Format = Ascii | Uni | LaTeX
 
@@ -42,28 +42,12 @@ dollar :: Doc
 dollar = text "$"
 
 pStmt :: Form -> Stmt -> Doc
-pStmt m s = case s of
-  BoolOp o s1 s2 ->
-    sep [pLeftStmt o m s1, pBoolOp m o <+> pRightStmt o m s2]
-    -- the original input language does not allow parentheses!
-  CmpOp o s1 s2 ->
-    sep [pSet m s1, pCmpOp m o <+> pSet m s2]
-
-pLeftStmt :: BoolOp -> Form -> Stmt -> Doc
-pLeftStmt o m s = (case s of
-  BoolOp {} -> case o of
-    Impl -> parens  -- Impl binds stronger than And and is not nested
-    And -> id -- we have only top-level Ands without parens
-  _ -> id) $ pStmt m s
-
-pRightStmt :: BoolOp -> Form -> Stmt -> Doc
-pRightStmt o m s = (case s of
-  BoolOp i _ _ -> case o of
-    Impl -> case i of
-      And -> parens -- as above
-      Impl -> id  -- Impl is usually right associative if nested
-    And -> id
-  _ -> id) $ pStmt m s
+pStmt m = foldStmt FoldStmt
+  { foldBool = \ _ o d1 d2 ->
+    sep [d1, pBoolOp m o <+> d2]
+  , foldCmp = \ _ o d1 d2 ->
+    sep [d1, pCmpOp m o <+> d2] }
+  $ pSet m
 
 pBoolOp :: Form -> BoolOp -> Doc
 pBoolOp m o = text $ case o of
@@ -83,39 +67,40 @@ pCmpOp m = text . case format m of
   LaTeX -> lCmpOp
 
 pSet :: Form -> Set -> Doc
-pSet m s = case s of
-  BinOp o s1 s2 -> case o of
-    Pair -> parens $ hcat [pSet m s1, pBinOp m o, pSet m s2]
-    Minus -> cat [pParenSet o m s1, hcat [pBinOp m o, braces $ pSet m s2]]
-    _ -> sep [pParenSet o m s1, pBinOp m o <+> pParenSet o m s2]
-  UnOp o t -> case o of
-     Card -> hcat [pBar, pSet m t, pBar]
-     _ -> let
-       b = case t of
-         BinOp i _ _ -> i /= Pair
-         _ -> prParen m
-       c = case format m of
-         LaTeX -> True
-         _ -> case t of
-           BinOp Pair _ _ -> True
-           _ -> b
-       d = pSet m t
-       in (if c then cat else sep)
+pSet m = foldSet FoldSet
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> case o of
+    Pair -> parens $ hcat [d1, pBinOp m o, d2]
+    Minus -> cat [pParenSet o s1 d1, hcat [pBinOp m o, braces d2]]
+    _ -> sep [pParenSet o s1 d1, pBinOp m o <+> pParenSet o s2 d2]
+  , foldUn = \ (UnOp _ t) o d -> case o of
+    Card -> hcat [pBar, d, pBar]
+    _ -> let
+      b = case t of
+        BinOp i _ _ -> i /= Pair
+        _ -> prParen m
+      c = case format m of
+        LaTeX -> True
+        _ -> case t of
+          BinOp Pair _ _ -> True
+          _ -> b
+      in (if c then cat else sep)
           [pUnOp m { prParen = b } o, if b then parens d else d]
-  PrimSet t -> text t
-  EmptySet -> pEmpty m
-  Num i -> int i
-  Var i _ -> text $ 'v' : show i
+  , foldPrim = \ s -> case s of
+      PrimSet t -> text t
+      EmptySet -> pEmpty m
+      Num i -> int i
+      Var i _ -> text $ 'v' : show i
+      _ -> error "pSet" }
 
-pParenSet :: BinOp -> Form -> Set -> Doc
-pParenSet o m s = (case s of
+pParenSet :: BinOp -> Set -> Doc -> Doc
+pParenSet o s = case s of
   BinOp i _ _ -> case o of
     Minus -> parens
     Inter -> case i of
       Union -> parens
       _ -> id
     _ -> id
-  _ -> id) $ pSet m s
+  _ -> id
 
 pBinOp :: Form -> BinOp -> Doc
 pBinOp m o = text $ case o of
