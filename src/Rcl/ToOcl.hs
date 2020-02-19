@@ -4,16 +4,18 @@ import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
+import Rcl.Type (typeOfSet, isElem)
 import Text.PrettyPrint
 
 ocl :: [Stmt] -> String
-ocl = unlines . map (render . uncurry toOcl . runReduce)
+ocl = unlines . map (\ (n, s) -> render $ hcat
+    [ text $ "inv i" ++ show n ++ ": "
+    , uncurry toOcl $ runReduce s]) . zip [1 :: Int ..]
 
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
    [ hcat [setToOcl s, arr, text "forAll"]
-   , parens $ sep [text $ 'v' : show i ++ " |", f]])
-   . stmtToOcl
+   , parens $ sep [text $ 'v' : show i ++ " |", f]]) . stmtToOcl
 
 arr :: Doc
 arr = text "->"
@@ -38,9 +40,10 @@ setToOcl = foldSet FoldSet
   { foldBin = \ _ o d1 d2 -> case o of
       Pair -> cat [hcat [d1, pBinOp o], d2]
       _ -> cat [hcat [d1, arr, pBinOp o], parens d2]
-  , foldUn = \ _ o d -> case o of
+  , foldUn = \ (UnOp _ s) o d -> case o of
       Card -> hcat [d, arr, text "size()"]
-      _ -> cat [pUnOp o, parens d]
+      _ -> cat [pUnOp o, parens
+        $ if isElem (typeOfSet s) then hcat [text "Set", braces d] else d]
   , foldPrim = pSet form }
 
 pBoolOp :: BoolOp -> Doc

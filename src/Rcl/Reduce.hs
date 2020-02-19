@@ -6,7 +6,7 @@ import Control.Monad.State (State, modify, runState)
 import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (ppStmt, ppSet)
-import Rcl.Type (typeOfSet)
+import Rcl.Type (typeOfSet, elemType)
 
 replaceAO :: Stmt -> Stmt
 replaceAO = foldStmt mapStmt replAO
@@ -49,7 +49,7 @@ reduce i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
     modify ((i, r) :)
-    reduce (i + 1) $ replaceOE r (Var i $ typeOfSet r) s
+    reduce (i + 1) $ replaceOE r (Var i . elemType $ typeOfSet r) s
 
 runReduce :: Stmt -> (Stmt, Vars)
 runReduce s = runState (reduce 1 $ replaceAO s) []
@@ -63,7 +63,7 @@ replaceVar i = foldStmt mapStmt . replVar i
 replVar :: Int -> Set -> Set -> Set
 replVar i r = foldSet mapSet
   { foldPrim = \ s -> case s of
-    Var j t | i == j -> assert (typeOfSet r == t) $ UnOp OE r
+    Var j t | i == j -> assert (elemType (typeOfSet r) == t) $ UnOp OE r
     _ -> s }
 
 replaceMinus :: Stmt -> Stmt

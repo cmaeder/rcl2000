@@ -1,13 +1,12 @@
 module Main where
 
 import Rcl.Ast
-import Rcl.Parse (parser)
-import Rcl.Print
+import Rcl.Parse (parser, parse, parseFromFile, ParseError)
+import Rcl.Print (render, ppStmts, pStmts, Form (Form), Format (LaTeX))
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.Type (typeErrors)
 import System.Environment (getArgs)
-import Text.ParserCombinators.Parsec (parse, parseFromFile, ParseError)
 
 main :: IO ()
 main = do

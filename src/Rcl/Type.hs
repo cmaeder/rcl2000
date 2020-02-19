@@ -1,4 +1,4 @@
-module Rcl.Type (typeErrors, typeOfSet) where
+module Rcl.Type (typeErrors, typeOfSet, elemType, isElem) where
 
 import Control.Monad (when, unless)
 import Control.Monad.State (State, modify, evalState, execState)
@@ -27,7 +27,7 @@ ty s = case s of
 
 compatCmp :: CmpOp -> Type -> Type -> Bool
 compatCmp o t1 t2 = case o of
-  Elem -> isSet t2 && elemTy t2 == t1
+  Elem -> isSet t2 && elemType t2 == t1
   _ -> t1 == NatTy && t1 == t2
     || compatSetTys t1 t2 /= Error && o `elem` [Eq, Ne]
 
@@ -102,7 +102,7 @@ compatSetTys t1 t2 = case (t1, t2) of
 tyAppl :: UnOp -> Type -> Type
 tyAppl o t = case o of
   Card | isSet t || t == EmptySetTy -> NatTy
-  OE -> elemTy t
+  OE -> elemType t
   AO | isSet t -> t
   User -> case t of
     SetTy (ElemTy "S") -> SetTy $ ElemTy "U" -- S -> U
@@ -153,9 +153,14 @@ mkType :: String -> Type
 mkType = SetTy . setTy
 
 isSet :: Type -> Bool
-isSet = (/= Error) . elemTy
+isSet = (/= Error) . elemType
 
-elemTy :: Type -> Type
-elemTy t = case t of
+elemType :: Type -> Type
+elemType t = case t of
   SetTy (Set s) -> SetTy s
   _ -> Error
+
+isElem :: Type -> Bool
+isElem t = case t of
+  SetTy (ElemTy _) -> True
+  _ -> False
