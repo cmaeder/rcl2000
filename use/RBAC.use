@@ -23,18 +23,20 @@ end
 
 class RBAC
 
+attributes
+  OBJ : Set(OBJ) init = OBJ.allInstances
+  OP : Set(OP) init = OP.allInstances
+  P : Set(P) init = P.allInstances
+  R : Set(R) init = R.allInstances
+  S : Set(S) init = S.allInstances
+  U : Set(U) init = U.allInstances
+  CP : Set(Set(P)) init = Set{P}
+  CR : Set(Set(R)) init = Set{R}
+  CU : Set(Set(U)) init = Set{U}
+
 operations
-  OBJ() : Set(OBJ) = OBJ.allInstances
-  OP() : Set(OP) = OP.allInstances
-  P() : Set(P) = P.allInstances
-  R() : Set(R) = R.allInstances
-  S() : Set(S) = S.allInstances
-  U() : Set(U) = U.allInstances
-  CP() : Set(Set(P)) = Set{P()}
-  CR() : Set(Set(R)) = Set{R()}
-  CU() : Set(Set(U)) = Set{U()}
   roles(us : Set(PSU)): Set(R) = Set{}
-  user(u : U): S = S()->any(true)
+  user(u : U): S = S->any(true)
   users(rs : Set(R)): Set(U) = Set{}
   sessions(us : Set(U)): Set(S) = Set{}
   permissions(rs : Set(R)): Set(P) = Set{}

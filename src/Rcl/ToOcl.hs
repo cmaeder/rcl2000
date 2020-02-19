@@ -45,12 +45,7 @@ setToOcl = foldSet FoldSet
   , foldUn = \ (UnOp _ s) o d -> case o of
       Card -> hcat [d, arr, text "size"]
       _ -> cat [pUnOp s o, parens $ singleSet s d]
-  , foldPrim = primSet }
-
-primSet :: Set -> Doc
-primSet s = case s of
-  PrimSet t -> text $ t ++ "()"
-  _ -> pSet form s
+  , foldPrim = pSet form }
 
 singleSet :: Set -> Doc -> Doc
 singleSet s d =
