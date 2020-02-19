@@ -24,11 +24,11 @@ stmtToOcl :: Stmt -> Doc
 stmtToOcl = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
-  , foldCmp = \ (CmpOp _ _ s2) o d1 d2 -> case o of
+  , foldCmp = \ (CmpOp _ s1 s2) o d1 d2 -> case o of
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty()"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty()"]
-      _ -> sep [d1, pCmpOp o <+> d2] } setToOcl
+      _ -> sep [singleSet s1 d1, pCmpOp o <+> singleSet s2 d2] } setToOcl
 
 parenStmt :: Stmt -> Doc -> Doc
 parenStmt s = case s of
@@ -37,14 +37,24 @@ parenStmt s = case s of
 
 setToOcl :: Set -> Doc
 setToOcl = foldSet FoldSet
-  { foldBin = \ _ o d1 d2 -> case o of
-      Pair -> cat [hcat [d1, pBinOp o], d2]
-      _ -> cat [hcat [d1, arr, pBinOp o], parens d2]
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> case o of
+      Pair -> cat [hcat [singleSet s1 d1, pBinOp o], singleSet s2 d2]
+      Minus -> cat [hcat [d1, arr, pBinOp o], parens d2]
+      _ -> cat
+        [hcat [singleSet s1 d1, arr, pBinOp o], parens $ singleSet s2 d2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Card -> hcat [d, arr, text "size()"]
-      _ -> cat [pUnOp o, parens
-        $ if isElem (typeOfSet s) then hcat [text "Set", braces d] else d]
-  , foldPrim = pSet form }
+      Card -> hcat [d, arr, text "size"]
+      _ -> cat [pUnOp s o, parens $ singleSet s d]
+  , foldPrim = primSet }
+
+primSet :: Set -> Doc
+primSet s = case s of
+  PrimSet t -> text $ t ++ "()"
+  _ -> pSet form s
+
+singleSet :: Set -> Doc -> Doc
+singleSet s d =
+  if isElem $ typeOfSet s then hcat [text "Set", braces d] else d
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
@@ -63,5 +73,8 @@ pBinOp o = text $ case o of
   Minus -> "excluding"
   Pair -> ","
 
-pUnOp :: UnOp -> Doc
-pUnOp = text . map (\ c -> if c == '*' then '_' else c) . stUnOp
+pUnOp :: Set -> UnOp -> Doc
+pUnOp s o = text $ case o of
+  Operations -> "ops"
+  User -> if typeOfSet s == SetTy (ElemTy "S") then "user" else "users"
+  _ -> filter (/= '*') $ stUnOp o
