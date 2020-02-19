@@ -22,9 +22,10 @@ stmtToOcl :: Stmt -> Doc
 stmtToOcl = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
-  , foldCmp = \ _ o d1 d2 -> case o of
-      Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
-      -- Ne -> cat [text "not", parens $ sep [d1, pCmpOp Eq <+> d2]]
+  , foldCmp = \ (CmpOp _ s1 s2) o d1 d2 -> case o of
+      Elem -> cat [hcat [parenSet s2 d2, arr, text "includes"], parens d1]
+      Eq | s2 == EmptySet -> hcat [parenSet s1 d1, arr, text "isEmpty()"]
+      Ne | s2 == EmptySet -> hcat [parenSet s1 d1, arr, text "notEmpty()"]
       _ -> sep [d1, pCmpOp o <+> d2] } setToOcl
 
 parenStmt :: Stmt -> Doc -> Doc
@@ -47,9 +48,7 @@ setToOcl = foldSet FoldSet
 
 parenSet :: Set -> Doc -> Doc
 parenSet s = case s of
-  BinOp o _ _ -> case o of
-    Pair -> id
-    _ -> parens
+  BinOp Minus _ _ -> parens
   _ -> id
 
 primToOcl :: Set -> Doc
