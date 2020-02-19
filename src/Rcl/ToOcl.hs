@@ -11,7 +11,7 @@ ocl = unlines . map (render . uncurry toOcl . runReduce)
 
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
-   [ hcat [pSet form s, arr, text "forAll"]
+   [ hcat [setToOcl s, arr, text "forAll"]
    , parens $ sep [text $ 'v' : show i ++ " |", f]])
    . stmtToOcl
 
@@ -22,10 +22,10 @@ stmtToOcl :: Stmt -> Doc
 stmtToOcl = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
-  , foldCmp = \ (CmpOp _ s1 s2) o d1 d2 -> case o of
-      Elem -> cat [hcat [parenSet s2 d2, arr, text "includes"], parens d1]
-      Eq | s2 == EmptySet -> hcat [parenSet s1 d1, arr, text "isEmpty()"]
-      Ne | s2 == EmptySet -> hcat [parenSet s1 d1, arr, text "notEmpty()"]
+  , foldCmp = \ (CmpOp _ _ s2) o d1 d2 -> case o of
+      Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
+      Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty()"]
+      Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty()"]
       _ -> sep [d1, pCmpOp o <+> d2] } setToOcl
 
 parenStmt :: Stmt -> Doc -> Doc
@@ -35,26 +35,13 @@ parenStmt s = case s of
 
 setToOcl :: Set -> Doc
 setToOcl = foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 _) o d1 d2 -> case o of
-      Pair -> parens $ cat [hcat [d1, pBinOp o], d2]
-      Minus -> cat [parenSet s1 d1, cat [pBinOp o, text "Set", braces d2]]
-      _ -> cat [hcat [parenSet s1 d1, arr, pBinOp o], parens d2]
-  , foldUn = \ (UnOp _ s) o d -> case o of
-      Card -> hcat [parenSet s d, arr, text "size()"]
-      _ -> cat [pUnOp o, case s of
-        BinOp Pair _ _ -> d
-        _ -> parens d]
-  , foldPrim = primToOcl }
-
-parenSet :: Set -> Doc -> Doc
-parenSet s = case s of
-  BinOp Minus _ _ -> parens
-  _ -> id
-
-primToOcl :: Set -> Doc
-primToOcl s = case s of
-  EmptySet -> text "Set{}"
-  _ -> pSet form s
+  { foldBin = \ _ o d1 d2 -> case o of
+      Pair -> cat [hcat [d1, pBinOp o], d2]
+      _ -> cat [hcat [d1, arr, pBinOp o], parens d2]
+  , foldUn = \ _ o d -> case o of
+      Card -> hcat [d, arr, text "size()"]
+      _ -> cat [pUnOp o, parens d]
+  , foldPrim = pSet form }
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
@@ -70,7 +57,7 @@ pBinOp :: BinOp -> Doc
 pBinOp o = text $ case o of
   Union -> "union"
   Inter -> "intersection"
-  Minus -> "-"
+  Minus -> "excluding"
   Pair -> ","
 
 pUnOp :: UnOp -> Doc
