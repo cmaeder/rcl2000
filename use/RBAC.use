@@ -13,12 +13,37 @@ class P < PSU
 end
 
 class R
+attributes
+  name : String
 end
 
 class S < PSU
 end
 
 class U < PSU
+attributes
+  name : String
+end
+
+association UA between
+  U[*]
+  R[*]
+end
+
+association PA between
+  P[*]
+  R[*]
+end
+
+association SU between
+  S[*]
+  U[1]
+end
+
+association OBP between
+  P[*]
+  OBJ[*]
+  OP[*]
 end
 
 class RBAC
@@ -35,14 +60,18 @@ attributes
   CU : Set(Set(U)) init = Set{U}
 
 operations
-  roles(us : Set(PSU)): Set(R) = Set{}
-  user(u : U): S = S->any(true)
-  users(rs : Set(R)): Set(U) = Set{}
-  sessions(us : Set(U)): Set(S) = Set{}
-  permissions(rs : Set(R)): Set(P) = Set{}
-  ops(rs : Set(R), os : Set(OBJ)): Set(OP) = Set{}
-  object(ps : Set(P)): Set(OBJ) = Set{}
+  roles(us : Set(PSU)): Set(R) = us->collect(u | if
+    u.oclIsKindOf(S) then user(u.oclAsType(S)).r else
+    if u.oclIsKindOf(P) then u.oclAsType(P).r else
+    u.oclAsType(U).r endif endif)->asSet
+  user(s : S): U = s.u
+  users(rs : Set(R)): Set(U) = rs->collect(u)->asSet()
+  sessions(us : Set(U)): Set(S) = us->collect(s)->asSet()
+  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet()
+  ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
+    permissions(rs)->reject(p | (p.oBJ-os)->isEmpty())->collect(oP)->asSet()
+  object(ps : Set(P)): Set(OBJ) = ps->collect(oBJ)->asSet()
 end
-  
+
 constraints
 context RBAC
