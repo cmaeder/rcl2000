@@ -15,7 +15,7 @@ ocl = unlines . map (\ (n, s) -> render $ hcat
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
    [ hcat [setToOcl s, arr, text "forAll"]
-   , parens $ sep [text $ 'v' : show i ++ " |", f]]) . stmtToOcl
+   , parens $ sep [text $ stVar i ++ " |", f]]) . stmtToOcl
 
 arr :: Doc
 arr = text "->"

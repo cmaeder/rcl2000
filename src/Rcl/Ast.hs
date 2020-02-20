@@ -11,7 +11,9 @@ data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 data BoolOp = And | Impl deriving (Eq, Show)
 
 data Set = PrimSet { stPrim :: String } | EmptySet | Num Int | UnOp UnOp Set
-  | BinOp BinOp Set Set | Var Int Type deriving (Eq, Show)
+  | BinOp BinOp Set Set | Var Var deriving (Eq, Show)
+
+data Var = MkVar Int String Type deriving (Eq, Show)
 
 data BinOp = Union | Inter | Minus | Pair deriving (Eq, Show)
 
@@ -24,6 +26,9 @@ data SetType = ElemTy String | Set SetType | PairTy SetType SetType
   deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
+
+stVar :: Var -> String
+stVar (MkVar i t _) = t ++ show i
 
 chEmpty :: Char
 chEmpty = '\x2205'

@@ -3,6 +3,7 @@ module Rcl.Reduce (reduction, Vars, runReduce) where
 import Control.Applicative ((<|>))
 import Control.Exception (assert)
 import Control.Monad.State (State, modify, runState)
+import Data.Char (toLower)
 import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (ppStmt, ppSet)
@@ -42,14 +43,19 @@ replOE e r = foldSet mapSet
       OE | p == e -> r
       _ -> UnOp o p }
 
-type Vars = [(Int, Set)]
+type Vars = [(Var, Set)]
 
 reduce :: Int -> Stmt -> State Vars Stmt
 reduce i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    modify ((i, r) :)
-    reduce (i + 1) $ replaceOE r (Var i . elemType $ typeOfSet r) s
+    let t = elemType $ typeOfSet r
+        p = case t of
+          SetTy (ElemTy e) -> e
+          _ -> ppSet r
+        v = MkVar i (take 2 $ map toLower p) t
+    modify ((v, r) :)
+    reduce (i + 1) $ replaceOE r (Var v) s
 
 runReduce :: Stmt -> (Stmt, Vars)
 runReduce s = runState (reduce 1 $ replaceAO s) []
@@ -57,13 +63,14 @@ runReduce s = runState (reduce 1 $ replaceAO s) []
 construct :: Stmt -> Vars -> Stmt
 construct = foldl (\ r (i, t) -> replaceVar i t r)
 
-replaceVar :: Int -> Set -> Stmt -> Stmt
+replaceVar :: Var -> Set -> Stmt -> Stmt
 replaceVar i = foldStmt mapStmt . replVar i
 
-replVar :: Int -> Set -> Set -> Set
-replVar i r = foldSet mapSet
+replVar :: Var -> Set -> Set -> Set
+replVar i@(MkVar _ _ t) r =
+  assert (elemType (typeOfSet r) == t) . foldSet mapSet
   { foldPrim = \ s -> case s of
-    Var j t | i == j -> assert (elemType (typeOfSet r) == t) $ UnOp OE r
+    Var v | i == v -> UnOp OE r
     _ -> s }
 
 replaceMinus :: Stmt -> Stmt
@@ -80,7 +87,7 @@ reduceAndReconstruct s = let
   (r, vs) = runReduce s
   n = replaceMinus (construct r vs)
   in assert (n == s)
-  $ concatMap (\ (i, e) -> 'v' : show i ++ ":" ++ ppSet e ++ ";")
+  $ concatMap (\ (i, e) -> stVar i ++ ":" ++ ppSet e ++ ";")
     (reverse vs) ++ ppStmt r
 
 reduction :: [Stmt] -> String

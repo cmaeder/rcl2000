@@ -64,7 +64,7 @@ tySet s = case s of
   Num n -> do
     unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
-  Var _ t -> pure t
+  Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find (`isSuffixOf` map toUpper p) primTypes of
     Just b | b == p || p `elem` subTypes -> pure $ mkType b
       | p `elem` setOfSets -> pure . SetTy . Set $ setTy b

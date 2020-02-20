@@ -4,7 +4,7 @@ module Rcl.Print (ppStmts, ppStmt, ppSet,
 import Rcl.Ast
 import Rcl.Fold
 import Text.PrettyPrint (Doc, render, vcat, cat, sep, (<+>), hcat,
-  text, int, empty, parens, braces)
+  text, empty, parens, braces)
 
 data Format = Ascii | Uni | LaTeX
 
@@ -88,11 +88,11 @@ pSet m = let f = format m in foldSet FoldSet
   , foldPrim = pPrimSet f }
 
 pPrimSet :: Format -> Set -> Doc
-pPrimSet m s = case s of
-  PrimSet t -> text t
+pPrimSet m s = text $ case s of
+  PrimSet t -> t
   EmptySet -> pEmpty m
-  Num i -> int i
-  Var i _ -> text $ 'v' : show i
+  Num i -> show i
+  Var v -> stVar v
   _ -> error "no prim set"
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
@@ -126,8 +126,8 @@ pUnOp m = text . case format m of
   LaTeX -> (if prParen m then id else (++ "~")) . lUnOp
   _ -> stUnOp
 
-pEmpty :: Format -> Doc
-pEmpty m = text $ case m of
+pEmpty :: Format -> String
+pEmpty m = case m of
   LaTeX -> lEmpty
   Uni -> [chEmpty]
   Ascii -> stEmpty
