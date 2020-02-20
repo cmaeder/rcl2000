@@ -1,4 +1,4 @@
-module Rcl.Type (typeErrors, typeOfSet, elemType, isElem) where
+module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
 
 import Control.Monad (when, unless)
 import Control.Monad.State (State, modify, evalState, execState)
@@ -15,6 +15,9 @@ tys = mapM_ ty
 
 typeOfSet :: Set -> Type
 typeOfSet s = evalState (tySet s) []
+
+wellTyped :: Stmt -> Bool
+wellTyped s = null $ execState (ty s) []
 
 ty :: Stmt -> State [String] ()
 ty s = case s of

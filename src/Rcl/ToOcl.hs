@@ -4,13 +4,14 @@ import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
-import Rcl.Type (typeOfSet, isElem)
+import Rcl.Type (wellTyped, typeOfSet, isElem)
 import Text.PrettyPrint
 
 ocl :: [Stmt] -> String
 ocl = unlines . map (\ (n, s) -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
     , uncurry toOcl $ runReduce s]) . zip [1 :: Int ..]
+    . filter wellTyped
 
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
