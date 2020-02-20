@@ -46,28 +46,19 @@ association OBP between
   OP[*]
 end
 
-class CR
-end
-
-association CRR between
-  R[*]
-  CR[0..1]
-end
-
 class CP
+attributes
+ cs : Set(P)
 end
 
-association CPR between
-  P[*]
-  CP[0..1]
+class CR
+attributes
+ cs : Set(R)
 end
 
 class CU
-end
-
-association CUR between
-  U[*]
-  CU[0..1]
+attributes
+ cs : Set(U)
 end
 
 class RBAC
@@ -79,9 +70,9 @@ attributes
   R : Set(R) init = R.allInstances
   S : Set(S) init = S.allInstances
   U : Set(U) init = U.allInstances
-  CP : Set(Set(P)) init = CP.allInstances->collectNested(p)->asSet()
-  CR : Set(Set(R)) init = CR.allInstances->collectNested(r)->asSet()
-  CU : Set(Set(U)) init = CU.allInstances->collectNested(u)->asSet()
+  CP : Set(Set(P)) init = CP.allInstances->collectNested(cs)->asSet()
+  CR : Set(Set(R)) init = CR.allInstances->collectNested(cs)->asSet()
+  CU : Set(Set(U)) init = CU.allInstances->collectNested(cs)->asSet()
 
 operations
   roles(us : Set(PSU)): Set(R) = us->collect(u | if
