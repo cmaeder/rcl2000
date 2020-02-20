@@ -18,6 +18,22 @@ end
 class R
 attributes
   name : String
+operations
+  getRoles() : Set(R) = Set{self}
+end
+
+class HR < R
+operations
+  getRoles() : Set(R) = Set{self}->union(juniors()) // overwrite
+  juniors() : Set(HR) = junior->closure(junior)->asSet
+  seniors() : Set(HR) = senior->closure(senior)->asSet
+constraints
+  inv nonCyclicRoleHierarchy: juniors()->excludes(self)
+end
+
+association RH between
+  HR[*] role junior
+  HR[*] role senior
 end
 
 class S < PSU
@@ -75,11 +91,12 @@ operations
   roles(us : Set(PSU)): Set(R) = us->collect(u | if
     u.oclIsKindOf(S) then user(u.oclAsType(S)).r else
     if u.oclIsKindOf(P) then u.oclAsType(P).r else
-    u.oclAsType(U).r endif endif)->asSet
+    u.oclAsType(U).r endif endif)->collect(getRoles())->asSet
   user(s : S): U = s.u
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
   sessions(us : Set(U)): Set(S) = us->collect(s)->asSet
-  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
+  permissions(rs : Set(R)): Set(P) =
+    rs->collect(getRoles())->collect(p)->asSet
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
   object(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
