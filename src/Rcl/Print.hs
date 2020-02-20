@@ -6,7 +6,7 @@ import Rcl.Fold
 import Text.PrettyPrint (Doc, render, vcat, cat, sep, (<+>), hcat,
   text, empty, parens, braces)
 
-data Format = Ascii | Uni | LaTeX
+data Format = Ascii | Uni | LaTeX deriving Show
 
 data Form = Form { format :: Format, prParen :: Bool }
 
