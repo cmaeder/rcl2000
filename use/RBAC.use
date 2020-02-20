@@ -10,6 +10,9 @@ class PSU
 end
 
 class P < PSU
+attributes
+  op : OP
+  obj : OBJ
 end
 
 class R
@@ -40,12 +43,6 @@ association SU between
   U[1]
 end
 
-association OBP between
-  P[*]
-  OBJ[*]
-  OP[*]
-end
-
 class CP
 attributes
  cs : Set(P)
@@ -70,9 +67,9 @@ attributes
   R : Set(R) init = R.allInstances
   S : Set(S) init = S.allInstances
   U : Set(U) init = U.allInstances
-  CP : Set(Set(P)) init = CP.allInstances->collectNested(cs)->asSet()
-  CR : Set(Set(R)) init = CR.allInstances->collectNested(cs)->asSet()
-  CU : Set(Set(U)) init = CU.allInstances->collectNested(cs)->asSet()
+  CP : Set(Set(P)) init = CP.allInstances->collectNested(cs)->asSet
+  CR : Set(Set(R)) init = CR.allInstances->collectNested(cs)->asSet
+  CU : Set(Set(U)) init = CU.allInstances->collectNested(cs)->asSet
 
 operations
   roles(us : Set(PSU)): Set(R) = us->collect(u | if
@@ -80,12 +77,12 @@ operations
     if u.oclIsKindOf(P) then u.oclAsType(P).r else
     u.oclAsType(U).r endif endif)->asSet
   user(s : S): U = s.u
-  users(rs : Set(R)): Set(U) = rs->collect(u)->asSet()
-  sessions(us : Set(U)): Set(S) = us->collect(s)->asSet()
-  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet()
+  users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
+  sessions(us : Set(U)): Set(S) = us->collect(s)->asSet
+  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
-    permissions(rs)->reject(p | (p.oBJ-os)->isEmpty())->collect(oP)->asSet()
-  object(ps : Set(P)): Set(OBJ) = ps->collect(oBJ)->asSet()
+    permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
+  object(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
 end
 
 constraints
