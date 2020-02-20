@@ -51,7 +51,7 @@ end
 
 association CRR between
   R[*]
-  CR[1]
+  CR[0..1]
 end
 
 class CP
@@ -59,7 +59,7 @@ end
 
 association CPR between
   P[*]
-  CP[1]
+  CP[0..1]
 end
 
 class CU
@@ -67,7 +67,7 @@ end
 
 association CUR between
   U[*]
-  CU[1]
+  CU[0..1]
 end
 
 class RBAC
