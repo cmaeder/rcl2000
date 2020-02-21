@@ -2,8 +2,7 @@ module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
 
 import Control.Monad (when, unless)
 import Control.Monad.State (State, modify, evalState, execState)
-import Data.Char (toUpper)
-import Data.List (find, isSuffixOf)
+import Data.List (find)
 import Rcl.Ast
 import Rcl.Print (ppStmt, ppSet)
 
@@ -68,12 +67,8 @@ tySet s = case s of
     when (n < 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
   Var (MkVar _ _ t) -> pure t
-  PrimSet p -> case find (`isSuffixOf` map toUpper p) primTypes of
-    Just b | b == p || p `elem` subTypes -> pure $ mkType b
-      | p `elem` setOfSets -> pure . SetTy . Set $ setTy b
-      | p == "GR" -> pure . SetTy . Set . Set $ setTy b
-      -- assume the base type is a suffix of a nested set like CR, CU, CP
-    _ -> case find ((p `elem`) . fst) userTypes of
+  PrimSet p -> if p `elem` primTypes then pure $ mkType p else
+    case find ((p `elem`) . fst) userTypes of
       Just (_, t) -> pure $ SetTy t
       _ -> do
         modify (("unknown base set: " ++ ppSet s) :)
@@ -82,16 +77,13 @@ tySet s = case s of
 primTypes :: [String]
 primTypes = ["U", "R", "OP", "OBJ", "P", "S"]
 
-subTypes :: [String]
-subTypes = ["RR", "WR", "wp", "rp"]
-
-setOfSets :: [String]
-setOfSets = ["CR", "CU", "CP", "AR", "ASR", "SR"]
-
 userTypes :: [([String], SetType)]
-userTypes = [(["read", "write"], Set $ setTy "R")
-  , (["OWN", "PARENTGRANT", "PARENT", "READ"], setTy "R")
-  , (["OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy "P")]
+userTypes = [(["CU"], Set $ setTy "U")
+  , (["CP"], Set $ setTy "P")
+  , (["CR", "read", "write", "AR", "ASR", "SR"], Set $ setTy "R")
+  , (["GR"], Set . Set $ setTy "R")
+  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], setTy "R")
+  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy "P")]
 
 compatSetTys :: Type -> Type -> Type
 compatSetTys t1 t2 = case (t1, t2) of
