@@ -24,6 +24,7 @@ dependencies:
 - parsec
 - pretty
 - mtl
+- containers
 
 library:
   source-dirs: src

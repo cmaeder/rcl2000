@@ -1,4 +1,4 @@
-module Rcl.Parse (parser, parse, parseFromFile, ParseError) where
+module Rcl.Parse (parser, parseFromFile, ParseError) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)

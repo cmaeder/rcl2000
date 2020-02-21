@@ -1,11 +1,12 @@
-module Rcl.ToOcl where
+module Rcl.ToOcl (ocl) where
 
 import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
 import Rcl.Type (wellTyped, typeOfSet, isElem)
-import Text.PrettyPrint
+import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
+  parens, braces)
 
 ocl :: [Stmt] -> String
 ocl = unlines . map (\ (n, s) -> render $ hcat
