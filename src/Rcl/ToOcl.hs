@@ -73,4 +73,4 @@ pUnOp :: Set -> UnOp -> Doc
 pUnOp s o = text $ case o of
   Operations -> "ops"
   User -> if typeOfSet s == SetTy (ElemTy "S") then "user" else "users"
-  _ -> filter (/= '*') $ stUnOp o
+  _ -> map (\ c -> if c == '*' then '_' else c) $ stUnOp o
