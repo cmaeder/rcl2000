@@ -99,7 +99,7 @@ operations
     rs->collect(getRoles())->collect(p)->asSet
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
-  object(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
+  objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
 end
 
 constraints

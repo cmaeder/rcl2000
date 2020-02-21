@@ -65,7 +65,7 @@ tySet s = case s of
         pure t
   EmptySet -> pure EmptySetTy
   Num n -> do
-    unless (n > 0) $ modify (("illegal number: " ++ ppSet s) :)
+    when (n < 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
   Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find (`isSuffixOf` map toUpper p) primTypes of
@@ -111,26 +111,16 @@ tyAppl o t = case o of
     SetTy (ElemTy "S") -> SetTy $ ElemTy "U" -- S -> U
     _ | isElemOrSetOf "R" t -> mkType "U"  -- R -> 2^U
     _ -> Error
-  Roles -> rolesAppl t
-  RolesStar -> rolesAppl t
+  Roles _ | any (`isElemOrSetOf` t) $ map (: []) "UPS"
+    -> mkType "R" -- U + P + S -> 2^R
   Sessions | isElemOrSetOf "U" t -> mkType "S"  -- U -> 2^S
-  Permissions -> permAppl t
-  PermissionsStar -> permAppl t
+  Permissions _ | isElemOrSetOf "R" t -> mkType "P" -- R -> 2^P
   Operations -> case t of
     SetTy (PairTy l r) | isElemOrSet "R" l && isElemOrSet "OBJ" r
       -> mkType "OP" -- R x OBJ -> 2^OP
     _ -> Error
-  Object | isElemOrSetOf "P" t -> mkType "OBJ"  -- P -> 2^OBJ
+  Objects | isElemOrSetOf "P" t -> mkType "OBJ"  -- P -> 2^OBJ
   _ -> Error
-
-rolesAppl :: Type -> Type
-rolesAppl t = if any (`isElemOrSetOf` t) $ map (: []) "UPS"
-  then mkType "R" -- U + P + S -> 2^R
-  else Error
-
-permAppl :: Type -> Type
-permAppl t = if isElemOrSetOf "R" t then mkType "P" -- R -> 2^P
-  else Error
 
 isElemOrSetOf :: String -> Type -> Bool
 isElemOrSetOf s = (== Just s) . mElemOrSetOf

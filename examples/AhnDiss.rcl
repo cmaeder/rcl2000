@@ -26,7 +26,7 @@ roles(sessions(OE(OE(CU)))) ∩ roles(sessions(AO(OE(CU)))) = ∅ // 11.
 // p 62
 roles(OE(U)) = OE(ASR)
 roles(OE(sessions(OE(U)))) = OE(AR)
-object(OE(wp)) = object(OE(rp))  // "objects" is used
+objects(OE(wp)) = objects(OE(rp))
   ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(AR)  // compare p 81 SR
   ∧ roles(OE(rp)) ∩ WR = ∅ ∧ |roles(OE(rp)) ∩ RR| = 1
 
@@ -53,32 +53,32 @@ roles(sessions(OE(U))) = OE(OE(GR))
 |OE(PARENTGRANT) ∪ AO(PARENTGRANT)| = 0
 ∧ |OE(PARENT) ∪ AO(PARENT)| = 0
 permissions(OE(OWN)) = OE(PPM) ∪ OE(OWNRPM)
-∧ object(permissions(OE(OWN))) = object(OE(PPM))
-  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+∧ objects(permissions(OE(OWN))) = objects(OE(PPM))
+  ∧ objects(permissions(OE(OWN))) = objects(OE(OWNRPM))
     ∧ permissions(OE(READ)) = OE(RPM)
-      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+      ∧ objects(permissions(OE(READ))) = objects(OE(RPM))
 
 PARENTGRANT ∪ AO(PARENTGRANT) = ∅ // wrong
 permissions(OE(OWN)) = PPM ∪ OWNRPM
-∧ object(permissions(OE(OWN))) = object(OE(PPM))
-  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+∧ objects(permissions(OE(OWN))) = objects(OE(PPM))
+  ∧ objects(permissions(OE(OWN))) = objects(OE(OWNRPM))
     ∧ permissions(OE(READ)) = RPM
-      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+      ∧ objects(permissions(OE(READ))) = objects(OE(RPM))
 
 // p 75 compare p 74
 |OE(PARENTGRANT) ∪ AO(PARENTGRANT)| = 0
 permissions(OE(OWN)) = OE(PGPM) ∪ OE(OWNRPM)
-∧ object(permissions(OE(OWN))) = object(OE(PGPM))
-  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+∧ objects(permissions(OE(OWN))) = objects(OE(PGPM))
+  ∧ objects(permissions(OE(OWN))) = objects(OE(OWNRPM))
     ∧ permissions(OE(READ)) = OE(RPM)
-      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+      ∧ objects(permissions(OE(READ))) = objects(OE(RPM))
 
 // at least type correct
 permissions(OE(OWN)) = PGPM ∪ OWNRPM
-∧ object(permissions(OE(OWN))) = object(OE(PGPM))
-  ∧ object(permissions(OE(OWN))) = object(OE(OWNRPM))
+∧ objects(permissions(OE(OWN))) = objects(OE(PGPM))
+  ∧ objects(permissions(OE(OWN))) = objects(OE(OWNRPM))
     ∧ permissions(OE(READ)) = RPM
-      ∧ object(permissions(OE(READ))) = object(OE(RPM))
+      ∧ objects(permissions(OE(READ))) = objects(OE(RPM))
 
 // p 80
 permissions(OE(R)) ∩ OE(CP) ≠ ∅ // Type 1
@@ -86,7 +86,7 @@ permissions(OE(R)) ∩ OE(CP) ≠ ∅ // Type 1
 // p 81
 roles(OE(U)) = OE(PR) // Type 2 // PR unknown
 
-object(OE(wp)) = object(OE(rp))  // compare p 62
+objects(OE(wp)) = objects(OE(rp))  // compare p 62
   ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(SR) // Type 3
 
 |roles(OE(wp)) ∩ WR| = 1  // Type 4

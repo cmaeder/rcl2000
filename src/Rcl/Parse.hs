@@ -72,7 +72,7 @@ unOpSet :: Parser Set
 unOpSet = UnOp <$> choice pUnOps <*> applSet
 
 pUnOps :: [Parser UnOp]
-pUnOps = map (pString lUnOp) [RolesStar, PermissionsStar]
+pUnOps = map (pString lUnOp) [Roles True, Permissions True]
   ++ map (pString stUnOp) unOps
 
 cardSet :: Parser Set

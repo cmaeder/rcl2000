@@ -1,7 +1,7 @@
 module Rcl.Ast where
 
-import Data.Char
-import Data.List
+import Data.Char (isLetter, toLower)
+import Data.List (isSuffixOf)
 
 data Stmt = CmpOp CmpOp Set Set
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -17,10 +17,9 @@ data Var = MkVar Int String Type deriving (Eq, Show)
 
 data BinOp = Union | Inter | Minus | Pair deriving (Eq, Show)
 
-data UnOp = AO | OE | User | Roles | RolesStar | Sessions
-  | Permissions | PermissionsStar | Operations | Object | Card
-  deriving (Eq, Show)
--- AO: all other, OE: one element
+data UnOp = AO | OE | Card | User | Roles Bool | Sessions
+  | Permissions Bool | Operations | Objects deriving (Eq, Show)
+-- AO: all other, OE: one element, object ~> objects, Bool for * suffix
 
 data SetType = ElemTy String | Set SetType | PairTy SetType SetType
   deriving (Eq, Show)
@@ -58,17 +57,17 @@ stInter :: String
 stInter = "&"
 
 unOps :: [UnOp]
-unOps = [AO, OE, User, RolesStar, Roles, Sessions
-  , PermissionsStar, Permissions, Operations, Object]
+unOps = [AO, OE, User, Roles True, Roles False, Sessions
+  , Permissions True, Permissions False, Operations, Objects]
 
 stUnOp :: UnOp -> String
 stUnOp o = let
-  s = show o
+  s = show o -- rely on Show instance
   l = length s
-  v = map toLower s in
-  if l == 2 then s else
-  if "Star" `isSuffixOf` s then take (l - 4) v ++ "*"
-  else v
+  v = map toLower s
+  w = takeWhile isLetter v
+  in if l == 2 then s else -- not AO or OE
+  if " True" `isSuffixOf` s then w ++ "*" else w
 
 lUnOp :: UnOp -> String
 lUnOp o = case stUnOp o of
