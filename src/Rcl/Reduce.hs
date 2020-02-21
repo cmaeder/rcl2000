@@ -87,8 +87,8 @@ reduceAndReconstruct s = let
   (r, vs) = runReduce s
   n = replaceMinus (construct r vs)
   in assert (n == s)
-  $ concatMap (\ (i, e) -> '\x2200' : stVar i ++ ":" ++ ppSet e ++ ";")
-    (reverse vs) ++ ppStmt r
+  $ concatMap (\ (i, e) -> '\x2200' : stVar i ++ '\x220A' : ppSet e ++ ".")
+    (reverse vs) ++ ' ' : ppStmt r
 
 reduction :: [Stmt] -> String
 reduction = unlines . map reduceAndReconstruct
