@@ -37,6 +37,12 @@ association RH between
 end
 
 class S < PSU
+attributes
+  user : U
+  activatedRoles : Set(R)
+constraints
+inv onlyActiveAssignedRoles:
+  user.r->includesAll(activatedRoles)
 end
 
 class U < PSU
@@ -52,11 +58,6 @@ end
 association PA between
   P[*]
   R[*]
-end
-
-association SU between
-  S[*]
-  U[1]
 end
 
 class CP
@@ -89,12 +90,12 @@ attributes
 
 operations
   roles(us : Set(PSU)): Set(R) = us->collect(u | if
-    u.oclIsKindOf(S) then user(u.oclAsType(S)).r else
+    u.oclIsKindOf(S) then u.oclAsType(S).activatedRoles else
     if u.oclIsKindOf(P) then u.oclAsType(P).r else
     u.oclAsType(U).r endif endif)->collect(getRoles())->asSet
-  user(s : S): U = s.u
+  user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
-  sessions(us : Set(U)): Set(S) = us->collect(s)->asSet
+  sessions(us : Set(U)): Set(S) = S->select(s | us->includes(s.user))
   permissions(rs : Set(R)): Set(P) =
     rs->collect(getRoles())->collect(p)->asSet
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
