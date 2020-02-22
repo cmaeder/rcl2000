@@ -67,23 +67,24 @@ tySet s = case s of
     when (n < 0) $ modify (("illegal number: " ++ ppSet s) :)
     pure NatTy
   Var (MkVar _ _ t) -> pure t
-  PrimSet p -> if p `elem` primTypes then pure $ mkType p else
-    case find ((p `elem`) . fst) userTypes of
+  PrimSet p -> case find ((== p) . show) primTypes of
+    Just b -> pure $ mkType b
+    Nothing -> case find ((p `elem`) . fst) userTypes of
       Just (_, t) -> pure $ SetTy t
-      _ -> do
+      Nothing -> do
         modify (("unknown base set: " ++ ppSet s) :)
         pure Error
 
-primTypes :: [String]
-primTypes = ["U", "R", "OP", "OBJ", "P", "S"]
+primTypes :: [Base]
+primTypes = [U, R, OP, OBJ, P, S]
 
 userTypes :: [([String], SetType)]
-userTypes = [(["CU"], Set $ setTy "U")
-  , (["CP"], Set $ setTy "P")
-  , (["CR", "read", "write", "AR", "ASR", "SR"], Set $ setTy "R")
-  , (["GR"], Set . Set $ setTy "R")
-  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], setTy "R")
-  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy "P")]
+userTypes = [(["CU"], Set $ setTy U)
+  , (["CP"], Set $ setTy P)
+  , (["CR", "read", "write", "AR", "ASR", "SR"], Set $ setTy R)
+  , (["GR"], Set . Set $ setTy R)
+  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], setTy R)
+  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy P)]
 
 compatSetTys :: Type -> Type -> Type
 compatSetTys t1 t2 = case (t1, t2) of
@@ -100,41 +101,41 @@ tyAppl o t = case o of
   OE -> elemType t
   AO | isSet t -> t
   User -> case t of
-    SetTy (ElemTy "S") -> SetTy $ ElemTy "U" -- S -> U
-    _ | isElemOrSetOf "R" t -> mkType "U"  -- R -> 2^U
+    SetTy (ElemTy S) -> SetTy $ ElemTy U -- S -> U
+    _ | isElemOrSetOf R t -> mkType U  -- R -> 2^U
     _ -> Error
-  Roles _ | any (`isElemOrSetOf` t) $ map (: []) "UPS"
-    -> mkType "R" -- U + P + S -> 2^R
-  Sessions | isElemOrSetOf "U" t -> mkType "S"  -- U -> 2^S
-  Permissions _ | isElemOrSetOf "R" t -> mkType "P" -- R -> 2^P
+  Roles _ | any (`isElemOrSetOf` t) [U, P, S]
+    -> mkType R -- U + P + S -> 2^R
+  Sessions | isElemOrSetOf U t -> mkType S  -- U -> 2^S
+  Permissions _ | isElemOrSetOf R t -> mkType P -- R -> 2^P
   Operations -> case t of
-    SetTy (PairTy l r) | isElemOrSet "R" l && isElemOrSet "OBJ" r
-      -> mkType "OP" -- R x OBJ -> 2^OP
+    SetTy (PairTy l r) | isElemOrSet R l && isElemOrSet OBJ r
+      -> mkType OP -- R x OBJ -> 2^OP
     _ -> Error
-  Objects | isElemOrSetOf "P" t -> mkType "OBJ"  -- P -> 2^OBJ
+  Objects | isElemOrSetOf P t -> mkType OBJ  -- P -> 2^OBJ
   _ -> Error
 
-isElemOrSetOf :: String -> Type -> Bool
+isElemOrSetOf :: Base -> Type -> Bool
 isElemOrSetOf s = (== Just s) . mElemOrSetOf
 
-mElemOrSetOf :: Type -> Maybe String
+mElemOrSetOf :: Type -> Maybe Base
 mElemOrSetOf t = case t of
   SetTy s -> mElemOrSet s
   _ -> Nothing
 
-isElemOrSet :: String -> SetType -> Bool
+isElemOrSet :: Base -> SetType -> Bool
 isElemOrSet s = (== Just s) . mElemOrSet
 
-mElemOrSet :: SetType -> Maybe String
+mElemOrSet :: SetType -> Maybe Base
 mElemOrSet t = case t of
   ElemTy i -> Just i
   Set (ElemTy i) -> Just i -- p 215 "general notation device"
   _ -> Nothing
 
-setTy :: String -> SetType
+setTy :: Base -> SetType
 setTy = Set . ElemTy
 
-mkType :: String -> Type
+mkType :: Base -> Type
 mkType = SetTy . setTy
 
 isSet :: Type -> Bool

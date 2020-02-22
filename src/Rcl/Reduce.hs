@@ -51,7 +51,7 @@ reduce i s = case findSimpleOE s of
   Just r -> do
     let t = elemType $ typeOfSet r
         p = case t of
-          SetTy (ElemTy e) -> e
+          SetTy (ElemTy e) -> show e
           _ -> ppSet r
         v = MkVar i (take 2 $ map toLower p) t
     modify ((v, r) :)

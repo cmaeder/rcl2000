@@ -21,7 +21,9 @@ data UnOp = AO | OE | Card | User | Roles Bool | Sessions
   | Permissions Bool | Operations | Objects deriving (Eq, Show)
 -- AO: all other, OE: one element, object ~> objects, Bool for * suffix
 
-data SetType = ElemTy String | Set SetType | PairTy SetType SetType
+data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
+
+data SetType = ElemTy Base | Set SetType | PairTy SetType SetType
   deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
