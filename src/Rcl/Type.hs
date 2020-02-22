@@ -68,7 +68,7 @@ tySet s = case s of
     pure NatTy
   Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find ((== p) . show) primTypes of
-    Just b -> pure $ mkType b
+    Just b -> pure $ mkSetType b
     Nothing -> case find ((p `elem`) . fst) userTypes of
       Just (_, t) -> pure $ SetTy t
       Nothing -> do
@@ -92,7 +92,7 @@ compatSetTys t1 t2 = case (t1, t2) of
   (_, EmptySetTy) | isSet t1 -> t1
   _ | isSet t1 && t1 == t2 -> t1
   _ -> case (mElemOrSetOf t1, mElemOrSetOf t2) of
-    (Just s1, Just s2) | s1 == s2 -> mkType s1 -- treat elements as sets
+    (Just s1, Just s2) | s1 == s2 -> mkSetType s1 -- treat elements as sets
     _ -> Error
 
 tyAppl :: UnOp -> Type -> Type
@@ -102,17 +102,17 @@ tyAppl o t = case o of
   AO | isSet t -> t
   User -> case t of
     SetTy (ElemTy S) -> SetTy $ ElemTy U -- S -> U
-    _ | isElemOrSetOf R t -> mkType U  -- R -> 2^U
+    _ | isElemOrSetOf R t -> mkSetType U  -- R -> 2^U
     _ -> Error
   Roles _ | any (`isElemOrSetOf` t) [U, P, S]
-    -> mkType R -- U + P + S -> 2^R
-  Sessions | isElemOrSetOf U t -> mkType S  -- U -> 2^S
-  Permissions _ | isElemOrSetOf R t -> mkType P -- R -> 2^P
+    -> mkSetType R -- U + P + S -> 2^R
+  Sessions | isElemOrSetOf U t -> mkSetType S  -- U -> 2^S
+  Permissions _ | isElemOrSetOf R t -> mkSetType P -- R -> 2^P
   Operations -> case t of
     SetTy (PairTy l r) | isElemOrSet R l && isElemOrSet OBJ r
-      -> mkType OP -- R x OBJ -> 2^OP
+      -> mkSetType OP -- R x OBJ -> 2^OP
     _ -> Error
-  Objects | isElemOrSetOf P t -> mkType OBJ  -- P -> 2^OBJ
+  Objects | isElemOrSetOf P t -> mkSetType OBJ  -- P -> 2^OBJ
   _ -> Error
 
 isElemOrSetOf :: Base -> Type -> Bool
@@ -135,8 +135,8 @@ mElemOrSet t = case t of
 setTy :: Base -> SetType
 setTy = Set . ElemTy
 
-mkType :: Base -> Type
-mkType = SetTy . setTy
+mkSetType :: Base -> Type
+mkSetType = SetTy . setTy
 
 isSet :: Type -> Bool
 isSet = (/= Error) . elemType
