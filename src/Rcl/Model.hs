@@ -6,10 +6,10 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set, (\\), isSubsetOf)
 
-data U = U String deriving (Eq, Ord, Show)
-data R = R String deriving (Eq, Ord, Show)
-data OP = OP String deriving (Eq, Ord, Show)
-data OBJ = OBJ String deriving (Eq, Ord, Show)
+newtype U = U String deriving (Eq, Ord, Show)
+newtype R = R String deriving (Eq, Ord, Show)
+newtype OP = OP String deriving (Eq, Ord, Show)
+newtype OBJ = OBJ String deriving (Eq, Ord, Show)
 data S = S { sid :: String, user :: U, activeRoles :: Set R }
   deriving (Eq, Ord, Show)
 data P = P { op :: OP, object :: OBJ }
@@ -49,7 +49,7 @@ juniors :: Map R (Set R) -> Set R -> R -> Set R
 juniors m visited r =
   let s = Map.findWithDefault Set.empty r m \\ visited
   in if Set.null s then s else Set.union s
-     $ Set.unions $ Set.map (juniors m $ Set.insert r visited) s
+     . Set.unions . map (juniors m $ Set.insert r visited) $ Set.toList s
 
 getRoles :: Map R (Set R) -> R -> Set R
 getRoles m r = Set.insert r $ juniors m Set.empty r
@@ -68,12 +68,12 @@ properStructure sets = let
   pas = pa sets
   m = rh sets
   in Set.map user ss `isSubsetOf` us
-  && Set.unions (Set.map activeRoles ss) `isSubsetOf` rs
+  && Set.unions (map activeRoles $ Set.toList ss) `isSubsetOf` rs
   && Set.map op ps `isSubsetOf` operations sets
   && Set.map object ps `isSubsetOf` objects sets
-  && Set.unions (cr sets) `isSubsetOf` rs
-  && Set.unions (cu sets) `isSubsetOf` us
-  && Set.unions (cp sets) `isSubsetOf` ps
+  && Set.unions (Set.toList $ cr sets) `isSubsetOf` rs
+  && Set.unions (Set.toList $ cu sets) `isSubsetOf` us
+  && Set.unions (Set.toList $ cp sets) `isSubsetOf` ps
   && Set.map fst uas `isSubsetOf` us
   && Set.map snd uas `isSubsetOf` rs
   && Set.map fst pas `isSubsetOf` ps
