@@ -4,7 +4,7 @@ import Rcl.Ast
 import Rcl.Fold
 import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
-import Rcl.Type (wellTyped, typeOfSet, isElem)
+import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces)
 
@@ -46,12 +46,16 @@ setToOcl = foldSet FoldSet
         [hcat [singleSet s1 d1, arr, pBinOp o], parens $ singleSet s2 d2]
   , foldUn = \ (UnOp _ s) o d -> case o of
       Card -> hcat [d, arr, text "size"]
-      _ -> cat [pUnOp s o, parens $ singleSet s d]
+      _ -> let t = typeOfSet s in
+        cat [pUnOp t o, parens $ singleSetType t d]
   , foldPrim = pSet form }
 
 singleSet :: Set -> Doc -> Doc
-singleSet s d =
-  if isElem $ typeOfSet s then hcat [text "Set", braces d] else d
+singleSet = singleSetType . typeOfSet
+
+singleSetType :: Type -> Doc -> Doc
+singleSetType t d =
+  if isElem t then hcat [text "Set", braces d] else d
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
@@ -70,8 +74,16 @@ pBinOp o = text $ case o of
   Minus -> "excluding"
   Pair -> ","
 
-pUnOp :: Set -> UnOp -> Doc
-pUnOp s o = text $ case o of
+pUnOp :: Type -> UnOp -> Doc
+pUnOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
+  in text $ case o of
   Operations -> "ops"
-  User -> if typeOfSet s == SetTy (ElemTy S) then "user" else "users"
-  _ -> map (\ c -> if c == '*' then '_' else c) $ stUnOp o
+  User -> if t == SetTy (ElemTy S) then u else "users"
+  Roles p -> case if isElem t then t else elemType t of
+    SetTy (ElemTy r) -> case r of
+      U -> 'u' : u
+      P -> 'p' : u
+      S -> 's' : u
+      _ -> u
+    _ -> u
+  _ -> u

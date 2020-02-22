@@ -6,10 +6,7 @@ end
 class OBJ
 end
 
-class PSU
-end
-
-class P < PSU
+class P
 attributes
   op : OP
   obj : OBJ
@@ -36,7 +33,7 @@ association RH between
   HR[*] role senior
 end
 
-class S < PSU
+class S
 attributes
   user : U
   activeRoles : Set(R)
@@ -45,7 +42,7 @@ inv onlyActiveAssignedRoles:
   user.r->includesAll(activeRoles)
 end
 
-class U < PSU
+class U
 attributes
   name : String
 end
@@ -89,11 +86,12 @@ attributes
   CU : Set(Set(U)) init = CU.allInstances->collectNested(cs)->asSet
 
 operations
-  roles(us : Set(PSU)): Set(R) = us->collect(u | if
-    u.oclIsKindOf(S) then u.oclAsType(S).activeRoles else
-    if u.oclIsKindOf(P) then u.oclAsType(P).r else
-    u.oclAsType(U).r endif endif)->asSet
-  roles_(us : Set(PSU)): Set(R) = roles(us)->collect(getRoles())->asSet
+  uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
+  proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
+  sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
+  uroles_(us : Set(U)): Set(R) = uroles(us)->collect(getRoles())->asSet
+  proles_(ps : Set(P)): Set(R) = proles(ps)->collect(getRoles())->asSet
+  sroles_(ss : Set(S)): Set(R) = sroles(ss)->collect(getRoles())->asSet
   user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
   sessions(us : Set(U)): Set(S) = S->select(s | us->includes(s.user))
