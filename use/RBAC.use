@@ -36,7 +36,6 @@ end
 class S
 attributes
   user : U
-  activeRoles : Set(R)
 constraints
 inv onlyActiveAssignedRoles:
   user.r->includesAll(activeRoles)
@@ -57,35 +56,48 @@ association PA between
   R[*]
 end
 
+aggregation SR between
+  S[0..1]
+  R[*] role activeRoles
+end
+
 class CP
-attributes
- cs : Set(P)
+end
+
+aggregation CPP between
+  CP[0..1]
+  P[*]
 end
 
 class CR
-attributes
- cs : Set(R)
+end
+
+aggregation CRR between
+  CR[0..1]
+  R[*]
 end
 
 class CU
-attributes
- cs : Set(U)
+end
+
+aggregation CUU between
+  CU[0..1]
+  U[*]
 end
 
 class RBAC
 
-attributes
-  OBJ : Set(OBJ) init = OBJ.allInstances
-  OP : Set(OP) init = OP.allInstances
-  P : Set(P) init = P.allInstances
-  R : Set(R) init = R.allInstances
-  S : Set(S) init = S.allInstances
-  U : Set(U) init = U.allInstances
-  CP : Set(Set(P)) init = CP.allInstances->collectNested(cs)->asSet
-  CR : Set(Set(R)) init = CR.allInstances->collectNested(cs)->asSet
-  CU : Set(Set(U)) init = CU.allInstances->collectNested(cs)->asSet
-
 operations
+  OBJ() : Set(OBJ) = OBJ.allInstances
+  OP() : Set(OP) = OP.allInstances
+  P() : Set(P) = P.allInstances
+  R() : Set(R) = R.allInstances
+  S() : Set(S) = S.allInstances
+  U() : Set(U) = U.allInstances
+  CP() : Set(Set(P)) = CP.allInstances->collectNested(p)->asSet
+  CR() : Set(Set(R)) = CR.allInstances->collectNested(r)->asSet
+  CU() : Set(Set(U)) = CU.allInstances->collectNested(u)->asSet
+
   uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
   proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
   sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
@@ -94,7 +106,7 @@ operations
   sroles_(ss : Set(S)): Set(R) = sroles(ss)->collect(getRoles())->asSet
   user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
-  sessions(us : Set(U)): Set(S) = S->select(s | us->includes(s.user))
+  sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
   permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
   permissions_(rs : Set(R)): Set(P) =
     permissions(rs->collect(getRoles())->asSet)

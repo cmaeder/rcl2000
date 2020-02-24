@@ -2,7 +2,6 @@ module Rcl.ToOcl (ocl) where
 
 import Rcl.Ast
 import Rcl.Fold
-import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
 import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
@@ -59,7 +58,10 @@ setToOcl = foldSet FoldSet
         [hcat [singleSet s1 d1, arr, p], parens $ singleSet s2 d2]
   , foldUn = \ (UnOp _ s) o d ->
         cat [pUnOp (typeOfSet s) o, parens $ singleSet s d]
-  , foldPrim = pSet form }
+  , foldPrim = \ s -> text $ case s of
+      PrimSet t -> t ++ "()"
+      Var (MkVar i t _) -> t ++ show i
+      _ -> error "setToOcl: no prim set" }
 
 singleSet :: Set -> Doc -> Doc
 singleSet = maybe id singleSetType . typeOfSet
