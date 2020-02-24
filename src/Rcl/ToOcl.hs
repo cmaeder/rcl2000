@@ -6,12 +6,12 @@ import Rcl.Print (pSet, form)
 import Rcl.Reduce (runReduce, Vars)
 import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
-  parens, braces)
+  parens, braces, int)
 
 ocl :: [Stmt] -> String
-ocl = unlines . map (\ (n, s) -> render $ hcat
+ocl = unlines . zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
-    , uncurry toOcl $ runReduce s]) . zip [1 :: Int ..]
+    , uncurry toOcl $ runReduce s]) [1 :: Int ..]
     . filter wellTyped
 
 toOcl :: Stmt -> Vars -> Doc
@@ -30,30 +30,41 @@ stmtToOcl = foldStmt FoldStmt
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
-      _ -> sep [singleSet s1 d1, pCmpOp o <+> singleSet s2 d2] } setToOcl
+      _ -> sep [singleTerm s1 d1, pCmpOp o <+> singleTerm s2 d2] } termToOcl
 
 parenStmt :: Stmt -> Doc -> Doc
 parenStmt s = case s of
   BoolOp Impl _ _ -> parens
   _ -> id
 
+termToOcl :: Term -> Doc
+termToOcl t = case t of
+  Term b s -> let d = setToOcl s in
+    if b then hcat [d, arr, text "size"] else d
+  EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
+  Num i -> int i
+
+singleTerm :: Term -> Doc -> Doc
+singleTerm t = case t of
+  Term False s -> singleSet s
+  _ -> id
+
 setToOcl :: Set -> Doc
 setToOcl = foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> case o of
-      Pair -> cat [hcat [singleSet s1 d1, pBinOp o], singleSet s2 d2]
-      Minus -> cat [hcat [d1, arr, pBinOp o], parens d2]
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp o in case o of
+      Ops -> cat [p, parens
+        $ hcat [singleSet s1 d1, text ",", singleSet s2 d2]]
+      Minus -> cat [hcat [d1, arr, p], parens d2]
       _ -> cat
-        [hcat [singleSet s1 d1, arr, pBinOp o], parens $ singleSet s2 d2]
-  , foldUn = \ (UnOp _ s) o d -> case o of
-      Card -> hcat [d, arr, text "size"]
-      _ -> let t = typeOfSet s in
-        cat [pUnOp t o, parens $ singleSetType t d]
+        [hcat [singleSet s1 d1, arr, p], parens $ singleSet s2 d2]
+  , foldUn = \ (UnOp _ s) o d ->
+        cat [pUnOp (typeOfSet s) o, parens $ singleSet s d]
   , foldPrim = pSet form }
 
 singleSet :: Set -> Doc -> Doc
-singleSet = singleSetType . typeOfSet
+singleSet = maybe id singleSetType . typeOfSet
 
-singleSetType :: Type -> Doc -> Doc
+singleSetType :: SetType -> Doc -> Doc
 singleSetType t d =
   if isElem t then hcat [text "Set", braces d] else d
 
@@ -72,18 +83,19 @@ pBinOp o = text $ case o of
   Union -> "union"
   Inter -> "intersection"
   Minus -> "excluding"
-  Pair -> ","
+  Ops -> "ops"
 
-pUnOp :: Type -> UnOp -> Doc
+pUnOp :: Maybe SetType -> UnOp -> Doc
 pUnOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   in text $ case o of
-  Operations -> "ops"
-  User -> if t == SetTy (ElemTy S) then u else "users"
-  Roles p -> case if isElem t then t else elemType t of
-    SetTy (ElemTy r) -> case r of
-      U -> 'u' : u
-      P -> 'p' : u
-      S -> 's' : u
+  User -> if t == Just (ElemTy S) then u else "users"
+  Roles _ -> case t of
+    Just s -> case if isElem s then Just s else elemType s of
+      Just (ElemTy r) -> case r of
+        U -> 'u' : u
+        P -> 'p' : u
+        S -> 's' : u
+        _ -> u
       _ -> u
-    _ -> u
+    Nothing -> u
   _ -> u

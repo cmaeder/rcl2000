@@ -1,12 +1,12 @@
-module Rcl.Print (ppStmts, ppStmt, ppSet,
+module Rcl.Print (ppStmts, ppStmt, ppTerm, ppSet,
   Form (..), Format (..), form, pStmts, pSet, Doc, render) where
 
 import Rcl.Ast
 import Rcl.Fold
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep, vcat,
-  parens, braces)
+  parens, braces, int)
 
-data Format = Ascii | Uni | LaTeX deriving Show
+data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
 
 data Form = Form { format :: Format, prParen :: Bool }
 
@@ -15,6 +15,9 @@ ppStmts = render . pStmts form
 
 ppStmt :: Stmt -> String
 ppStmt = render . pStmt form
+
+ppTerm :: Term -> String
+ppTerm = render . pTerm form
 
 ppSet :: Set -> String
 ppSet = render . pSet form
@@ -39,7 +42,7 @@ pStmt m = let f = format m in foldStmt FoldStmt
     sep [d1, pBoolOp f o <+> d2]
   , foldCmp = \ _ o d1 d2 ->
     sep [d1, pCmpOp f o <+> d2] }
-  $ pSet m
+  $ pTerm m
 
 pBoolOp :: Format -> BoolOp -> Doc
 pBoolOp m o = text $ case o of
@@ -58,32 +61,27 @@ pCmpOp m = text . case m of
   Uni -> csCmpOp
   LaTeX -> lCmpOp
 
+pTerm :: Form -> Term -> Doc
+pTerm m t = case t of
+  Term b s -> let d = pSet m s in
+    if b then hcat [pBar, d, pBar] else d
+  EmptySet -> pEmpty m
+  Num i -> int i
+
 pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> case o of
-    Pair -> parens $ hcat [d1, pBinOp f o, d2]
-    Minus -> cat [pParenSet o s1 d1, hcat [pBinOp f o, braces d2]]
-    _ -> sep [pParenSet o s1 d1, pBinOp f o <+> pParenSet o s2 d2]
-  , foldUn = \ (UnOp _ t) o d -> case o of
-    Card -> hcat [pBar, d, pBar]
-    _ -> let
-      b = case t of
-        BinOp i _ _ -> i /= Pair
-        _ -> prParen m
-      c = case f of
-        LaTeX -> True
-        _ -> case t of
-          BinOp Pair _ _ -> True
-          _ -> b
-      in (if c then cat else sep)
-          [pUnOp m { prParen = b } o, if b then parens d else d]
-  , foldPrim = pPrimSet f }
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp f o in case o of
+    Ops -> cat [p, parens $ hcat [d1, text ",", d2]]
+    Minus -> cat [pParenSet o s1 d1, hcat [p, braces d2]]
+    _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
+  , foldUn = \ _ o d -> let b = prParen m
+      in (if b || f == LaTeX then cat else sep)
+          [pUnOp m o, if b then parens d else d]
+  , foldPrim = pPrimSet }
 
-pPrimSet :: Format -> Set -> Doc
-pPrimSet m s = text $ case s of
+pPrimSet :: Set -> Doc
+pPrimSet s = text $ case s of
   PrimSet t -> t
-  EmptySet -> pEmpty m
-  Num i -> show i
   Var v -> stVar v
   _ -> error "no prim set"
 
@@ -99,8 +97,6 @@ pParenSet o s = case s of
 
 pBinOp :: Format -> BinOp -> Doc
 pBinOp m o = text $ case o of
-  Pair -> ","
-  Minus -> "-"
   Union -> case m of
     LaTeX -> lUnion
     Uni -> [chUnion]
@@ -109,6 +105,8 @@ pBinOp m o = text $ case o of
     LaTeX -> lInter
     Uni -> [chInter]
     Ascii -> stInter
+  Minus -> "-"
+  Ops -> stOps
 
 pBar :: Doc
 pBar = text "|"
@@ -118,8 +116,8 @@ pUnOp m = text . case format m of
   LaTeX -> (if prParen m then id else (++ "~")) . lUnOp
   _ -> stUnOp
 
-pEmpty :: Format -> String
-pEmpty m = case m of
+pEmpty :: Form -> Doc
+pEmpty m = text $ case format m of
   LaTeX -> lEmpty
   Uni -> [chEmpty]
   Ascii -> stEmpty

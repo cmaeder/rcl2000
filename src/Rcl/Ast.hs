@@ -3,30 +3,33 @@ module Rcl.Ast where
 import Data.Char (isLetter, toLower)
 import Data.List (isSuffixOf)
 
-data Stmt = CmpOp CmpOp Set Set
+data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
 
 data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 
 data BoolOp = And | Impl deriving (Eq, Show)
 
-data Set = PrimSet { stPrim :: String } | EmptySet | Num Int | UnOp UnOp Set
-  | BinOp BinOp Set Set | Var Var deriving (Eq, Show)
+data Term = Term Bool Set | EmptySet | Num Int deriving (Eq, Show)
+-- named token by Ahn without size, Bool for cardinality
 
-data Var = MkVar Int String Type deriving (Eq, Show)
+data Set = PrimSet { stPrim :: String } | UnOp UnOp Set
+  | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
 
-data BinOp = Union | Inter | Minus | Pair deriving (Eq, Show)
+data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
 
-data UnOp = AO | OE | Card | User | Roles Bool | Sessions
-  | Permissions Bool | Operations | Objects deriving (Eq, Show)
+data BinOp = Union | Inter | Ops | Minus deriving (Eq, Show)
+-- operations is special binary and Minus is used for reduction of AO
+
+data UnOp = AO | OE | User | Roles Bool | Sessions
+  | Permissions Bool | Objects deriving (Eq, Show)
 -- AO: all other, OE: one element, object ~> objects, Bool for * suffix
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 
-data SetType = ElemTy Base | Set SetType | PairTy SetType SetType
-  deriving (Eq, Show)
+data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
 
-data Type = SetTy SetType | NatTy | EmptySetTy | Error deriving (Eq, Show)
+data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
 
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
@@ -58,9 +61,12 @@ lInter = "\\cap"
 stInter :: String
 stInter = "&"
 
+stOps :: String
+stOps = "operations"
+
 unOps :: [UnOp]
 unOps = [AO, OE, User, Roles True, Roles False, Sessions
-  , Permissions True, Permissions False, Operations, Objects]
+  , Permissions True, Permissions False, Objects]
 
 stUnOp :: UnOp -> String
 stUnOp o = let

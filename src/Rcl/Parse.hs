@@ -20,15 +20,31 @@ cmp :: Parser Stmt
 cmp = cmpSet <|> cmpCard
 
 cmpCard :: Parser Stmt
-cmpCard = flip CmpOp <$> cardSet <*> cmpOp <*> (cardSet <|> nat)
+cmpCard = flip CmpOp <$> pCardTerm <*> cmpOp <*> (pCardTerm <|> nat)
+
+pCardTerm :: Parser Term
+pCardTerm = Term True <$> (bar *> set <* bar)
+
+bar :: Parser Char
+bar = pch '|'
+
+-- allow leading zero
+nat :: Parser Term
+nat = Num . read <$> many1 digit <* skip
 
 cmpSet :: Parser Stmt
 cmpSet = do
-  s <- set
+  t <- pTerm
   o <- setCmpOp
-  CmpOp o s <$> case o of
-    Elem -> set
-    _ -> emptySet <|> set
+  CmpOp o t <$> case o of
+    Elem -> pTerm
+    _ -> emptySet <|> pTerm
+
+pTerm :: Parser Term
+pTerm = Term False <$> set
+
+emptySet :: Parser Term
+emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]
 
 setCmpOp :: Parser CmpOp
 setCmpOp = let
@@ -63,7 +79,11 @@ mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
 
 applSet :: Parser Set
-applSet = unOpSet <|> primSet
+applSet = unOpSet <|> opsSet <|> primSet
+
+opsSet :: Parser Set
+opsSet = BinOp Ops <$> (pString (const stOps) Ops
+  *> pch '(' *> set <* pch ',') <*> set <* pch ')'
 
 primSet :: Parser Set
 primSet = (PrimSet <$> many1 letter <* skip) <|> parenSet
@@ -75,31 +95,11 @@ pUnOps :: [Parser UnOp]
 pUnOps = map (pString lUnOp) [Roles True, Permissions True]
   ++ map (pString stUnOp) unOps
 
-cardSet :: Parser Set
-cardSet = UnOp Card <$> (bar *> set <* bar)
-
-bar :: Parser Char
-bar = pch '|'
-
 parenSet :: Parser Set
-parenSet = pch '(' *> setOrPair <* pch ')'
-
-setOrPair :: Parser Set
-setOrPair = mayBe (BinOp Pair)
-  <$> set <*> optionMaybe (pch ',' *> set)
+parenSet = pch '(' *> set <* pch ')'
 
 pch :: Char -> Parser Char
 pch c = char c <* skip
-
-nat :: Parser Set
-nat = Num . read <$> digits <* skip
-
--- allow leading zero
-digits :: Parser String
-digits = many1 digit
-
-emptySet :: Parser Set
-emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]
 
 alts :: [String] -> GenParser Char () String
 alts = choice . map (pString id)

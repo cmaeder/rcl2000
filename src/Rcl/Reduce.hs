@@ -10,7 +10,7 @@ import Rcl.Print (ppStmt, ppSet)
 import Rcl.Type (typeOfSet, elemType)
 
 replaceAO :: Stmt -> Stmt
-replaceAO = foldStmt mapStmt replAO
+replaceAO = foldStmt mapStmt $ mapTerm replAO
 
 replAO :: Set -> Set
 replAO = foldSet mapSet
@@ -24,7 +24,12 @@ const2 = const . const
 findSimpleOE :: Stmt -> Maybe Set
 findSimpleOE = foldStmt FoldStmt
   { foldBool = const2 (<|>)
-  , foldCmp = const2 (<|>) } findOE
+  , foldCmp = const2 (<|>) } findTermOE
+
+findTermOE :: Term -> Maybe Set
+findTermOE t = case t of
+  Term _ s -> findOE s
+  _ -> Nothing
 
 findOE :: Set -> Maybe Set
 findOE = foldSet FoldSet
@@ -35,7 +40,7 @@ findOE = foldSet FoldSet
   , foldPrim = const Nothing }
 
 replaceOE :: Set -> Set -> Stmt -> Stmt
-replaceOE e = foldStmt mapStmt . replOE e
+replaceOE e = foldStmt mapStmt . mapTerm . replOE e
 
 replOE :: Set -> Set -> Set -> Set
 replOE e r = foldSet mapSet
@@ -49,11 +54,11 @@ reduce :: Int -> Stmt -> State Vars Stmt
 reduce i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    let t = elemType $ typeOfSet r
-        p = case t of
-          SetTy (ElemTy e) -> show e
+    let mt = typeOfSet r >>= elemType
+        p = case mt of
+          Just (ElemTy e) -> show e
           _ -> ppSet r
-        v = MkVar i (take 2 $ map toLower p) t
+        v = MkVar i (take 2 $ map toLower p) mt
     modify ((v, r) :)
     reduce (i + 1) $ replaceOE r (Var v) s
 
@@ -64,17 +69,17 @@ construct :: Stmt -> Vars -> Stmt
 construct = foldl (\ r (i, t) -> replaceVar i t r)
 
 replaceVar :: Var -> Set -> Stmt -> Stmt
-replaceVar i = foldStmt mapStmt . replVar i
+replaceVar i = foldStmt mapStmt . mapTerm . replVar i
 
 replVar :: Var -> Set -> Set -> Set
 replVar i@(MkVar _ _ t) r =
-  assert (elemType (typeOfSet r) == t) . foldSet mapSet
+  assert ((typeOfSet r >>= elemType) == t) . foldSet mapSet
   { foldPrim = \ s -> case s of
     Var v | i == v -> UnOp OE r
     _ -> s }
 
 replaceMinus :: Stmt -> Stmt
-replaceMinus = foldStmt mapStmt replMinus
+replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 
 replMinus :: Set -> Set
 replMinus = foldSet mapSet
