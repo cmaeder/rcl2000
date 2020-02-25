@@ -1,21 +1,20 @@
 module Rcl.Model where
 
+import Control.Exception (assert)
 import qualified Data.Map as Map
 import Data.Map (Map)
-
 import qualified Data.Set as Set
 import Data.Set ((\\), isSubsetOf)
-
 import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 
 import Rcl.Ast
 
-newtype U = User { name :: String } deriving (Eq, Ord, Show)
+newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
 newtype OP = Operation { operation :: String } deriving (Eq, Ord, Show)
 newtype OBJ = Object { object :: String } deriving (Eq, Ord, Show)
-data S = Session { sid :: String, user :: U, activeRoles :: Set.Set R }
+data S = Session { user :: U, activeRoles :: Set.Set R }
   deriving (Eq, Ord, Show)
 data P = Permission { op :: OP, obj :: OBJ }
   deriving (Eq, Ord, Show)
@@ -34,17 +33,32 @@ data Model = Model
   , operations :: Set.Set OP
   , objects :: Set.Set OBJ
   , permissions :: Set.Set P
-  , sessions :: Set.Set S
+  , sessions :: Map String S
   , userSets :: Map String (SetType, Value)
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- direct junior roles
   , strMap :: Map String Int
   , intMap :: Map Int String
-  , next :: Int -- next unused Int
-  }
+  , next :: Int } -- next unused Int
 
 data Value = VInt Int | VSet (Set.Set Value) deriving (Eq, Ord, Show)
+
+emptyModel :: Model
+emptyModel = Model
+  { roles = Set.empty
+  , users = Set.empty
+  , operations = Set.empty
+  , objects = Set.empty
+  , permissions = Set.empty
+  , sessions = Map.empty
+  , userSets = Map.empty
+  , ua = Set.empty
+  , pa = Set.empty
+  , rh = Map.empty
+  , strMap = Map.empty
+  , intMap = Map.empty
+  , next = 1 }
 
 rolesOfU :: Model -> U -> Set.Set R
 rolesOfU sets u =
@@ -59,7 +73,7 @@ rolesOfP sets p =
 properSessions :: Model -> Bool
 properSessions sets =
   all (\ s -> activeRoles s `isSubsetOf` rolesOfU sets (user s))
-  . Set.toList $ sessions sets
+  . Map.elems $ sessions sets
 
 juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
 juniors m visited r =
@@ -78,7 +92,7 @@ properStructure :: Model -> Bool
 properStructure m = let
   us = users m
   rs = roles m
-  ss = sessions m
+  ss = Map.elems $ sessions m
   ps = permissions m
   uas = ua m
   pas = pa m
@@ -88,8 +102,8 @@ properStructure m = let
   sm = strMap m
   strs = Map.keysSet sm
   is = Map.keysSet im
-  in Set.map user ss `isSubsetOf` us
-  && Set.unions (map activeRoles $ Set.toList ss) `isSubsetOf` rs
+  in all ((`Set.member` us) . user) ss
+  && all ((`isSubsetOf` rs) . activeRoles) ss
   && Set.map op ps `isSubsetOf` operations m
   && Set.map obj ps `isSubsetOf` objects m
   && Set.map fst uas `isSubsetOf` us
@@ -105,6 +119,7 @@ properStructure m = let
   && strs == getAllStrings m
   && strs == Set.fromList (Map.elems im)
   && is == Set.fromList (Map.elems sm)
+  && Set.size is == Set.size strs
   && maybe True (< next m) (Set.lookupMax is)
 
 checkValue :: (SetType, Value) -> Bool
@@ -129,8 +144,8 @@ getStrings m b = case b of
   R -> Set.map role $ roles m
   OBJ -> Set.map object $ objects m
   OP -> Set.map operation $ operations m
-  P -> Set.map sid $ sessions m
-  S -> Set.map pStr $ permissions m
+  S -> Map.keysSet $ sessions m
+  P -> Set.map pStr $ permissions m
 
 getAllStrings :: Model -> Set.Set String
 getAllStrings m = Set.unions $ map (getStrings m) primTypes
@@ -140,3 +155,78 @@ checkInts m b is =
   all (\ i -> Set.member
       (Map.findWithDefault "" i $ intMap m)
       $ getStrings m b) $ IntSet.toList is
+
+updUserSet :: String -> Base -> [String] -> Model -> Model
+updUserSet s b l m =
+  assert (all (`Set.member` getStrings m b) l)
+  m { userSets = Map.insert s
+      (Set $ ElemTy b, VSet . Set.fromList $ map
+        (\ v -> VInt . Map.findWithDefault 0 v $ strMap m) l)
+    $ userSets m }
+
+updUserSet2 :: String -> Base -> [[String]] -> Model -> Model
+updUserSet2 s b ll m =
+  assert (all (all (`Set.member` getStrings m b)) ll)
+  m { userSets = Map.insert s
+      (Set . Set $ ElemTy b, VSet . Set.fromList $ map
+        (VSet . Set.fromList . map
+          (\ v -> VInt . Map.findWithDefault 0 v $ strMap m)) ll)
+    $ userSets m }
+
+updUserSet3 :: String -> Base -> [[[String]]] -> Model -> Model
+updUserSet3 s b lll m =
+  assert (all (all (all (`Set.member` getStrings m b))) lll)
+  m { userSets = Map.insert s
+      (Set . Set . Set $ ElemTy b, VSet . Set.fromList $ map
+        (VSet . Set.fromList . map
+          (VSet . Set.fromList . map
+            (\ v -> VInt . Map.findWithDefault 0 v $ strMap m))) lll)
+    $ userSets m }
+
+addString :: String -> Model -> Model
+addString s m = let
+  sm = strMap m
+  im = intMap m
+  i = next m
+  in case Map.lookup s sm of
+    Nothing -> m {
+      strMap = Map.insert s i sm
+      , intMap = Map.insert i s im
+      , next = i + 1 }
+    _ -> m
+
+addU :: String -> Model -> Model
+addU u m = addString u m { users = Set.insert (Name u) $ users m }
+
+addR :: String -> Model -> Model
+addR r m = addString r m { roles = Set.insert (Role r) $ roles m }
+
+addOp :: String -> Model -> Model
+addOp o m = addString o m
+  { operations = Set.insert (Operation o) $ operations m }
+
+addObj :: String -> Model -> Model
+addObj o m = addString o m { objects = Set.insert (Object o) $ objects m }
+
+-- op and obj
+addP :: String -> String -> Model -> Model
+addP oP oBj m = addString (unwords [oP, oBj]) . addObj oBj $ addOp oP m
+  { permissions = Set.insert (Permission (Operation oP) $ Object oBj)
+    $ permissions m }
+
+-- sid and user
+addS :: String -> String -> Model -> Model
+addS s u m = addString s $ addU u m
+  { sessions = Map.insert s (Session (Name u) Set.empty) $ sessions m }
+
+-- sid and active role
+addSR :: String -> String -> Model -> Model
+addSR s r m = let sm = sessions m in addR r m
+  { sessions = case Map.lookup s sm of
+      Just (Session u rs) ->
+        Map.insert s (Session u $ Set.insert (Role r) rs) sm
+      Nothing -> sm }
+
+-- user and role
+addUA :: String -> String -> Model -> Model
+addUA u r m = addU u $ addR r m { ua = Set.insert (Name u, Role r) $ ua m }
