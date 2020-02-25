@@ -30,6 +30,13 @@ objects(OE(wp)) = objects(OE(rp))
   ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(AR)  // compare p 81 SR
   ∧ roles(OE(rp)) ∩ WR = ∅ ∧ |roles(OE(rp)) ∩ RR| = 1
 
+// corrections by Karsten
+roles(OE(U)) ∈ ASR
+roles(OE(sessions(OE(U)))) ∈ AR
+objects(OE(wp)) = objects(OE(rp))
+  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) ∈ AR  // compare p 81 SR
+  ∧ roles(OE(rp)) ∩ WR = ∅ ∧ |roles(OE(rp)) ∩ RR| = 1
+
 // p 66 wrongly typed
 roles(sessions(OE(U))) = OE(R)
 
@@ -88,5 +95,11 @@ roles(OE(U)) = OE(PR) // Type 2 // PR unknown
 
 objects(OE(wp)) = objects(OE(rp))  // compare p 62
   ⇒ roles(OE(wp)) ∪ roles(OE(rp)) = OE(SR) // Type 3
+
+// corrections
+roles(OE(U)) ∈ SR // Type 2
+
+objects(OE(wp)) = objects(OE(rp))  // compare p 62
+  ⇒ roles(OE(wp)) ∪ roles(OE(rp)) ∈ SR // Type 3
 
 |roles(OE(wp)) ∩ WR| = 1  // Type 4
