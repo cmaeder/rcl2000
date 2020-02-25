@@ -7,64 +7,67 @@ import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
 
-ocl :: [Stmt] -> String
-ocl = unlines . zipWith (\ n s -> render $ hcat
+ocl :: UserTypes -> [Stmt] -> String
+ocl us = unlines . zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
-    , uncurry toOcl $ runReduce s]) [1 :: Int ..]
-    . filter wellTyped
+    , uncurry (toOcl us) $ runReduce us s]) [1 :: Int ..]
+    . filter (wellTyped us)
 
-toOcl :: Stmt -> Vars -> Doc
-toOcl = foldl (\ f (i, s) -> cat
-   [ hcat [setToOcl s, arr, text "forAll"]
-   , parens $ sep [text $ stVar i ++ " |", f]]) . stmtToOcl
+toOcl :: UserTypes -> Stmt -> Vars -> Doc
+toOcl us = foldl (\ f (i, s) -> cat
+   [ hcat [setToOcl us s, arr, text "forAll"]
+   , parens $ sep [text $ stVar i ++ " |", f]]) . stmtToOcl us
 
 arr :: Doc
 arr = text "->"
 
-stmtToOcl :: Stmt -> Doc
-stmtToOcl = foldStmt FoldStmt
+stmtToOcl :: UserTypes -> Stmt -> Doc
+stmtToOcl us = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
   , foldCmp = \ (CmpOp _ s1 s2) o d1 d2 -> case o of
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
-      _ -> sep [singleTerm s1 d1, pCmpOp o <+> singleTerm s2 d2] } termToOcl
+      _ -> sep [singleTerm us s1 d1, pCmpOp o <+> singleTerm us s2 d2] }
+  $ termToOcl us
 
 parenStmt :: Stmt -> Doc -> Doc
 parenStmt s = case s of
   BoolOp Impl _ _ -> parens
   _ -> id
 
-termToOcl :: Term -> Doc
-termToOcl t = case t of
-  Term b s -> let d = setToOcl s in
+termToOcl :: UserTypes -> Term -> Doc
+termToOcl us t = case t of
+  Term b s -> let d = setToOcl us s in
     if b then hcat [d, arr, text "size"] else d
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
-singleTerm :: Term -> Doc -> Doc
-singleTerm t = case t of
-  Term False s -> singleSet s
+singleTerm :: UserTypes -> Term -> Doc -> Doc
+singleTerm us t = case t of
+  Term False s -> singleSet us s
   _ -> id
 
-setToOcl :: Set -> Doc
-setToOcl = foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp o in case o of
-      Ops -> cat [p, parens
-        $ hcat [singleSet s1 d1, text ",", singleSet s2 d2]]
+setToOcl :: UserTypes -> Set -> Doc
+setToOcl us = foldSet FoldSet
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
+      p = pBinOp o
+      a1 = singleSet us s1 d1
+      a2 = singleSet us s2 d2
+      in case o of
+      Ops -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> cat [hcat [d1, arr, p], parens d2]
-      _ -> cat
-        [hcat [singleSet s1 d1, arr, p], parens $ singleSet s2 d2]
+      _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d ->
-        cat [pUnOp (typeOfSet s) o, parens $ singleSet s d]
+        cat [pUnOp (typeOfSet us s) o, parens $ singleSet us s d]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> t ++ "()"
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
-singleSet :: Set -> Doc -> Doc
-singleSet = maybe id singleSetType . typeOfSet
+singleSet :: UserTypes -> Set -> Doc -> Doc
+singleSet us = maybe id singleSetType . typeOfSet us
 
 singleSetType :: SetType -> Doc -> Doc
 singleSetType t d =

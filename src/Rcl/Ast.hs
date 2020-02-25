@@ -31,6 +31,8 @@ data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
 
+type UserTypes = [([String], SetType)]
+
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
 

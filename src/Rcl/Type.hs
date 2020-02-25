@@ -7,24 +7,24 @@ import Data.Maybe (isJust, isNothing)
 import Rcl.Ast
 import Rcl.Print (ppStmt, ppSet)
 
-typeErrors :: [Stmt] -> String
-typeErrors l = unlines . reverse $ execState (tys l) []
+typeErrors :: UserTypes -> [Stmt] -> String
+typeErrors us l = unlines . reverse $ execState (tys us l) []
 
-tys :: [Stmt] -> State [String] ()
-tys = mapM_ ty
+tys :: UserTypes -> [Stmt] -> State [String] ()
+tys = mapM_ . ty
 
-typeOfSet :: Set -> Maybe SetType
-typeOfSet s = evalState (tySet s) []
+typeOfSet :: UserTypes -> Set -> Maybe SetType
+typeOfSet us s = evalState (tySet us s) []
 
-wellTyped :: Stmt -> Bool
-wellTyped s = null $ execState (ty s) []
+wellTyped :: UserTypes -> Stmt -> Bool
+wellTyped us s = null $ execState (ty us s) []
 
-ty :: Stmt -> State [String] ()
-ty s = case s of
-  BoolOp _ s1 s2 -> ty s1 >> ty s2
+ty :: UserTypes -> Stmt -> State [String] ()
+ty us s = case s of
+  BoolOp _ s1 s2 -> ty us s1 >> ty us s2
   CmpOp o e1 e2 -> do
-    m1 <- tyTerm e1
-    m2 <- tyTerm e2
+    m1 <- tyTerm us e1
+    m2 <- tyTerm us e2
     let md = modify (("wrongly typed relation: " ++ ppStmt s) :)
     case (m1, m2) of
       (Just t1, Just t2) -> case (t1, t2) of
@@ -36,21 +36,21 @@ ty s = case s of
         _ -> md
       _ -> pure () -- error reported earlier
 
-tyTerm :: Term -> State [String] (Maybe Type)
-tyTerm t = case t of
+tyTerm :: UserTypes -> Term -> State [String] (Maybe Type)
+tyTerm us t = case t of
   Term b s -> do
-    m <- tySet s
+    m <- tySet us s
     pure $ if b then Just NatTy else fmap SetTy m
   EmptySet -> pure $ Just EmptySetTy
   Num n -> do
     when (n < 0) $ modify (("illegal number: " ++ show n) :)
     pure $ Just NatTy
 
-tySet :: Set -> State [String] (Maybe SetType)
-tySet s = case s of
+tySet :: UserTypes -> Set -> State [String] (Maybe SetType)
+tySet us s = case s of
   BinOp o s1 s2 -> do
-    m1 <- tySet s1
-    m2 <- tySet s2
+    m1 <- tySet us s1
+    m2 <- tySet us s2
     case (m1, m2) of
       (Just t1, Just t2) -> case o of
         Ops -> do
@@ -68,7 +68,7 @@ tySet s = case s of
           pure t
       _ -> pure Nothing
   UnOp o s1 -> do
-    t1 <- tySet s1
+    t1 <- tySet us s1
     case t1 of
       Nothing -> pure t1 -- was reported earlier
       Just st -> do
@@ -79,7 +79,7 @@ tySet s = case s of
   Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find ((== p) . show) primTypes of
     Just b -> pure $ mkSetType b
-    Nothing -> case find ((p `elem`) . fst) userTypes of
+    Nothing -> case find ((p `elem`) . fst) us of
       Just (_, t) -> pure $ Just t
       Nothing -> do
         modify (("unknown base set: " ++ ppSet s) :)
@@ -87,14 +87,6 @@ tySet s = case s of
 
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]
-
-userTypes :: [([String], SetType)]
-userTypes = [(["CU"], Set $ setTy U)
-  , (["CP"], Set $ setTy P)
-  , (["CR", "read", "write", "AR", "ASR", "SR"], Set $ setTy R)
-  , (["GR"], Set . Set $ setTy R)
-  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], setTy R)
-  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], setTy P)]
 
 compatSetTys :: SetType -> SetType -> Maybe SetType
 compatSetTys t1 t2 = case (mElemOrSet t1, mElemOrSet t2) of
@@ -126,10 +118,7 @@ mElemOrSet t = case t of
   _ -> Nothing
 
 mkSetType :: Base -> Maybe SetType
-mkSetType = Just . setTy
-
-setTy :: Base -> SetType
-setTy = Set . ElemTy
+mkSetType = Just . Set . ElemTy
 
 isSet :: SetType -> Bool
 isSet = isJust . elemType

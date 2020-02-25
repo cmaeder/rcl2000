@@ -50,30 +50,30 @@ replOE e r = foldSet mapSet
 
 type Vars = [(Var, Set)]
 
-reduce :: Int -> Stmt -> State Vars Stmt
-reduce i s = case findSimpleOE s of
+reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
+reduce us i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    let mt = typeOfSet r >>= elemType
+    let mt = typeOfSet us r >>= elemType
         p = case mt of
           Just (ElemTy e) -> show e
           _ -> ppSet r
         v = MkVar i (take 2 $ map toLower p) mt
     modify ((v, r) :)
-    reduce (i + 1) $ replaceOE r (Var v) s
+    reduce us (i + 1) $ replaceOE r (Var v) s
 
-runReduce :: Stmt -> (Stmt, Vars)
-runReduce s = runState (reduce 1 $ replaceAO s) []
+runReduce :: UserTypes -> Stmt -> (Stmt, Vars)
+runReduce us s = runState (reduce us 1 $ replaceAO s) []
 
-construct :: Stmt -> Vars -> Stmt
-construct = foldl (\ r (i, t) -> replaceVar i t r)
+construct :: UserTypes -> Stmt -> Vars -> Stmt
+construct us = foldl (\ r (i, t) -> replaceVar us i t r)
 
-replaceVar :: Var -> Set -> Stmt -> Stmt
-replaceVar i = foldStmt mapStmt . mapTerm . replVar i
+replaceVar :: UserTypes -> Var -> Set -> Stmt -> Stmt
+replaceVar us i = foldStmt mapStmt . mapTerm . replVar us i
 
-replVar :: Var -> Set -> Set -> Set
-replVar i@(MkVar _ _ t) r =
-  assert ((typeOfSet r >>= elemType) == t) . foldSet mapSet
+replVar :: UserTypes -> Var -> Set -> Set -> Set
+replVar us i@(MkVar _ _ t) r =
+  assert ((typeOfSet us r >>= elemType) == t) . foldSet mapSet
   { foldPrim = \ s -> case s of
     Var v | i == v -> UnOp OE r
     _ -> s }
@@ -87,14 +87,14 @@ replMinus = foldSet mapSet
       Minus -> assert (s2 == UnOp OE s1) $ UnOp AO s1
       _ -> BinOp o s1 s2 }
 
-reduceAndReconstruct :: Stmt -> String
-reduceAndReconstruct s = let
-  (r, vs) = runReduce s
-  n = replaceMinus (construct r vs)
+reduceAndReconstruct :: UserTypes -> Stmt -> String
+reduceAndReconstruct us s = let
+  (r, vs) = runReduce us s
+  n = replaceMinus (construct us r vs)
   in assert (n == s)
   $ concatMap (\ (i, e) ->
       '\x2200' : stVar i ++ '\x220A' : ppSet e ++ "\x2219")
     (reverse vs) ++ ' ' : ppStmt r
 
-reduction :: [Stmt] -> String
-reduction = unlines . map reduceAndReconstruct
+reduction :: UserTypes -> [Stmt] -> String
+reduction us = unlines . map (reduceAndReconstruct us)

@@ -4,7 +4,7 @@ import Control.Monad (when)
 import Data.Char (toLower)
 import Data.List (find)
 import Data.Maybe (fromMaybe)
-import Rcl.Ast (Stmt)
+import Rcl.Ast
 import Rcl.Parse (parser, parseFromFile, ParseError)
 import Rcl.Print (render, pStmts, Form (Form), Format (..))
 import Rcl.Reduce (reduction)
@@ -12,6 +12,14 @@ import Rcl.ToOcl (ocl)
 import Rcl.Type (typeErrors)
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
+
+userTypes :: UserTypes
+userTypes = [(["CU"], Set . Set $ ElemTy U)
+  , (["CP"], Set . Set $ ElemTy P)
+  , (["CR", "read", "write", "AR", "ASR", "SR"], Set . Set $ ElemTy R)
+  , (["GR"], Set . Set . Set $ ElemTy R)
+  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], Set $ ElemTy R)
+  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], Set $ ElemTy P)]
 
 main :: IO ()
 main = do
@@ -23,7 +31,7 @@ main = do
     _ -> case getOpt Permute options args of
       (o, n, []) -> case n of
         [] -> putStrLn "missing file arguments"
-        _ -> mapM_ (processFile $ foldl (flip id) defaultOpts o) n
+        _ -> mapM_ (processFile userTypes $ foldl (flip id) defaultOpts o) n
       (_, _, errs) -> mapM_ putStrLn errs
 
 -- | describe all available options
@@ -76,11 +84,11 @@ form o = let low = map toLower in
   Form (fromMaybe Uni $ find (\ f -> low (show f) == low (format o))
     [LaTeX, Ascii]) $ parens o
 
-processFile :: Opts -> String -> IO ()
-processFile o file = parseFromFile parser file >>= reportParse o
+processFile :: UserTypes -> Opts -> String -> IO ()
+processFile us o file = parseFromFile parser file >>= reportParse us o
 
-reportParse :: Opts -> Either ParseError [Stmt] -> IO ()
-reportParse o eith = case eith of
+reportParse :: UserTypes -> Opts -> Either ParseError [Stmt] -> IO ()
+reportParse us o eith = case eith of
   Left err -> print err
   Right ast -> do
     let p = pprint o
@@ -89,11 +97,11 @@ reportParse o eith = case eith of
         i = toOcl o
         a = all (== False) [p, c, r, i]
     when (p || a) . putStrLn . render $ pStmts (form o) ast
-    when (c || a) . putStrLn $ typeErrors ast
-    when (r || a) . putStrLn $ reduction ast
+    when (c || a) . putStrLn $ typeErrors us ast
+    when (r || a) . putStrLn $ reduction us ast
     when i $ do
       str <- readFile (useFile o)
-      let cont = str ++ ocl ast
+      let cont = str ++ ocl us ast
       case outFile o of
         "" -> putStrLn cont
         out -> writeFile out cont
