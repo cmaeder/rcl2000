@@ -22,10 +22,13 @@ data P = Permission { op :: OP, obj :: OBJ }
 pStr :: P -> String
 pStr p = unwords [operation $ op p, object $ obj p]
 
-strP :: String -> P
-strP s = case words s of
-  [u, v] -> Permission (Operation u) $ Object v
-  _ -> error $ "strP: " ++ s
+strP :: String -> String -> P
+strP u v = Permission (Operation u) $ Object v
+
+strP1 :: String -> P
+strP1 s = case words s of
+  [u, v] -> strP u v
+  _ -> error $ "strP1: " ++ s
 
 data Model = Model
   { roles :: Set.Set R
@@ -61,23 +64,51 @@ emptyModel = Model
   , next = 1 }
 
 rolesOfU :: Model -> U -> Set.Set R
-rolesOfU sets u =
-  Set.foldr (\ (v, r) -> if u == v then Set.insert r else id) Set.empty
-  $ ua sets
+rolesOfU m u = Set.foldr
+  (\ (v, r) -> if u == v then Set.insert r else id) Set.empty $ ua m
 
 rolesOfP :: Model -> P -> Set.Set R
-rolesOfP sets p =
-  Set.foldr (\ (v, r) -> if p == v then Set.insert r else id) Set.empty
-  $ pa sets
+rolesOfP m p = Set.foldr
+  (\ (v, r) -> if p == v then Set.insert r else id) Set.empty $ pa m
+
+rolesOfS :: Model -> String -> Set.Set R
+rolesOfS m s = case Map.lookup s $ sessions m of
+  Just (Session _ rs) -> rs
+  Nothing -> error $ "rolesOfS:" ++ s
+
+close :: Model -> Set.Set R -> Set.Set R
+close m = Set.unions . map (getRoles $ rh m) . Set.toList
+
+userOfS :: Model -> String -> U
+userOfS m s = case Map.lookup s $ sessions m of
+  Just (Session u _) -> u
+  Nothing -> error $ "rolesOfS:" ++ s
+
+usersOfR :: Model -> R -> Set.Set U
+usersOfR m r = Set.foldr
+  (\ (u, v) -> if r == v then Set.insert u else id) Set.empty $ ua m
+
+sessionsOfU :: Model -> U -> Map String S
+sessionsOfU m u = Map.filter ((== u) . user) $ sessions m
+
+permissionsOfR :: Model -> R -> Set.Set P
+permissionsOfR m r = Set.foldr
+  (\ (p, v) -> if r == v then Set.insert p else id) Set.empty $ pa m
+
+operationsOf :: Model -> (R, OBJ) -> Set.Set OP
+operationsOf m ro = Set.foldr (\ (Permission oP oBj, v) ->
+  if ro == (v, oBj) then Set.insert oP else id) Set.empty $ pa m
+
+objectsOfP :: Set.Set P -> Set.Set OBJ
+objectsOfP = Set.map obj
 
 properSessions :: Model -> Bool
-properSessions sets =
-  all (\ s -> activeRoles s `isSubsetOf` rolesOfU sets (user s))
-  . Map.elems $ sessions sets
+properSessions m =
+  all (\ s -> activeRoles s `isSubsetOf` rolesOfU m (user s))
+  . Map.elems $ sessions m
 
 juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
-juniors m visited r =
-  let s = Map.findWithDefault Set.empty r m \\ visited
+juniors m visited r = let s = Map.findWithDefault Set.empty r m \\ visited
   in if Set.null s then s else Set.union s
      . Set.unions . map (juniors m $ Set.insert r visited) $ Set.toList s
 
@@ -211,8 +242,7 @@ addObj o m = addString o m { objects = Set.insert (Object o) $ objects m }
 -- op and obj
 addP :: String -> String -> Model -> Model
 addP oP oBj m = addString (unwords [oP, oBj]) . addObj oBj $ addOp oP m
-  { permissions = Set.insert (Permission (Operation oP) $ Object oBj)
-    $ permissions m }
+  { permissions = Set.insert (strP oP oBj) $ permissions m }
 
 -- sid and user
 addS :: String -> String -> Model -> Model
@@ -225,8 +255,29 @@ addSR s r m = let sm = sessions m in addR r m
   { sessions = case Map.lookup s sm of
       Just (Session u rs) ->
         Map.insert s (Session u $ Set.insert (Role r) rs) sm
-      Nothing -> sm }
+      Nothing -> error $ "addSR:" ++ s }
+
+addSRs :: String -> [String] -> Model -> Model
+addSRs s rs m = let sm = sessions m in (foldr addR m rs)
+  { sessions = case Map.lookup s sm of
+      Just (Session u _) ->
+        Map.insert s (Session u . Set.fromList $ map Role rs) sm
+      Nothing -> error $ "addSRs:" ++ s }
+
+addSURs :: String -> String -> [String] -> Model -> Model
+addSURs s u rs m = addU u (foldr addR m rs)
+  { sessions = Map.insert s (Session (Name u) . Set.fromList $ map Role rs)
+    $ sessions m }
 
 -- user and role
 addUA :: String -> String -> Model -> Model
 addUA u r m = addU u $ addR r m { ua = Set.insert (Name u, Role r) $ ua m }
+
+addPA :: String -> String -> String -> Model -> Model
+addPA oP oBj r m = addP oP oBj $ addR r m
+  { pa = Set.insert (strP oP oBj, Role r) $ pa m }
+
+addRH :: String -> [String] -> Model -> Model
+addRH r js m = addR r (foldr addR m js)
+    { rh = let nh = Map.insert (Role r) (Set.fromList $ map Role js) $ rh m
+      in assert (nonCyclicRH nh) nh }
