@@ -85,9 +85,6 @@ tySet us s = case s of
         modify (("unknown base set: " ++ ppSet s) :)
         pure Nothing
 
-primTypes :: [Base]
-primTypes = [U, R, OP, OBJ, P, S]
-
 compatSetTys :: SetType -> SetType -> Maybe SetType
 compatSetTys t1 t2 = case (mElemOrSet t1, mElemOrSet t2) of
     (Just s1, Just s2) | s1 == s2 -> mkSetType s1 -- treat elements as sets

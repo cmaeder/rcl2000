@@ -27,6 +27,9 @@ data UnOp = AO | OE | User | Roles Bool | Sessions
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 
+primTypes :: [Base]
+primTypes = [U, R, OP, OBJ, P, S]
+
 data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
 
 data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
