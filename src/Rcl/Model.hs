@@ -307,9 +307,13 @@ sUnOp t o = let u = take 1 $ show o
         U -> "ur"
         P -> "pr"
         S -> "sr"
+        R -> "r"
         _ -> u
       _ -> u
   _ -> u
+
+init :: Model -> Model
+init = flip (foldr initFctMap) fcts . initOpsMap . initBases
 
 -- | insert initial base sets
 initBases :: Model -> Model
@@ -324,3 +328,48 @@ initOpsMap m =
     let p = (toInt m r, toInt m oBj)
         is = Map.findWithDefault IntSet.empty p n
     in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
+
+fcts :: [(Base, UnOp)]
+fcts = map toR [U, P, S, R] ++
+  [(S, User), (R, User), (U, Sessions), (R, Permissions True), (P, Objects)]
+
+toR :: Base -> (Base, UnOp)
+toR b = (b, Roles True)
+
+initFctMap :: (Base, UnOp) -> Model -> Model
+initFctMap p@(b, o) m = m
+  { fctMap = Map.insert (sUnOp (Just $ ElemTy b) o) (function p m) $ fctMap m }
+
+function :: (Base, UnOp) -> Model -> IntMap IntSet
+function bo m = let
+  ss = Map.toList $ sessions m
+  rs = Set.toList $ roles m
+  us = Set.toList $ users m
+  ps = Set.toList $ permissions m
+  in case bo of
+  (S, User) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
+    (toInt m s, IntSet.singleton (toInt m u))) ss
+  (_, User) -> IntMap.fromList $ map (\ r ->
+        (toInt m $ role r, IntSet.fromList $ map (toInt m . name)
+        . Set.toList $ usersOfR m r)) rs
+  (U, Roles _) -> IntMap.fromList $ map (\ u ->
+        (toInt m $ name u, IntSet.fromList . map (toInt m . role)
+        . Set.toList $ rolesOfU m u)) us
+  (P, Roles _) -> IntMap.fromList $ map (\ p ->
+        (toInt m $ pStr p, IntSet.fromList $ map (toInt m . role)
+        . Set.toList $ rolesOfP m p)) ps
+  (S, Roles _) -> IntMap.fromList $ map (\ (s, Session _ as) ->
+        (toInt m s, IntSet.fromList . map (toInt m . role)
+        $ Set.toList as)) ss
+  (_, Roles _) -> IntMap.fromList $ map (\ r ->
+        (toInt m $ role r, IntSet.fromList . map (toInt m . role)
+        . Set.toList $ getRoles (rh m) r)) rs
+  (_, Sessions) -> IntMap.fromList $ map (\ u ->
+        (toInt m $ name u, IntSet.fromList . map (toInt m)
+        . Map.keys $ sessionsOfU m u)) us
+  (_, Permissions _) -> IntMap.fromList $ map (\ r ->
+        (toInt m $ role r, IntSet.fromList . map (toInt m . pStr)
+        . Set.toList $ permissionsOfR m r)) rs
+  (_, Objects) -> IntMap.fromList $ map (\ p@(Permission _ (Object ob)) ->
+        (toInt m $ pStr p, IntSet.singleton (toInt m ob))) ps
+  _ -> error "function"
