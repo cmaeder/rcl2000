@@ -1,14 +1,17 @@
 module Rcl.Model where
 
 import Control.Exception (assert)
+import qualified Data.IntMap as IntMap
+import Data.IntMap (IntMap)
+import qualified Data.IntSet as IntSet
+import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set ((\\), isSubsetOf)
-import qualified Data.IntSet as IntSet
-import Data.IntSet (IntSet)
 
 import Rcl.Ast
+import Rcl.Type
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
@@ -42,10 +45,12 @@ data Model = Model
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- direct junior roles
   , strMap :: Map String Int
-  , intMap :: Map Int String
+  , intMap :: IntMap String
+  , fctMap :: Map String (IntMap IntSet)
+  , opsMap :: Map (Int, Int) IntSet -- operations
   , next :: Int } -- next unused Int
 
-data Value = VInt Int | VSet (Set.Set Value) deriving (Eq, Ord, Show)
+data Value = Ints IntSet | VSet (Set.Set Value) deriving (Eq, Ord, Show)
 
 emptyModel :: Model
 emptyModel = Model
@@ -60,7 +65,9 @@ emptyModel = Model
   , pa = Set.empty
   , rh = Map.empty
   , strMap = Map.empty
-  , intMap = Map.empty
+  , intMap = IntMap.empty
+  , fctMap = Map.empty
+  , opsMap = Map.empty
   , next = 1 }
 
 rolesOfU :: Model -> U -> Set.Set R
@@ -132,7 +139,7 @@ properStructure m = let
   im = intMap m
   sm = strMap m
   strs = Map.keysSet sm
-  is = Map.keysSet im
+  is = IntMap.keysSet im
   in all ((`Set.member` us) . user) ss
   && all ((`isSubsetOf` rs) . activeRoles) ss
   && Set.map op ps `isSubsetOf` operations m
@@ -148,15 +155,16 @@ properStructure m = let
   && all checkValue vs
   && all (\ (t, v) -> checkInts m (baseType t) $ getInts v) vs
   && strs == getAllStrings m
-  && strs == Set.fromList (Map.elems im)
-  && is == Set.fromList (Map.elems sm)
-  && Set.size is == Set.size strs
-  && maybe True (< next m) (Set.lookupMax is)
+  && strs == Set.fromList (IntMap.elems im)
+  && is == IntSet.fromList (Map.elems sm)
+  && IntSet.size is == Set.size strs
+  && maybe True ((< next m) . fst) (IntSet.maxView is)
 
 checkValue :: (SetType, Value) -> Bool
 checkValue p = case p of
-  (Set e, VSet s) -> all (curry checkValue e) $ Set.toList s
-  (ElemTy _, VInt _) -> True
+  (Set (ElemTy _), Ints _) -> True
+  (Set e@(Set _), VSet s) -> all (curry checkValue e) $ Set.toList s
+  (ElemTy _, Ints vs) -> IntSet.size vs == 1
   _ -> False
 
 baseType :: SetType -> Base
@@ -166,7 +174,7 @@ baseType s = case s of
 
 getInts :: Value -> IntSet
 getInts v = case v of
-  VInt i -> IntSet.singleton i
+  Ints is -> is
   VSet s -> IntSet.unions . map getInts $ Set.toList s
 
 getStrings :: Model -> Base -> Set.Set String
@@ -184,24 +192,26 @@ getAllStrings m = Set.unions $ map (getStrings m) primTypes
 checkInts :: Model -> Base -> IntSet -> Bool
 checkInts m b is =
   all (\ i -> Set.member
-      (Map.findWithDefault "" i $ intMap m)
+      (IntMap.findWithDefault "" i $ intMap m)
       $ getStrings m b) $ IntSet.toList is
+
+insUserSet :: String -> Base -> [String] -> Model -> Model
+insUserSet s b l m =
+  m { userSets = Map.insert s
+      (Set $ ElemTy b, toInts m l)
+    $ userSets m }
 
 updUserSet :: String -> Base -> [String] -> Model -> Model
 updUserSet s b l m =
   assert (all (`Set.member` getStrings m b) l)
-  m { userSets = Map.insert s
-      (Set $ ElemTy b, VSet . Set.fromList $ map
-        (\ v -> VInt . Map.findWithDefault 0 v $ strMap m) l)
-    $ userSets m }
+  $ insUserSet s b l m
 
 updUserSet2 :: String -> Base -> [[String]] -> Model -> Model
 updUserSet2 s b ll m =
   assert (all (all (`Set.member` getStrings m b)) ll)
   m { userSets = Map.insert s
       (Set . Set $ ElemTy b, VSet . Set.fromList $ map
-        (VSet . Set.fromList . map
-          (\ v -> VInt . Map.findWithDefault 0 v $ strMap m)) ll)
+        (toInts m) ll)
     $ userSets m }
 
 updUserSet3 :: String -> Base -> [[[String]]] -> Model -> Model
@@ -209,10 +219,14 @@ updUserSet3 s b lll m =
   assert (all (all (all (`Set.member` getStrings m b))) lll)
   m { userSets = Map.insert s
       (Set . Set . Set $ ElemTy b, VSet . Set.fromList $ map
-        (VSet . Set.fromList . map
-          (VSet . Set.fromList . map
-            (\ v -> VInt . Map.findWithDefault 0 v $ strMap m))) lll)
+        (VSet . Set.fromList . map (toInts m)) lll)
     $ userSets m }
+
+toInts :: Model -> [String] -> Value
+toInts m = Ints . IntSet.fromList . map (toInt m)
+
+toInt :: Model -> String -> Int
+toInt m v = Map.findWithDefault 0 v $ strMap m
 
 addString :: String -> Model -> Model
 addString s m = let
@@ -222,7 +236,7 @@ addString s m = let
   in case Map.lookup s sm of
     Nothing -> m {
       strMap = Map.insert s i sm
-      , intMap = Map.insert i s im
+      , intMap = IntMap.insert i s im
       , next = i + 1 }
     _ -> m
 
@@ -281,3 +295,32 @@ addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r (foldr addR m js)
     { rh = let nh = Map.insert (Role r) (Set.fromList $ map Role js) $ rh m
       in assert (nonCyclicRH nh) nh }
+
+-- | short strings for fctMap
+sUnOp :: Maybe SetType -> UnOp -> String
+sUnOp t o = let u = take 1 $ show o
+  in case o of
+  User -> if t == Just (ElemTy S) then "us" else "U"
+  Objects -> "Ob"
+  Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
+      Just (ElemTy r) -> case r of
+        U -> "ur"
+        P -> "pr"
+        S -> "sr"
+        _ -> u
+      _ -> u
+  _ -> u
+
+-- | insert initial base sets
+initBases :: Model -> Model
+initBases m = foldr
+  (\ b n -> insUserSet (show b) b (Set.toList $ getStrings m b) n)
+  m primTypes
+
+initOpsMap :: Model -> Model
+initOpsMap m =
+  m { opsMap = Set.foldr
+    (\ (Permission (Operation oP) (Object oBj), Role r) n ->
+    let p = (toInt m r, toInt m oBj)
+        is = Map.findWithDefault IntSet.empty p n
+    in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
