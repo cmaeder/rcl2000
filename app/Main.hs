@@ -5,8 +5,10 @@ import Data.Char (toLower)
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 import Rcl.Ast
+import Rcl.Interpret (interprets)
 import Rcl.Parse (parser, parseFromFile, ParseError)
 import Rcl.Print (render, pStmts, Form (Form), Format (..))
+import Rcl.Read (readModel)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.Type (typeErrors)
@@ -46,8 +48,8 @@ options =
       "type check"
     , Option "r" ["reduce"] (NoArg $ \ o -> o {reduce = True})
       "reduce and reconstruct"
-    , Option "i" ["invariants"] (NoArg $ \ o -> o {toOcl = True})
-      "output ocl invariants"
+    , Option "e" ["evaluate"] (NoArg $ \ o -> o {evaluate = True})
+      "evaluate formulas"
     , Option "f" ["format"]
       (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
       "use format LaTeX, Ascii or Unicode (default)"
@@ -64,6 +66,7 @@ data Opts = Opts
   , pprint :: Bool
   , check :: Bool
   , reduce :: Bool
+  , evaluate :: Bool
   , toOcl :: Bool
   , useFile :: String
   , outFile :: String }
@@ -75,6 +78,7 @@ defaultOpts = Opts
   , pprint = False
   , check = False
   , reduce = False
+  , evaluate = False
   , toOcl = False
   , useFile = "use/RBAC.use"
   , outFile = "" }
@@ -105,3 +109,8 @@ reportParse us o eith = case eith of
       case outFile o of
         "" -> putStrLn cont
         out -> writeFile out cont
+    when (evaluate o) $ do
+      m <- readModel
+      case interprets m ast of
+        Right () -> putStrLn "wow"
+        Left e -> print e

@@ -1,0 +1,31 @@
+op1 obj1 r1
+op1 obj2 r2
+op2 obj1 r1
+op3 obj3 r3
+op4 obj4 r4
+
+read obj1 HR
+read obj2 HR
+
+write obj1 HW
+write obj2 HW
+
+add ParentGrant OWN
+delete ParentGrant OWN
+destroy O1 OWN
+destroy O2 OWN
+add Parent PARENTGRANT
+delete Parent PARENTGRANT
+add Read PARENT
+delete Read PARENT
+can_read O1 READ
+can_read O2 READ
+
+Own O1 OWN
+Own O2 OWN
+ParentGrant O1 PARENTGRANT
+ParentGrant O2 PARENTGRANT
+Parent O1 PARENT
+Parent O2 PARENT
+Read O1 READ
+Read O2 READ

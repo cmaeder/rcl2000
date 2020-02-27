@@ -1,0 +1,47 @@
+cr1 r1 r3 r5
+cr2 r2 r4 r6
+cr3 r7 r8 r9
+
+CR cr1 cr2 cr3
+
+rp read obj1 read obj2
+wp write obj1 write obj2
+
+RR HR LR
+WR HW LW
+
+ar1 HR HW
+ar2 LR LW
+
+AR ar1 ar2
+
+asr1 HR LW
+asr2 LR LW
+
+ASR asr1 asr2
+
+sr1 Bank-A-read Bank-A-write
+sr2 Bank-B-read Bank-B-write
+sr3 Oil-X-read Oil-X-write
+sr4 Oil-Y-read Oil-Y-write
+
+SR sr1 sr2 sr3 sr4
+
+Oil-R Oil-X-read Oil-Y-read
+Bank-R Bank-A-read Bank-B-read
+read Oil-R Bank-R
+Oil-W Oil-X-write Oil-Y-write
+Bank-W Bank-A-write Bank-B-write
+write Oil-W Bank-W
+GR read write
+
+OWN OWN
+PARENT PARENT
+PARENTGRANT PARENTGRANT
+READ READ
+
+OWNAPM add ParentGrant delete ParentGrant
+OWNRPM destroy O1 destroy O2
+PGPM add Parent delete Parent
+PPM add Read delete Read
+RPM can_read O1 can_read O2

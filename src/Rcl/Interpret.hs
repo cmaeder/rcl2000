@@ -1,4 +1,4 @@
-module Rcl.Interpret where
+module Rcl.Interpret (interprets) where
 
 import Control.Exception (assert)
 import qualified Data.IntMap as IntMap
@@ -18,6 +18,11 @@ import Rcl.Type
 type Env = IntMap Value
 
 data TermVal = VTerm Value | VEmptySet | VNum Int deriving (Eq, Show)
+
+interprets :: Model -> [Stmt] -> Either Env ()
+interprets m = let us = getUserTypes m in
+  mapM_ (uncurry (interpret m IntMap.empty) . runReduce us)
+  . filter (wellTyped us )
 
 interpret :: Model -> Env -> Stmt -> Vars -> Either Env ()
 interpret m e s vs = case vs of

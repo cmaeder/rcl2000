@@ -49,6 +49,7 @@ data Model = Model
   , fctMap :: Map String (IntMap IntSet)
   , opsMap :: Map (Int, Int) IntSet -- operations
   , next :: Int } -- next unused Int
+  deriving Show
 
 data Value = Ints IntSet | VSet (Set.Set Value) deriving (Eq, Ord, Show)
 
@@ -285,11 +286,10 @@ addSURs s u rs m = addU u (foldr addR m rs)
 
 -- user and role
 addUA :: String -> String -> Model -> Model
-addUA u r m = addU u $ addR r m { ua = Set.insert (Name u, Role r) $ ua m }
+addUA u r m = addR r m { ua = Set.insert (Name u, Role r) $ ua m }
 
 addPA :: String -> String -> String -> Model -> Model
-addPA oP oBj r m = addP oP oBj $ addR r m
-  { pa = Set.insert (strP oP oBj, Role r) $ pa m }
+addPA oP oBj r m = addR r m { pa = Set.insert (strP oP oBj, Role r) $ pa m }
 
 addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r (foldr addR m js)
@@ -312,8 +312,8 @@ sUnOp t o = let u = take 1 $ show o
       _ -> u
   _ -> u
 
-init :: Model -> Model
-init = flip (foldr initFctMap) fcts . initOpsMap . initBases
+initModel :: Model -> Model
+initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases
 
 -- | insert initial base sets
 initBases :: Model -> Model

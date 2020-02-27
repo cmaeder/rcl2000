@@ -1,0 +1,3 @@
+s1 u1 r1 r2 r3 r4
+s2 u2 r3 r4 r5 r6
+s3 u1 r3 r4 r5 r6
