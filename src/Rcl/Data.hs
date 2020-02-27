@@ -6,6 +6,7 @@ import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
+import Data.Set ((\\))
 
 import Rcl.Ast
 import Rcl.Type (isElem, elemType)
@@ -62,6 +63,24 @@ pStr p = unwords [operation $ op p, object $ obj p]
 
 strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Object v
+
+rolesOfU :: Model -> U -> Set.Set R
+rolesOfU m u = Set.foldr
+  (\ (v, r) -> if u == v then Set.insert r else id) Set.empty $ ua m
+
+juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
+juniors m visited r = let s = Map.findWithDefault Set.empty r m \\ visited
+  in if Set.null s then s else Set.union s
+     . Set.unions . map (juniors m $ Set.insert r visited) $ Set.toList s
+
+getStrings :: Model -> Base -> Set.Set String
+getStrings m b = case b of
+  U -> Set.map name $ users m
+  R -> Set.map role $ roles m
+  OBJ -> Set.map object $ objects m
+  OP -> Set.map operation $ operations m
+  S -> Map.keysSet $ sessions m
+  P -> Set.map pStr $ permissions m
 
 -- | short strings for fctMap
 sUnOp :: Maybe SetType -> UnOp -> String

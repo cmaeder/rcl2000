@@ -1,9 +1,11 @@
 module Rcl.Read (readModel) where
 
+import Control.Exception (assert)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
+import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (initModel, addU, addP, addR, toInts)
 
@@ -14,9 +16,10 @@ readModel = do
   rhs <- readFile "examples/rh.txt"
   ses <- readFile "examples/s.txt"
   ts <- readFile "examples/sets.txt"
-  return . initModel . foldr readSets (foldr readS (foldr readRH (foldr readPA
-    (foldr readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
-    $ lines ses) $ lines ts
+  let m = initModel . foldr readSets (foldr readS (foldr readRH (foldr readPA
+        (foldr readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
+        $ lines ses) $ lines ts
+  return $ assert (properStructure m) m
 
 readUA :: String -> Model -> Model
 readUA s m = case words s of
