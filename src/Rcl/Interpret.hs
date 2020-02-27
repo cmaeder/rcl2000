@@ -10,10 +10,10 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
+import Rcl.Data
 import Rcl.Fold
-import Rcl.Model
-import Rcl.Reduce
-import Rcl.Type
+import Rcl.Reduce (Vars, runReduce)
+import Rcl.Type (wellTyped, typeOfSet)
 
 type Env = IntMap Value
 

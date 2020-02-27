@@ -4,7 +4,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
-import Rcl.Model
+import Rcl.Data
+import Rcl.Model (initModel, addU, addP, addR, toInts)
 
 readModel :: IO Model
 readModel = do
@@ -36,6 +37,22 @@ readS :: String -> Model -> Model
 readS s m = case words s of
   i : u : rs -> addSURs i u rs m
   _ -> m
+
+addSURs :: String -> String -> [String] -> Model -> Model
+addSURs s u rs m = addU u (foldr addR m rs)
+  { sessions = Map.insert s (Session (Name u) . Set.fromList $ map Role rs)
+    $ sessions m }
+
+-- user and role
+addUA :: String -> String -> Model -> Model
+addUA u r m = addR r m { ua = Set.insert (Name u, Role r) $ ua m }
+
+addPA :: String -> String -> String -> Model -> Model
+addPA oP oBj r m = addR r m { pa = Set.insert (strP oP oBj, Role r) $ pa m }
+
+addRH :: String -> [String] -> Model -> Model
+addRH r js m = addR r (foldr addR m js)
+    { rh = Map.insert (Role r) (Set.fromList $ map Role js) $ rh m }
 
 readSets :: String -> Model -> Model
 readSets s m = let us = userSets m in case words s of
