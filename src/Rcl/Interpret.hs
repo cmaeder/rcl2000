@@ -11,7 +11,6 @@ import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Fold
 import Rcl.Reduce (Vars, runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 

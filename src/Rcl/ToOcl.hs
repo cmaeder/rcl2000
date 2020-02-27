@@ -1,7 +1,6 @@
 module Rcl.ToOcl (ocl) where
 
 import Rcl.Ast
-import Rcl.Fold
 import Rcl.Reduce (runReduce, Vars)
 import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,

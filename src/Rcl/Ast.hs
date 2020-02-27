@@ -6,8 +6,11 @@ import Data.List (isSuffixOf)
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
 
-data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
+data FoldStmt a b = FoldStmt
+  { foldBool :: Stmt -> BoolOp -> b -> b -> b
+  , foldCmp :: Stmt -> CmpOp -> a -> a -> b }
 
+data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 data BoolOp = And | Impl deriving (Eq, Show)
 
 data Term = Term Bool Set | EmptySet | Num Int deriving (Eq, Show)
@@ -15,6 +18,11 @@ data Term = Term Bool Set | EmptySet | Num Int deriving (Eq, Show)
 
 data Set = PrimSet { stPrim :: String } | UnOp UnOp Set
   | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
+
+data FoldSet a = FoldSet
+  { foldBin :: Set -> BinOp -> a -> a -> a
+  , foldUn :: Set -> UnOp -> a -> a
+  , foldPrim :: Set -> a }
 
 data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
 
@@ -27,14 +35,39 @@ data UnOp = AO | OE | User | Roles Bool | Sessions
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 
+data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
+data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
+type UserTypes = [([String], SetType)]
+
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]
 
-data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
+mapStmt :: FoldStmt Term Stmt
+mapStmt = FoldStmt
+  { foldBool = const BoolOp
+  , foldCmp = const CmpOp }
 
-data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
+foldStmt :: FoldStmt a b -> (Term -> a) -> Stmt -> b
+foldStmt r f s = case s of
+  BoolOp o s1 s2 -> foldBool r s o (foldStmt r f s1) $ foldStmt r f s2
+  CmpOp o s1 s2 -> foldCmp r s o (f s1) $ f s2
 
-type UserTypes = [([String], SetType)]
+mapTerm :: (Set -> Set) -> Term -> Term
+mapTerm f t = case t of
+  Term b s -> Term b $ f s
+  _ -> t
+
+mapSet :: FoldSet Set
+mapSet = FoldSet
+  { foldBin = const BinOp
+  , foldUn = const UnOp
+  , foldPrim = id }
+
+foldSet :: FoldSet a -> Set -> a
+foldSet r s = case s of
+  BinOp o s1 s2 -> foldBin r s o (foldSet r s1) $ foldSet r s2
+  UnOp o p -> foldUn r s o $ foldSet r p
+  _ -> foldPrim r s
 
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i

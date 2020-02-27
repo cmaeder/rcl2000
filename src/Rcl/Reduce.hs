@@ -5,7 +5,6 @@ import Control.Exception (assert)
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
 import Rcl.Ast
-import Rcl.Fold
 import Rcl.Print (ppStmt, ppSet)
 import Rcl.Type (typeOfSet, elemType)
 

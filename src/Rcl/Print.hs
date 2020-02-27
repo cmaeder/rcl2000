@@ -2,7 +2,6 @@ module Rcl.Print (ppStmts, ppStmt, ppTerm, ppSet,
   Form (..), Format (..), form, pStmts, pSet, Doc, render) where
 
 import Rcl.Ast
-import Rcl.Fold
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep, vcat,
   parens, braces, int)
 
