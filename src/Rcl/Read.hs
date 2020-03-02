@@ -1,13 +1,12 @@
 module Rcl.Read (readModel) where
 
-import Control.Exception (assert)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (initModel, addU, addP, addR, toInts)
+import Rcl.Model (initModel, addS, addU, addP, addR, toInts)
 
 readModel :: IO Model
 readModel = do
@@ -19,7 +18,7 @@ readModel = do
   let m = initModel . foldr readSets (foldr readS (foldr readRH (foldr readPA
         (foldr readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
         $ lines ses) $ lines ts
-  return $ assert (properStructure m) m
+  return $ assert "read" (properStructure m) m
 
 readUA :: String -> Model -> Model
 readUA s m = case words s of
@@ -42,7 +41,7 @@ readS s m = case words s of
   _ -> m
 
 addSURs :: String -> String -> [String] -> Model -> Model
-addSURs s u rs m = addU u (foldr addR m rs)
+addSURs s u rs m = addS s (addU u $ foldr addR m rs)
   { sessions = Map.insert s (Session (Name u) . Set.fromList $ map Role rs)
     $ sessions m }
 
@@ -90,9 +89,6 @@ psToValue m = toInts m . map pStr
 findSetType :: Model -> String -> Maybe SetType
 findSetType m v = case Map.lookup v $ userSets m of
   Just (t, _) -> Just t
-  Nothing
-    | Set.member (Role v) $ roles m -> Just $ ElemTy R
-    | Set.member (Name v) $ users m -> Just $ ElemTy U
-    | Set.member (Operation v) $ operations m -> Just $ ElemTy OP
-    | Set.member (Object v) $ objects m -> Just $ ElemTy OBJ
-  _ -> Nothing
+  Nothing -> case strToBase m v of
+    b : _ -> Just $ ElemTy b
+    [] -> Nothing

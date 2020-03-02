@@ -1,4 +1,4 @@
-module Rcl.Model (initModel, addU, addP, addR, toInts) where
+module Rcl.Model (initModel, addS, addU, addP, addR, toInts) where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
@@ -41,8 +41,8 @@ toInts m = Ints . IntSet.fromList . map (toInt m)
 toInt :: Model -> String -> Int
 toInt m v = Map.findWithDefault 0 v $ strMap m
 
-addString :: String -> Model -> Model
-addString s m = let
+addS :: String -> Model -> Model
+addS s m = let
   sm = strMap m
   im = intMap m
   i = next m
@@ -54,21 +54,21 @@ addString s m = let
     _ -> m
 
 addU :: String -> Model -> Model
-addU u m = addString u m { users = Set.insert (Name u) $ users m }
+addU u m = addS u m { users = Set.insert (Name u) $ users m }
 
 addR :: String -> Model -> Model
-addR r m = addString r m { roles = Set.insert (Role r) $ roles m }
+addR r m = addS r m { roles = Set.insert (Role r) $ roles m }
 
 addOp :: String -> Model -> Model
-addOp o m = addString o m
+addOp o m = addS o m
   { operations = Set.insert (Operation o) $ operations m }
 
 addObj :: String -> Model -> Model
-addObj o m = addString o m { objects = Set.insert (Object o) $ objects m }
+addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
-addP oP oBj m = addString (unwords [oP, oBj]) . addObj oBj $ addOp oP m
+addP oP oBj m = addS (unwords [oP, oBj]) . addObj oBj $ addOp oP m
   { permissions = Set.insert (strP oP oBj) $ permissions m }
 
 initModel :: Model -> Model

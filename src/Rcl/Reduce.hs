@@ -1,7 +1,6 @@
 module Rcl.Reduce (reduction, Vars, runReduce) where
 
 import Control.Applicative ((<|>))
-import Control.Exception (assert)
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
 import Rcl.Ast
@@ -72,7 +71,7 @@ replaceVar us i = foldStmt mapStmt . mapTerm . replVar us i
 
 replVar :: UserTypes -> Var -> Set -> Set -> Set
 replVar us i@(MkVar _ _ t) r =
-  assert ((typeOfSet us r >>= elemType) == t) . foldSet mapSet
+  assert "replVar" ((typeOfSet us r >>= elemType) == t) . foldSet mapSet
   { foldPrim = \ s -> case s of
     Var v | i == v -> UnOp OE r
     _ -> s }
@@ -83,14 +82,14 @@ replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 replMinus :: Set -> Set
 replMinus = foldSet mapSet
   { foldBin = \ _ o s1 s2 -> case o of
-      Minus -> assert (s2 == UnOp OE s1) $ UnOp AO s1
+      Minus -> assert "replMinus" (s2 == UnOp OE s1) $ UnOp AO s1
       _ -> BinOp o s1 s2 }
 
 reduceAndReconstruct :: UserTypes -> Stmt -> String
 reduceAndReconstruct us s = let
   (r, vs) = runReduce us s
   n = replaceMinus (construct us r vs)
-  in assert (n == s)
+  in assert "reduceAndReconstruct" (n == s)
   $ concatMap (\ (i, e) ->
       '\x2200' : stVar i ++ '\x220A' : ppSet e ++ "\x2219")
     (reverse vs) ++ ' ' : ppStmt r

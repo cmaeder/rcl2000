@@ -22,7 +22,11 @@ uOil-Y-write Oil-Y-write
 uBank-A-write Bank-A-write
 uBank-B-write Bank-B-read
 
-owner OWN
-parentgranter PARENTGRANT
-parent PARENT
-reader READ
+owner1 Own_O1
+owner2 Own_O2
+pg1 ParentGrant_O1
+pg2 ParentGrant_O2
+parent1 Parent_O1
+parent2 Parent_O2
+reader1 Read_O1
+reader2 Read_O2

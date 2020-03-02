@@ -1,6 +1,5 @@
 module Rcl.Interpret (interprets) where
 
-import Control.Exception (assert)
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.IntSet as IntSet
@@ -83,12 +82,12 @@ eval m e = let us = getUserTypes m in foldSet FoldSet
             [ (r, ob) | r <- IntSet.toList rs, ob <- IntSet.toList os ]
           _ -> []
       Minus -> case (v1, v2) of
-        (VSet s, _) -> assert (Set.member v2 s) . VSet $ Set.delete v2 s
-        (Ints is, Ints js) -> assert
+        (VSet s, _) -> assert "eval1" (Set.member v2 s) . VSet $ Set.delete v2 s
+        (Ints is, Ints js) -> assert "eval2"
           (js `IntSet.isSubsetOf` is && IntSet.size js == 1)
           . Ints $ is IntSet.\\ js
         _ -> Ints IntSet.empty
-      _ -> assert (sameNesting v1 v2) $ case (v1, v2) of
+      _ -> assert "eval3" (sameNesting v1 v2) $ case (v1, v2) of
         (Ints is, Ints js) -> Ints
           $ (if o == Inter then IntSet.intersection else IntSet.union) is js
         _ -> VSet . (if o == Inter then Set.intersection else Set.union)

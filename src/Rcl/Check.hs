@@ -29,12 +29,16 @@ properStructure m = let
   uas = ua m
   pas = pa m
   h = rh m
-  vs = Map.elems $ userSets m
+  uSets = userSets m
+  vs = Map.elems uSets
+  ks = Map.keys uSets
   im = intMap m
   sm = strMap m
   strs = Map.keysSet sm
   is = IntMap.keysSet im
   in all ((`Set.member` us) . user) ss
+  && all (null . strToBase m) ks
+  && all ((<= 1) . length . strToBase m) (Map.keys sm)
   && all ((`isSubsetOf` rs) . activeRoles) ss
   && Set.map op ps `isSubsetOf` operations m
   && Set.map obj ps `isSubsetOf` objects m
@@ -42,17 +46,20 @@ properStructure m = let
   && Set.map snd uas `isSubsetOf` rs
   && Set.map fst pas `isSubsetOf` ps
   && Set.map snd pas `isSubsetOf` rs
+
   && properSessions m
   && Map.keysSet h `isSubsetOf` rs
   && all (`isSubsetOf` rs) (Map.elems h)
   && nonCyclicRH h
   && all checkValue vs
+
   && all (\ (t, v) -> checkInts m (baseType t) $ getInts v) vs
   && strs == getAllStrings m
   && strs == Set.fromList (IntMap.elems im)
   && is == IntSet.fromList (Map.elems sm)
   && IntSet.size is == Set.size strs
   && maybe True ((< next m) . fst) (IntSet.maxView is)
+
 
 checkValue :: (SetType, Value) -> Bool
 checkValue p = case p of
@@ -75,7 +82,5 @@ getAllStrings :: Model -> Set.Set String
 getAllStrings m = Set.unions $ map (getStrings m) primTypes
 
 checkInts :: Model -> Base -> IntSet -> Bool
-checkInts m b is =
-  all (\ i -> Set.member
-      (IntMap.findWithDefault "" i $ intMap m)
-      $ getStrings m b) $ IntSet.toList is
+checkInts m b =
+  all (\ i -> toStr i m `Set.member` getStrings m b) . IntSet.toList

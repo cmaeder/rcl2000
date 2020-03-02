@@ -164,6 +164,20 @@ stImpl = "=>"
 lImpl :: String
 lImpl = "\\Rightarrow"
 
+stSet :: SetType -> String
+stSet t = case t of
+  ElemTy b -> show b
+  Set s -> '{' : show s ++ "}"
+
+stType :: Type -> String
+stType t = case t of
+  SetTy s -> stSet s
+  NatTy -> "\x2115" -- N
+  EmptySetTy -> "{}"
+
 keySigns :: String
 keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
   ++ concatMap csCmpOp [Elem, Le, Ge, Ne]
+
+assert :: String -> Bool -> a -> a
+assert s b a = if b then a else error $ "assert: " ++ s

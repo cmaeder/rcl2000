@@ -1,7 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Rcl.Data where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
+import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
@@ -97,3 +99,23 @@ sUnOp t o = let u = take 1 $ show o
         _ -> u
       _ -> u
   _ -> u
+
+stValue :: Model -> Value -> String
+stValue m v = '{' : case v of
+    Ints is -> unwords . map (`toStr` m) $ IntSet.toList is
+    VSet vs -> unwords . map (stValue m) $ Set.toList vs
+  ++ "}"
+
+toStr :: Int -> Model -> String
+toStr i = IntMap.findWithDefault "" i . intMap
+
+strToBase :: Model -> String -> [Base]
+strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
+  in t (Role, roles, R)
+  . t (Name, users, U)
+  . t (Operation, operations, OP)
+  . t (Object, objects, OBJ)
+  . t (id, Map.keysSet . sessions, S)
+  $ (case words v of
+    [oP, oBj] -> t (const $ strP oP oBj, permissions, P)
+    _ -> id) []
