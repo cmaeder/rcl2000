@@ -101,10 +101,11 @@ sUnOp t o = let u = take 1 $ show o
   _ -> u
 
 stValue :: Model -> Value -> String
-stValue m v = '{' : case v of
-    Ints is -> unwords . map (`toStr` m) $ IntSet.toList is
-    VSet vs -> unwords . map (stValue m) $ Set.toList vs
-  ++ "}"
+stValue m v = case v of
+    Ints is -> case IntSet.maxView is of
+      Just (i, s) | IntSet.null s -> toStr i m
+      _ -> '{' : unwords (map (`toStr` m) $ IntSet.toList is) ++ "}"
+    VSet vs -> '{' : unwords (map (stValue m) $ Set.toList vs) ++ "}"
 
 toStr :: Int -> Model -> String
 toStr i = IntMap.findWithDefault "" i . intMap

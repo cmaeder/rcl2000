@@ -16,8 +16,10 @@ tys = mapM_ . ty
 typeOfSet :: UserTypes -> Set -> Maybe SetType
 typeOfSet us s = evalState (tySet us s) []
 
-wellTyped :: UserTypes -> Stmt -> Bool
-wellTyped us s = null $ execState (ty us s) []
+wellTyped :: UserTypes -> Stmt -> Maybe String
+wellTyped us s = case execState (ty us s) [] of
+  [] -> Nothing
+  rs -> Just $ unlines rs
 
 ty :: UserTypes -> Stmt -> State [String] ()
 ty us s = case s of

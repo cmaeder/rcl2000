@@ -99,7 +99,8 @@ reportParse us o eith = case eith of
         c = check o
         r = reduce o
         i = toOcl o
-        a = all (== False) [p, c, r, i]
+        e = evaluate o
+        a = all (== False) [p, c, r, i, e]
     when (p || a) . putStrLn . render $ pStmts (form o) ast
     when (c || a) . putStrLn $ typeErrors us ast
     when (r || a) . putStrLn $ reduction us ast
@@ -109,8 +110,6 @@ reportParse us o eith = case eith of
       case outFile o of
         "" -> putStrLn cont
         out -> writeFile out cont
-    when (evaluate o) $ do
+    when e $ do
       m <- readModel
-      case interprets m ast of
-        Right () -> putStrLn "wow"
-        Left e -> print e
+      putStrLn $ interprets m ast

@@ -1,5 +1,7 @@
 module Rcl.ToOcl (ocl) where
 
+import Data.Maybe (isNothing)
+
 import Rcl.Ast
 import Rcl.Reduce (runReduce, Vars)
 import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
@@ -10,7 +12,7 @@ ocl :: UserTypes -> [Stmt] -> String
 ocl us = unlines . zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
     , uncurry (toOcl us) $ runReduce us s]) [1 :: Int ..]
-    . filter (wellTyped us)
+    . filter (isNothing . wellTyped us)
 
 toOcl :: UserTypes -> Stmt -> Vars -> Doc
 toOcl us = foldl (\ f (i, s) -> cat

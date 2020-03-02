@@ -4,12 +4,14 @@ import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
+import Data.List (find, partition)
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (isNothing, fromMaybe, mapMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
+import Rcl.Print (ppStmt, ppSet)
 import Rcl.Reduce (Vars, runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 
@@ -17,10 +19,26 @@ type Env = IntMap Value
 
 data TermVal = VTerm Value | VEmptySet | VNum Int deriving (Eq, Show)
 
-interprets :: Model -> [Stmt] -> Either Env ()
-interprets m = let us = getUserTypes m in
-  mapM_ (uncurry (interpret m IntMap.empty) . runReduce us)
-  . filter (wellTyped us )
+interprets :: Model -> [Stmt] -> String
+interprets m l = let
+  us = getUserTypes m
+  (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
+  in unlines $ mapMaybe snd es ++
+  mapMaybe (uncurry (interpretError m) . runReduce us . fst) ws
+
+interpretError :: Model -> Stmt -> Vars -> Maybe String
+interpretError m s vs = case interpret m IntMap.empty s vs of
+  Right () -> Nothing
+  Left e -> Just $ printEnv m vs e ++ ". " ++ ppStmt s
+
+printEnv :: Model -> Vars -> Env -> String
+printEnv m vs e = unwords . map
+  (\ (k, v) -> printVar vs k ++ "->" ++ stValue m v) $ IntMap.toList e
+
+printVar :: Vars -> Int -> String
+printVar vs k = case find (\ (MkVar i _ _, _) -> i == k) vs of
+  Just (v, s) -> stVar v ++ ":" ++ ppSet s
+  Nothing -> ""
 
 interpret :: Model -> Env -> Stmt -> Vars -> Either Env ()
 interpret m e s vs = case vs of
