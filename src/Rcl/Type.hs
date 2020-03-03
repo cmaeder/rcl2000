@@ -3,31 +3,31 @@ module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
 import Control.Monad (when, unless)
 import Control.Monad.State (State, modify, evalState, execState)
 import Data.List (find)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust, isNothing, mapMaybe)
 import Rcl.Ast
 import Rcl.Print (ppStmt, ppSet)
 
 typeErrors :: UserTypes -> [Stmt] -> String
-typeErrors us l = unlines . reverse $ execState (tys us l) []
-
-tys :: UserTypes -> [Stmt] -> State [String] ()
-tys = mapM_ . ty
+typeErrors us = unlines . mapMaybe (wellTyped us)
 
 typeOfSet :: UserTypes -> Set -> Maybe SetType
 typeOfSet us s = evalState (tySet us s) []
 
 wellTyped :: UserTypes -> Stmt -> Maybe String
 wellTyped us s = case execState (ty us s) [] of
-  [] -> Nothing
-  rs -> Just $ unlines rs
+  "" -> Nothing
+  e -> Just $ e ++ "\n  in: " ++ ppStmt s
 
-ty :: UserTypes -> Stmt -> State [String] ()
+report :: String -> State String ()
+report = modify . const
+
+ty :: UserTypes -> Stmt -> State String ()
 ty us s = case s of
   BoolOp _ s1 s2 -> ty us s1 >> ty us s2
   CmpOp o e1 e2 -> do
     m1 <- tyTerm us e1
     m2 <- tyTerm us e2
-    let md = modify (("wrongly typed relation: " ++ ppStmt s) :)
+    let md = report $ "wrongly typed relation: " ++ ppStmt s
     case (m1, m2) of
       (Just t1, Just t2) -> case (t1, t2) of
         (SetTy s1, SetTy s2) ->
@@ -38,18 +38,18 @@ ty us s = case s of
         _ -> md
       _ -> pure () -- error reported earlier
 
-tyTerm :: UserTypes -> Term -> State [String] (Maybe Type)
+tyTerm :: UserTypes -> Term -> State String (Maybe Type)
 tyTerm us t = case t of
   Term b s -> do
     m <- tySet us s
     pure $ if b then Just NatTy else fmap SetTy m
   EmptySet -> pure $ Just EmptySetTy
   Num n -> do
-    when (n < 0) $ modify (("illegal number: " ++ show n) :)
+    when (n < 0) . report $ "illegal number: " ++ show n
     pure $ Just NatTy
 
-tySet :: UserTypes -> Set -> State [String] (Maybe SetType)
-tySet us s = case s of
+tySet :: UserTypes -> Set -> State String (Maybe SetType)
+tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
   BinOp o s1 s2 -> do
     m1 <- tySet us s1
     m2 <- tySet us s2
@@ -57,16 +57,15 @@ tySet us s = case s of
       (Just t1, Just t2) -> case o of
         Ops -> do
           unless (isElemOrSet R t1 && isElemOrSet OBJ t2)
-            $ modify (("expected role and object arguments: " ++ ppSet s) :)
+            $ md "expected role and object arguments"
           pure $ mkSetType OP -- R x OBJ -> 2^OP
         Minus -> do
           unless (elemType t1 == Just t2)
-            $ modify (("wrongly typed set minus element: " ++ ppSet s) :)
+            $ md "wrongly typed set minus element"
           pure $ Just t1
         _ -> do
           let t = compatSetTys t1 t2
-          when (isNothing t)
-            $ modify (("wrongly typed set operation: " ++ ppSet s) :)
+          when (isNothing t) $ md "wrongly typed set operation"
           pure t
       _ -> pure Nothing
   UnOp o s1 -> do
@@ -75,8 +74,7 @@ tySet us s = case s of
       Nothing -> pure t1 -- was reported earlier
       Just st -> do
         let t = tyAppl o st
-        when (isNothing t)
-          $ modify (("wrongly typed application: " ++ ppSet s) :)
+        when (isNothing t) $ md "wrongly typed application"
         pure t
   Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find ((== p) . show) primTypes of
@@ -84,7 +82,7 @@ tySet us s = case s of
     Nothing -> case find ((p `elem`) . fst) us of
       Just (_, t) -> pure $ Just t
       Nothing -> do
-        modify (("unknown base set: " ++ ppSet s) :)
+        md "unknown base set"
         pure Nothing
 
 compatSetTys :: SetType -> SetType -> Maybe SetType

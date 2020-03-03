@@ -11,7 +11,7 @@ import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Print (ppStmt, ppSet)
+import Rcl.Print (ppStmt)
 import Rcl.Reduce (Vars, runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 
@@ -23,13 +23,16 @@ interprets :: Model -> [Stmt] -> String
 interprets m l = let
   us = getUserTypes m
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
-  in unlines $ mapMaybe snd es ++
-  mapMaybe (uncurry (interpretError m) . runReduce us . fst) ws
+  in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
+  case uncurry (interpretError m) $ runReduce us s of
+    Nothing -> "verified: " ++ ppStmt s
+    Just e -> e) ws
 
 interpretError :: Model -> Stmt -> Vars -> Maybe String
 interpretError m s vs = case interpret m IntMap.empty s $ reverse vs of
   Right () -> Nothing
-  Left e -> Just $ printEnv m vs e ++ ". " ++ ppStmt s
+  Left e -> Just $ (if IntMap.null e then "falsified: " else
+    "counter example: " ++ printEnv m vs e ++ "\n  in: ") ++ ppStmt s
 
 printEnv :: Model -> Vars -> Env -> String
 printEnv m vs e = unwords . map
