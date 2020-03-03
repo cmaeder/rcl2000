@@ -11,20 +11,8 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Data
 
-rolesOfP :: Model -> P -> Set.Set R
-rolesOfP m p = Set.foldr
-  (\ (v, r) -> if p == v then Set.insert r else id) Set.empty $ pa m
-
-usersOfR :: Model -> R -> Set.Set U
-usersOfR m r = Set.foldr
-  (\ (u, v) -> if r == v then Set.insert u else id) Set.empty $ ua m
-
 sessionsOfU :: Model -> U -> Map String S
 sessionsOfU m u = Map.filter ((== u) . user) $ sessions m
-
-permissionsOfR :: Model -> R -> Set.Set P
-permissionsOfR m r = Set.foldr
-  (\ (p, v) -> if r == v then Set.insert p else id) Set.empty $ pa m
 
 getRoles :: Map R (Set.Set R) -> R -> Set.Set R
 getRoles m r = Set.insert r $ juniors m Set.empty r

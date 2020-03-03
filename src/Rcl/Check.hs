@@ -1,4 +1,4 @@
-module Rcl.Check (properStructure) where
+module Rcl.Check (properStructure, checkAccess) where
 
 import qualified Data.IntMap as IntMap
 import qualified Data.IntSet as IntSet
@@ -82,3 +82,33 @@ getAllStrings m =
 checkInts :: Model -> Base -> IntSet -> Bool
 checkInts m b =
   all (\ i -> toStr i m `Set.member` getStrings m b) . IntSet.toList
+
+permsOfRs :: Model -> Set.Set R -> Set.Set P
+permsOfRs m = Set.unions . map (permissionsOfR m) . Set.toList
+
+checkAccess :: Model -> String -> OP -> OBJ -> Maybe String
+checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
+  let p = strP oP oBj
+      ps = pStr p
+      rs = rolesOfP m p
+      rl = Set.toList rs
+      nr = null rl
+      nn = not nr
+      us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
+      usr = null us
+      usn = not usr
+      l = [(op1 `Set.notMember` operations m, "unknown operation: " ++ oP)
+        , (obj2 `Set.notMember` objects m, "unknown object: " ++ oBj)
+        , (p `Set.notMember` permissions m, "unknown permission: " ++ ps)
+        , (nr, "no roles for permission: " ++ ps)
+        , (nn, "required one of role: " ++ unwords (map role rl))
+        , (nn && usr, "no user with roles for permission: " ++ ps)
+        , (usn, "allowed for one of user: " ++ unwords us)]
+      errs = unlines (map snd $ filter fst l)
+  in case Map.lookup s $ sessions m of
+    Nothing -> Just $ errs ++ "unknown session: " ++ s
+    Just (Session u as) -> if p `elem` permsOfRs m as then Nothing
+      else let ru = rolesOfU m u in if p `elem` permsOfRs m ru
+         then Just $ "user roles not activated: " ++
+           unwords (map role . Set.toList $ Set.intersection rs ru)
+         else Just $ errs ++ "missing assigned roles for user: " ++ name u

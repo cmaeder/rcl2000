@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Rcl.Data where
 
 import qualified Data.IntMap as IntMap
@@ -66,9 +65,21 @@ pStr p = unwords [operation $ op p, object $ obj p]
 strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Object v
 
+usersOfR :: Model -> R -> Set.Set U
+usersOfR m r = Set.foldr
+  (\ (u, v) -> if r == v then Set.insert u else id) Set.empty $ ua m
+
 rolesOfU :: Model -> U -> Set.Set R
 rolesOfU m u = Set.foldr
   (\ (v, r) -> if u == v then Set.insert r else id) Set.empty $ ua m
+
+rolesOfP :: Model -> P -> Set.Set R
+rolesOfP m p = Set.foldr
+  (\ (v, r) -> if p == v then Set.insert r else id) Set.empty $ pa m
+
+permissionsOfR :: Model -> R -> Set.Set P
+permissionsOfR m r = Set.foldr
+  (\ (p, v) -> if r == v then Set.insert p else id) Set.empty $ pa m
 
 juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
 juniors m visited r = let s = Map.findWithDefault Set.empty r m \\ visited
