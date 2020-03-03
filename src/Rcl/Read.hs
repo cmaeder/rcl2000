@@ -15,7 +15,7 @@ readModel = do
   rhs <- readFile "examples/rh.txt"
   ses <- readFile "examples/s.txt"
   ts <- readFile "examples/sets.txt"
-  let m = initModel . foldr readSets (foldr readS (foldr readRH (foldr readPA
+  let m = initModel . foldl readSets (foldr readS (foldr readRH (foldr readPA
         (foldr readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
         $ lines ses) $ lines ts
   return $ assert "read" (properStructure m) m
@@ -56,18 +56,21 @@ addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r (foldr addR m js)
     { rh = Map.insert (Role r) (Set.fromList $ map Role js) $ rh m }
 
-readSets :: String -> Model -> Model
-readSets s m = let us = userSets m in case words s of
-  n : vs@(_ : _) -> let mt : ts = map (findSetType m) vs in
-    case mt of
-      Just t -> if all (== mt) ts then m
+readSets :: Model -> String -> Model
+readSets m s = case words s of
+  n : vs@(_ : _) ->
+    let mt : ts = map (findSetType m) vs
+        us = userSets m
+        r = addS n m
+    in case mt of
+      Just t -> if all (== mt) ts then r
         { userSets = Map.insert n (Set t, joinValues m t vs) us }
         else case (t, ts) of
-          (ElemTy OP, Just (ElemTy OBJ) : _) -> m
+          (ElemTy OP, Just (ElemTy OBJ) : _) -> r
             { userSets = Map.insert n
               (Set $ ElemTy P, psToValue m $ joinPs m vs) us }
-          _ -> m
-      _ -> m
+          _ -> error $ "readSets1: " ++ s
+      _ -> error $ "readSets2: " ++ s
   _ -> m
 
 joinValues :: Model -> SetType -> [String] -> Value

@@ -46,20 +46,17 @@ properStructure m = let
   && Set.map snd uas `isSubsetOf` rs
   && Set.map fst pas `isSubsetOf` ps
   && Set.map snd pas `isSubsetOf` rs
-
   && properSessions m
   && Map.keysSet h `isSubsetOf` rs
   && all (`isSubsetOf` rs) (Map.elems h)
   && nonCyclicRH h
   && all checkValue vs
-
   && all (\ (t, v) -> checkInts m (baseType t) $ getInts v) vs
   && strs == getAllStrings m
   && strs == Set.fromList (IntMap.elems im)
   && is == IntSet.fromList (Map.elems sm)
   && IntSet.size is == Set.size strs
   && maybe True ((< next m) . fst) (IntSet.maxView is)
-
 
 checkValue :: (SetType, Value) -> Bool
 checkValue p = case p of
@@ -79,7 +76,8 @@ getInts v = case v of
   VSet s -> IntSet.unions . map getInts $ Set.toList s
 
 getAllStrings :: Model -> Set.Set String
-getAllStrings m = Set.unions $ map (getStrings m) primTypes
+getAllStrings m =
+  Set.unions $ Map.keysSet (userSets m) : map (getStrings m) primTypes
 
 checkInts :: Model -> Base -> IntSet -> Bool
 checkInts m b =

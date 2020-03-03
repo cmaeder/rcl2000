@@ -27,17 +27,17 @@ interprets m l = let
   mapMaybe (uncurry (interpretError m) . runReduce us . fst) ws
 
 interpretError :: Model -> Stmt -> Vars -> Maybe String
-interpretError m s vs = case interpret m IntMap.empty s vs of
+interpretError m s vs = case interpret m IntMap.empty s $ reverse vs of
   Right () -> Nothing
   Left e -> Just $ printEnv m vs e ++ ". " ++ ppStmt s
 
 printEnv :: Model -> Vars -> Env -> String
 printEnv m vs e = unwords . map
-  (\ (k, v) -> printVar vs k ++ "->" ++ stValue m v) $ IntMap.toList e
+  (\ (k, v) -> printVar vs k $ stValue m v) $ IntMap.toList e
 
-printVar :: Vars -> Int -> String
-printVar vs k = case find (\ (MkVar i _ _, _) -> i == k) vs of
-  Just (v, s) -> stVar v ++ ":" ++ ppSet s
+printVar :: Vars -> Int -> String -> String
+printVar vs k e = case find (\ (MkVar i _ _, _) -> i == k) vs of
+  Just (v, _) -> stVar v ++ "=" ++ e
   Nothing -> ""
 
 interpret :: Model -> Env -> Stmt -> Vars -> Either Env ()
@@ -119,9 +119,9 @@ eval m e = let us = getUserTypes m in foldSet FoldSet
 
 evalPrim :: Model -> Env -> Set -> Value
 evalPrim m e s = case s of
-  PrimSet p -> maybe (error $ "evalPrim: " ++ p) snd
+  PrimSet p -> maybe (error $ "evalPrim1: " ++ p) snd
     . Map.lookup p $ userSets m
-  Var v@(MkVar i _ _) -> fromMaybe (error $ "evalPrim: " ++ stVar v)
+  Var v@(MkVar i _ _) -> fromMaybe (error $ "evalPrim2: " ++ stVar v)
     $ IntMap.lookup i e
   _ -> error "evalPrim: not primitive"
 

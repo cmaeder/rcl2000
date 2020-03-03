@@ -30,10 +30,8 @@ getRoles :: Map R (Set.Set R) -> R -> Set.Set R
 getRoles m r = Set.insert r $ juniors m Set.empty r
 
 insUserSet :: String -> Base -> [String] -> Model -> Model
-insUserSet s b l m =
-  m { userSets = Map.insert s
-      (Set $ ElemTy b, toInts m l)
-    $ userSets m }
+insUserSet s b l m = addS s m
+  { userSets = Map.insert s (Set $ ElemTy b, toInts m l) $ userSets m }
 
 toInts :: Model -> [String] -> Value
 toInts m = Ints . IntSet.fromList . map (toInt m)

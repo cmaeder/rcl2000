@@ -20,7 +20,7 @@ uBank-B-read Bank-B-read
 uOil-X-write Oil-X-write
 uOil-Y-write Oil-Y-write
 uBank-A-write Bank-A-write
-uBank-B-write Bank-B-read
+uBank-B-write Bank-B-write
 
 owner1 Own_O1
 owner2 Own_O2

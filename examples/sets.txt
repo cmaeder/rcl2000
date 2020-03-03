@@ -1,3 +1,4 @@
+
 cr1 r1 r3 r5
 cr2 r2 r4 r6
 cr3 r7 r8 r9
@@ -29,11 +30,11 @@ SR sr1 sr2 sr3 sr4
 
 Oil-R Oil-X-read Oil-Y-read
 Bank-R Bank-A-read Bank-B-read
-read Oil-R Bank-R
+com_read Oil-R Bank-R
 Oil-W Oil-X-write Oil-Y-write
 Bank-W Bank-A-write Bank-B-write
-write Oil-W Bank-W
-GR read write
+com_write Oil-W Bank-W
+GR com_read com_write
 
 OWN Own_O1 Own_O2
 PARENTGRANT ParentGrant_O1 ParentGrant_O2
