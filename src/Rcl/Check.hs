@@ -86,7 +86,7 @@ checkInts m b =
 permsOfRs :: Model -> Set.Set R -> Set.Set P
 permsOfRs m = Set.unions . map (permissionsOfR m) . Set.toList
 
-checkAccess :: Model -> String -> OP -> OBJ -> Maybe String
+checkAccess :: Model -> String -> OP -> OBJ -> [String]
 checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
   let p = strP oP oBj
       ps = pStr p
@@ -104,11 +104,11 @@ checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
         , (nn, "required one of role: " ++ unwords (map role rl))
         , (nn && usr, "no user with roles for permission: " ++ ps)
         , (usn, "allowed for one of user: " ++ unwords us)]
-      errs = unlines (map snd $ filter fst l)
+      errs = map snd $ filter fst l
   in case Map.lookup s $ sessions m of
-    Nothing -> Just $ errs ++ "unknown session: " ++ s
-    Just (Session u as) -> if p `elem` permsOfRs m as then Nothing
+    Nothing -> ("unknown session: " ++ s) : errs
+    Just (Session u as) -> if p `elem` permsOfRs m as then []
       else let ru = rolesOfU m u in if p `elem` permsOfRs m ru
-         then Just $ "user roles not activated: " ++
-           unwords (map role . Set.toList $ Set.intersection rs ru)
-         else Just $ errs ++ "missing assigned roles for user: " ++ name u
+         then ["user roles not activated: " ++
+           unwords (map role . Set.toList $ Set.intersection rs ru)]
+         else ("missing assigned roles for user: " ++ name u) : errs
