@@ -1,40 +1,43 @@
-
 cr1 r1 r3 r5
 cr2 r2 r4 r6
 cr3 r7 r8 r9
-
 CR cr1 cr2 cr3
 
-rp read obj1 read obj2
-wp write obj1 write obj2
+cu1 u1 u2
+cu2 u3 u4
+CU cu1 cu2
+
+cp1 op1 obj1 op5 obj5
+cp2 op3 obj3 op4 obj4
+CP cp1 cp2
+
+rp read_ obj1 read_ obj2
+wp write_ obj1 write_ obj2
 
 RR HR LR
 WR HW LW
 
 ar1 HR HW
 ar2 LR LW
-
 AR ar1 ar2
 
 asr1 HR LW
 asr2 LR LW
-
 ASR asr1 asr2
 
 sr1 Bank-A-read Bank-A-write
 sr2 Bank-B-read Bank-B-write
 sr3 Oil-X-read Oil-X-write
 sr4 Oil-Y-read Oil-Y-write
-
 SR sr1 sr2 sr3 sr4
 
 Oil-R Oil-X-read Oil-Y-read
 Bank-R Bank-A-read Bank-B-read
-com_read Oil-R Bank-R
+read Oil-R Bank-R
 Oil-W Oil-X-write Oil-Y-write
 Bank-W Bank-A-write Bank-B-write
-com_write Oil-W Bank-W
-GR com_read com_write
+write Oil-W Bank-W
+GR read write
 
 OWN Own_O1 Own_O2
 PARENTGRANT ParentGrant_O1 ParentGrant_O2

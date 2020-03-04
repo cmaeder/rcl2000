@@ -3,12 +3,13 @@ op1 obj2 r2
 op2 obj1 r1
 op3 obj3 r3
 op4 obj4 r4
+op5 obj5
 
-read obj1 HR
-read obj2 HR
+read_ obj1 HR
+read_ obj2 HR
 
-write obj1 HW
-write obj2 HW
+write_ obj1 HW
+write_ obj2 HW
 
 add ParentGrant Own_O1 Own_O2
 delete ParentGrant Own_O1 Own_O2

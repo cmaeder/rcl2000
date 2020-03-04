@@ -90,6 +90,7 @@ checkAccess :: Model -> String -> OP -> OBJ -> [String]
 checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
   let p = strP oP oBj
       ps = pStr p
+      pm = p `Set.member` permissions m
       rs = rolesOfP m p
       rl = Set.toList rs
       nr = null rl
@@ -99,16 +100,16 @@ checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
       usn = not usr
       l = [(op1 `Set.notMember` operations m, "unknown operation: " ++ oP)
         , (obj2 `Set.notMember` objects m, "unknown object: " ++ oBj)
-        , (p `Set.notMember` permissions m, "unknown permission: " ++ ps)
-        , (nr, "no roles for permission: " ++ ps)
-        , (nn, "required one of role: " ++ unwords (map role rl))
+        , (not pm, "unknown permission: " ++ ps)
+        , (pm && nr, "no roles for permission: " ++ ps)
+        , (nn, "required roles: " ++ unwords (map role rl))
         , (nn && usr, "no user with roles for permission: " ++ ps)
-        , (usn, "allowed for one of user: " ++ unwords us)]
+        , (usn, "possible users: " ++ unwords us)]
       errs = map snd $ filter fst l
   in case Map.lookup s $ sessions m of
     Nothing -> ("unknown session: " ++ s) : errs
-    Just (Session u as) -> if p `elem` permsOfRs m as then []
+    Just (Session u@(Name n) as) -> if p `elem` permsOfRs m as then []
       else let ru = rolesOfU m u in if p `elem` permsOfRs m ru
-         then ["user roles not activated: " ++
+         then ["roles of user '" ++ n ++ "' not activated: " ++
            unwords (map role . Set.toList $ Set.intersection rs ru)]
-         else ("missing assigned roles for user: " ++ name u) : errs
+         else ("missing assigned roles for user: " ++ n) : errs

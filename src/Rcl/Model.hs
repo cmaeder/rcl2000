@@ -25,7 +25,7 @@ toInts :: Model -> [String] -> Value
 toInts m = Ints . IntSet.fromList . map (toInt m)
 
 toInt :: Model -> String -> Int
-toInt m v = Map.findWithDefault 0 v $ strMap m
+toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
 addS :: String -> Model -> Model
 addS s m = let

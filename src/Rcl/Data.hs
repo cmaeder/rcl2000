@@ -119,7 +119,7 @@ stValue m v = case v of
     VSet vs -> '{' : unwords (map (stValue m) $ Set.toList vs) ++ "}"
 
 toStr :: Int -> Model -> String
-toStr i = IntMap.findWithDefault "" i . intMap
+toStr i = IntMap.findWithDefault (error $ "toStr: " ++ show i) i . intMap
 
 strToBase :: Model -> String -> [Base]
 strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
