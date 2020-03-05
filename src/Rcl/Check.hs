@@ -13,12 +13,11 @@ import Rcl.Data
 
 properSessions :: Model -> Bool
 properSessions m =
-  all (\ s -> activeRoles s `isSubsetOf` rolesOfU m (user s))
-  . Map.elems $ sessions m
+  all (Set.null . illegalActiveRoles m) . Map.elems $ sessions m
 
 nonCyclicRH :: Map R (Set.Set R) -> Bool
 nonCyclicRH m =
-  all (\ k -> Set.notMember k $ juniors m Set.empty k) $ Map.keys m
+  all (Set.null . rhCycle m) $ Map.keys m
 
 properStructure :: Model -> Bool
 properStructure m = let

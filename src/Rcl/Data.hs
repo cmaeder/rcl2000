@@ -82,9 +82,9 @@ permissionsOfR m r = Set.foldr
   (\ (p, v) -> if r == v then Set.insert p else id) Set.empty $ pa m
 
 juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
-juniors m visited r = let s = Map.findWithDefault Set.empty r m \\ visited
-  in if Set.null s then s else Set.union s
-     . Set.unions . map (juniors m $ Set.insert r visited) $ Set.toList s
+juniors m visited r = let s = Map.findWithDefault Set.empty r m
+  in if Set.null s then s else Set.unions . (s :)
+  . map (juniors m $ Set.insert r visited) . Set.toList $ s \\ visited
 
 getStrings :: Model -> Base -> Set.Set String
 getStrings m b = case b of
@@ -131,3 +131,10 @@ strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
   $ (case words v of
     [oP, oBj] -> t (const $ strP oP oBj, permissions, P)
     _ -> id) []
+
+illegalActiveRoles :: Model -> S -> Set.Set R
+illegalActiveRoles m s = activeRoles s \\ rolesOfU m (user s)
+
+rhCycle :: Map R (Set.Set R) -> R -> Set.Set R
+rhCycle m k = let rs = juniors m Set.empty k in
+  if k `Set.member` rs then rs else Set.empty

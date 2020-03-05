@@ -42,8 +42,12 @@ readS s m = case words s of
 
 addSURs :: String -> String -> [String] -> Model -> Model
 addSURs s u rs m = addS s (addU u $ foldr addR m rs)
-  { sessions = Map.insert s (Session (Name u) . Set.fromList $ map Role rs)
-    $ sessions m }
+  { sessions = let
+      v = Session (Name u) . Set.fromList $ map Role rs
+      is = illegalActiveRoles m v
+      in assert ("invalid session roles: "
+        ++ unwords (s : u : map role (Set.toList is)))
+      (Set.null is) . Map.insert s v $ sessions m }
 
 -- user and role
 addUA :: String -> String -> Model -> Model
@@ -54,7 +58,12 @@ addPA oP oBj r m = addR r m { pa = Set.insert (strP oP oBj, Role r) $ pa m }
 
 addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r (foldr addR m js)
-    { rh = Map.insert (Role r) (Set.fromList $ map Role js) $ rh m }
+    { rh = let
+        k = Role r
+        v = Map.insert k (Set.fromList $ map Role js) $ rh m
+        c = rhCycle v k
+        cs = map role $ Set.toList c
+      in assert ("cyclic role: " ++ unwords (r : cs)) (Set.null c) v }
 
 readSets :: Model -> String -> Model
 readSets m s = case words s of
