@@ -15,28 +15,28 @@ readModel = do
   rhs <- readFile "examples/rh.txt"
   ses <- readFile "examples/s.txt"
   ts <- readFile "examples/sets.txt"
-  let m = initModel . foldl readSets (foldr readS (foldr readRH (foldr readPA
-        (foldr readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
+  let m = initModel . foldl readSets (foldl readS (foldl readRH (foldl readPA
+        (foldl readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
         $ lines ses) $ lines ts
   return $ assert "read" (properStructure m) m
 
-readUA :: String -> Model -> Model
-readUA s m = case words s of
+readUA :: Model -> String -> Model
+readUA m s = case words s of
   u : rs -> foldr (addUA u) (addU u m) rs
   _ -> m
 
-readPA :: String -> Model -> Model
-readPA s m = case words s of
+readPA :: Model -> String -> Model
+readPA m s = case words s of
   oP : oBj : rs -> foldr (addPA oP oBj) (addP oP oBj m) rs
   _ -> m
 
-readRH :: String -> Model -> Model
-readRH s m = case words s of
+readRH :: Model -> String -> Model
+readRH m s = case words s of
   r : rs -> addRH r rs m
   _ -> m
 
-readS :: String -> Model -> Model
-readS s m = case words s of
+readS :: Model -> String -> Model
+readS m s = case words s of
   i : u : rs -> addSURs i u rs m
   _ -> m
 
