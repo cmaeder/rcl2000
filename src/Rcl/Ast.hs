@@ -2,6 +2,7 @@ module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
 import Data.List (isSuffixOf)
+import Data.Map (Map)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -37,7 +38,7 @@ data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 
 data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
 data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
-type UserTypes = [([String], SetType)]
+type UserTypes = Map String SetType
 
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]

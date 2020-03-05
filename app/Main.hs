@@ -1,8 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 module Main where
 
 import Control.Monad (when)
 import Data.Char (toLower)
 import Data.List (find)
+import Data.Map (fromList)
 import Data.Maybe (fromMaybe)
 import Rcl.Ast
 import Rcl.Interpret (interprets)
@@ -16,7 +18,8 @@ import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 
 userTypes :: UserTypes
-userTypes = [(["CU"], Set . Set $ ElemTy U)
+userTypes = fromList $ concatMap (\ (l, t) -> map (, t) l)
+  [(["CU"], Set . Set $ ElemTy U)
   , (["CP"], Set . Set $ ElemTy P)
   , (["CR", "read", "write", "AR", "ASR", "SR"], Set . Set $ ElemTy R)
   , (["GR"], Set . Set . Set $ ElemTy R)

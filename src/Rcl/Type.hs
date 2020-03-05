@@ -3,6 +3,7 @@ module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
 import Control.Monad (when, unless)
 import Control.Monad.State (State, modify, evalState, execState)
 import Data.List (find)
+import qualified Data.Map as Map (lookup)
 import Data.Maybe (isJust, isNothing, mapMaybe)
 import Rcl.Ast
 import Rcl.Print (ppStmt, ppSet)
@@ -79,8 +80,8 @@ tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
   Var (MkVar _ _ t) -> pure t
   PrimSet p -> case find ((== p) . show) primTypes of
     Just b -> pure $ mkSetType b
-    Nothing -> case find ((p `elem`) . fst) us of
-      Just (_, t) -> pure $ Just t
+    Nothing -> case Map.lookup p us of
+      Just t -> pure $ Just t
       Nothing -> do
         md "unknown base set"
         pure Nothing

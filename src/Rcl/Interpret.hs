@@ -55,7 +55,7 @@ interpret m e s vs = case vs of
       $ Set.toList es
 
 getUserTypes :: Model -> UserTypes
-getUserTypes = map (\ (s, (t, _)) -> ([s], t)) . Map.toList . userSets
+getUserTypes = Map.map fst . userSets
 
 evalStmt :: Model -> Env -> Stmt -> Bool
 evalStmt m e = foldStmt FoldStmt
