@@ -1,0 +1,151 @@
+model RBAC
+
+class OP
+end
+
+class OBJ
+end
+
+class P
+attributes
+  op : OP
+  obj : OBJ
+end
+
+class R
+operations
+  getRoles() : Set(R) = Set{self}
+end
+
+class HR < R
+operations
+  getRoles() : Set(R) = Set{self}->union(juniors()) // overwrite
+  juniors() : Set(HR) = junior->closure(junior)->asSet
+  seniors() : Set(HR) = senior->closure(senior)->asSet
+constraints
+  inv nonCyclicRoleHierarchy: juniors()->excludes(self)
+end
+
+association RH between
+  HR[*] role junior
+  HR[*] role senior
+end
+
+class S
+attributes
+  user : U
+constraints
+inv onlyActiveAssignedRoles:
+  user.r->includesAll(activeRoles)
+end
+
+class U
+end
+
+association UA between
+  U[*]
+  R[*]
+end
+
+association PA between
+  P[*]
+  R[*]
+end
+
+aggregation SessionRoles between
+  S[0..1]
+  R[*] role activeRoles
+end
+
+abstract class Builtin
+
+operations
+  OBJ() : Set(OBJ) = OBJ.allInstances
+  OP() : Set(OP) = OP.allInstances
+  P() : Set(P) = P.allInstances
+  R() : Set(R) = R.allInstances
+  S() : Set(S) = S.allInstances
+  U() : Set(U) = U.allInstances
+  
+  uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
+  proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
+  sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
+  uroles_(us : Set(U)): Set(R) = uroles(us)->collect(getRoles())->asSet
+  proles_(ps : Set(P)): Set(R) = proles(ps)->collect(getRoles())->asSet
+  sroles_(ss : Set(S)): Set(R) = sroles(ss)->collect(getRoles())->asSet
+  user(s : S): U = s.user
+  users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
+  sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
+  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
+  permissions_(rs : Set(R)): Set(P) =
+    permissions(rs->collect(getRoles())->asSet)
+  ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
+    permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
+  objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
+
+constraints
+  inv singleton: Builtin.allInstances->size = 1
+end
+
+class SetOfR
+end
+
+aggregation ElemOfR between
+  SetOfR[0..1]
+  R[*]
+end
+
+class Oil_R < SetOfR
+end
+
+class Bank_R < SetOfR
+end
+
+class Oil_W < SetOfR
+end
+
+class Bank_W < SetOfR
+end
+
+class SetOfSetOfR
+operations
+  c() : Set(Set(R)) = setOfR->collectNested(r)->asSet
+end
+
+aggregation ElemOfSetOfR between
+  SetOfSetOfR[0..1]
+  SetOfR[*]
+end
+
+class read < SetOfSetOfR
+end
+
+class write < SetOfSetOfR
+end
+
+class SetOfSetOfSetOfR
+operations
+  c() : Set(Set(Set(R))) = setOfSetOfR->collectNested(c())->asSet
+end
+
+aggregation ElemOfSetOfSetOfR between
+  SetOfSetOfSetOfR[0..1]
+  SetOfSetOfR[*]
+end
+
+class GR < SetOfSetOfSetOfR
+end
+
+class RBAC < Builtin
+operations
+  Oil_R() : Set(R) = Oil_R.allInstances->any(true).r
+  Oil_W() : Set(R) = Oil_W.allInstances->any(true).r
+  Bank_R() : Set(R) = Bank_R.allInstances->any(true).r
+  Bank_W() : Set(R) = Bank_W.allInstances->any(true).r
+  read() : Set(Set(R)) = read.allInstances->any(true).c()
+  write() : Set(Set(R)) = read.allInstances->any(true).c()
+  GR() : Set(Set(Set(R))) = GR.allInstances->any(true).c()
+end
+
+constraints
+context RBAC
