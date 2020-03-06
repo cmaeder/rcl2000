@@ -14,21 +14,16 @@ end
 
 class R
 operations
-  getRoles() : Set(R) = Set{self}
-end
-
-class HR < R
-operations
   getRoles() : Set(R) = Set{self}->union(juniors()) // overwrite
-  juniors() : Set(HR) = junior->closure(junior)->asSet
-  seniors() : Set(HR) = senior->closure(senior)->asSet
+  juniors() : Set(R) = junior->closure(junior)->asSet
+  seniors() : Set(R) = senior->closure(senior)->asSet
 constraints
   inv nonCyclicRoleHierarchy: juniors()->excludes(self)
 end
 
 association RH between
-  HR[*] role junior
-  HR[*] role senior
+  R[*] role senior
+  R[*] role junior
 end
 
 class S
