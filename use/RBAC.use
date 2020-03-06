@@ -13,8 +13,6 @@ attributes
 end
 
 class R
-attributes
-  name : String
 operations
   getRoles() : Set(R) = Set{self}
 end
@@ -42,8 +40,6 @@ inv onlyActiveAssignedRoles:
 end
 
 class U
-attributes
-  name : String
 end
 
 association UA between
@@ -61,137 +57,7 @@ aggregation SessionRoles between
   R[*] role activeRoles
 end
 
-class CP
-end
-
-aggregation CPP between
-  CP[0..1]
-  P[*]
-end
-
-class CR
-end
-
-aggregation CRR between
-  CR[0..1]
-  R[*]
-end
-
-class CU
-end
-
-aggregation CUU between
-  CU[0..1]
-  U[*]
-end
-
-class AR
-end
-
-aggregation ARR between
-  AR[0..1]
-  R[*]
-end
-
-class ASR
-end
-
-aggregation ASRR between
-  ASR[0..1]
-  R[*]
-end
-
-class SR
-end
-
-aggregation SRR between
-  SR[0..1]
-  R[*]
-end
-
-class read
-end
-
-aggregation readR between
-  read[0..1]
-  R[*]
-end
-
-class write
-end
-
-aggregation writeR between
-  write[0..1]
-  R[*]
-end
-
-class wp
-attributes
-  p : P
-end
-
-class rp
-attributes
-  p : P
-end
-
-class PPM
-attributes
-  p : P
-end
-
-class PGPM
-attributes
-  p : P
-end
-
-class OWNAPM
-attributes
-  p : P
-end
-
-class OWNRPM
-attributes
-  p : P
-end
-
-class RPM
-attributes
-  p : P
-end
-
-class WR
-attributes
-  r : R
-end
-
-class RR
-attributes
-  r : R
-end
-
-class OWN
-attributes
-  r : R
-end
-
-class PARENTGRANT
-attributes
-  r : R
-end
-
-class PARENT
-attributes
-  r : R
-end
-
-class READ
-attributes
-  r : R
-end
-
-class RBAC
-
+abstract class Builtin
 operations
   OBJ() : Set(OBJ) = OBJ.allInstances
   OP() : Set(OP) = OP.allInstances
@@ -199,33 +65,6 @@ operations
   R() : Set(R) = R.allInstances
   S() : Set(S) = S.allInstances
   U() : Set(U) = U.allInstances
-  CP() : Set(Set(P)) = CP.allInstances->collectNested(p)->asSet
-  CR() : Set(Set(R)) = CR.allInstances->collectNested(r)->asSet
-  CU() : Set(Set(U)) = CU.allInstances->collectNested(u)->asSet
-
-  AR() : Set(Set(R)) = AR.allInstances->collectNested(r)->asSet
-  ASR() : Set(Set(R)) = ASR.allInstances->collectNested(r)->asSet
-  SR() : Set(Set(R)) = SR.allInstances->collectNested(r)->asSet
-  read() : Set(Set(R)) = read.allInstances->collectNested(r)->asSet
-  write() : Set(Set(R)) = write.allInstances->collectNested(r)->asSet
-
-  GR() : Set(Set(Set(R))) = Set{}
-
-  rp() : Set(P) = rp.allInstances->collect(p)->asSet
-  wp() : Set(P) = wp.allInstances->collect(p)->asSet
-  PPM() : Set(P) = PPM.allInstances->collect(p)->asSet
-  PGPM() : Set(P) = PGPM.allInstances->collect(p)->asSet
-  OWNAPM() : Set(P) = OWNAPM.allInstances->collect(p)->asSet
-  OWNRPM() : Set(P) = OWNRPM.allInstances->collect(p)->asSet
-  RPM() : Set(P) = RPM.allInstances->collect(p)->asSet
-
-  WR() : Set(R) = WR.allInstances->collect(r)->asSet
-  RR() : Set(R) = RR.allInstances->collect(r)->asSet
-  OWN() : Set(R) = OWN.allInstances->collect(r)->asSet
-  PARENTGRANT() : Set(R) = PARENTGRANT.allInstances->collect(r)->asSet
-  PARENT() : Set(R) = PARENT.allInstances->collect(r)->asSet
-  READ() : Set(R) = READ.allInstances->collect(r)->asSet
-
   uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
   proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
   sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
@@ -241,7 +80,6 @@ operations
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
-end
-
 constraints
-context RBAC
+  inv singleton: Builtin.allInstances->size = 1
+end

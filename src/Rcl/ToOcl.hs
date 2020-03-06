@@ -1,5 +1,8 @@
 module Rcl.ToOcl (ocl) where
 
+import Data.Char (toLower)
+import Data.List (nub)
+import Data.Map (toList)
 import Data.Maybe (isNothing)
 
 import Rcl.Ast
@@ -8,11 +11,61 @@ import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
 
+toUse :: UserTypes -> [String]
+toUse us = let l = toList us in
+  concatMap toSetClass (nub $ concatMap (toSubs . snd) l)
+  ++ map toClass l ++ ["class RBAC < Builtin", "operations"]
+  ++ map toOp l ++ [end, "constraints", "context RBAC"]
+
+toSubs :: SetType -> [SetType]
+toSubs t = case t of
+  ElemTy _ -> []
+  Set s -> t : toSubs s
+
+toClass :: (String, SetType) -> String
+toClass (s, t) = "class " ++ s ++ " < " ++ className t ++ " end"
+
+toOp :: (String, SetType) -> String
+toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
+  ++ s ++ ".allInstances->any(true).c()"
+
+toSetClass :: SetType -> [String]
+toSetClass t = case t of
+  ElemTy _ -> error "toSetClass"
+  Set s -> let c = className t in
+    [ "class " ++ c
+    , "operations"
+    , "  c() : " ++ useType t ++ " = " ++ roleName s
+      ++ if isElem s then "" else "->collectNested(c())->asSet"
+    , end
+    , "aggregation A" ++ c ++ " between"
+    , "  " ++ c ++ "[0..1]"
+    , "  " ++ className s ++ "[*]"
+    , end ]
+
+roleName :: SetType -> String
+roleName t = case className t of
+  c : r -> toLower c : r
+  "" -> error "roleName"
+
+className :: SetType -> String
+className t = case t of
+  ElemTy b -> show b
+  Set s -> "SetOf" ++ className s
+
+useType :: SetType -> String
+useType t = case t of
+  ElemTy b -> show b
+  Set s -> "Set(" ++ useType s ++ ")"
+
+end :: String
+end = "end"
+
 ocl :: UserTypes -> [Stmt] -> String
-ocl us = unlines . zipWith (\ n s -> render $ hcat
+ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
     , uncurry (toOcl us) $ runReduce us s]) [1 :: Int ..]
-    . filter (isNothing . wellTyped us)
+    (filter (isNothing . wellTyped us) l)
 
 toOcl :: UserTypes -> Stmt -> Vars -> Doc
 toOcl us = foldl (\ f (i, s) -> cat
