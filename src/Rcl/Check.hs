@@ -50,18 +50,18 @@ properStructure m = let
   && all (`isSubsetOf` rs) (Map.elems h)
   && nonCyclicRH h
   && all checkValue vs
-  && all (\ (t, v) -> checkInts m (baseType t) $ getInts v) vs
+  && all (\ (t, v, _) -> checkInts m (baseType t) $ getInts v) vs
   && strs == getAllStrings m
   && strs == Set.fromList (IntMap.elems im)
   && is == IntSet.fromList (Map.elems sm)
   && IntSet.size is == Set.size strs
   && maybe True ((< next m) . fst) (IntSet.maxView is)
 
-checkValue :: (SetType, Value) -> Bool
+checkValue :: (SetType, Value, a) -> Bool
 checkValue p = case p of
-  (Set (ElemTy _), Ints _) -> True
-  (Set e@(Set _), VSet s) -> all (curry checkValue e) $ Set.toList s
-  (ElemTy _, Ints vs) -> IntSet.size vs == 1
+  (Set (ElemTy _), Ints _, _) -> True
+  (Set e@(Set _), VSet s, a) -> all (\ v -> checkValue (e, v, a)) $ Set.toList s
+  (ElemTy _, Ints vs, _) -> IntSet.size vs == 1
   _ -> False
 
 baseType :: SetType -> Base

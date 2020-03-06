@@ -55,7 +55,7 @@ interpret m e s vs = case vs of
       $ Set.toList es
 
 getUserTypes :: Model -> UserTypes
-getUserTypes = Map.map fst . userSets
+getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
 
 evalStmt :: Model -> Env -> Stmt -> Bool
 evalStmt m e = foldStmt FoldStmt
@@ -122,7 +122,7 @@ eval m e = let us = getUserTypes m in foldSet FoldSet
 
 evalPrim :: Model -> Env -> Set -> Value
 evalPrim m e s = case s of
-  PrimSet p -> maybe (error $ "evalPrim1: " ++ p) snd
+  PrimSet p -> maybe (error $ "evalPrim1: " ++ p) (\ (_, v, _) -> v)
     . Map.lookup p $ userSets m
   Var v@(MkVar i _ _) -> fromMaybe (error $ "evalPrim2: " ++ stVar v)
     $ IntMap.lookup i e

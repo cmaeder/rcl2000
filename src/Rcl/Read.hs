@@ -73,11 +73,11 @@ readSets m s = case words s of
         r = addS n m
     in case mt of
       Just t -> if all (== mt) ts then r
-        { userSets = Map.insert n (Set t, joinValues m t vs) us }
+        { userSets = Map.insert n (Set t, joinValues m t vs, vs) us }
         else case (t, ts) of
           (ElemTy OP, Just (ElemTy OBJ) : _) -> r
-            { userSets = Map.insert n
-              (Set $ ElemTy P, psToValue m $ joinPs m vs) us }
+            { userSets = let ps = map pStr $ joinPs m vs in
+               Map.insert n (Set $ ElemTy P, toInts m ps, ps) us }
           _ -> error $ "readSets1: " ++ s
       _ -> error $ "readSets2: " ++ s
   _ -> m
@@ -85,8 +85,8 @@ readSets m s = case words s of
 joinValues :: Model -> SetType -> [String] -> Value
 joinValues m t vs = case t of
   ElemTy _ -> toInts m vs
-  _ -> VSet . Set.fromList $ map
-    (snd . flip (Map.findWithDefault $ error "joinValues") (userSets m)) vs
+  _ -> VSet . Set.fromList $ map ((\ (_, v, _) -> v)
+    . flip (Map.findWithDefault $ error "joinValues") (userSets m)) vs
 
 joinPs :: Model -> [String] -> [P]
 joinPs m l = case l of
@@ -95,12 +95,9 @@ joinPs m l = case l of
     $ joinPs m r
   _ -> []
 
-psToValue :: Model -> [P] -> Value
-psToValue m = toInts m . map pStr
-
 findSetType :: Model -> String -> Maybe SetType
 findSetType m v = case Map.lookup v $ userSets m of
-  Just (t, _) -> Just t
+  Just (t, _, _) -> Just t
   Nothing -> case strToBase m v of
     b : _ -> Just $ ElemTy b
     [] -> Nothing

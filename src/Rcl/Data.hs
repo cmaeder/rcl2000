@@ -30,7 +30,7 @@ data Model = Model
   , objects :: Set.Set OBJ
   , permissions :: Set.Set P
   , sessions :: Map String S
-  , userSets :: Map String (SetType, Value)
+  , userSets :: Map String (SetType, Value, [String])
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- direct junior roles
