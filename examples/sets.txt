@@ -1,14 +1,13 @@
-cr1 r1 r3 r5
-cr2 r2 r4 r6
-cr3 r7 r8 r9
-CR cr1 cr2 cr3
+cr1 r1 r12
+cr2 r2 r12
+CR cr1 cr2
 
 cu1 u1 u2
 cu2 u3 u4
 CU cu1 cu2
 
 cp1 op1 obj1 op5 obj5
-cp2 op3 obj3 op4 obj4
+cp2 op3 obj3 op6 obj6
 CP cp1 cp2
 
 rp read_ obj1 read_ obj2

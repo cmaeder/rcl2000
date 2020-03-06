@@ -4,6 +4,7 @@ op2 obj1 r1
 op3 obj3 r3
 op4 obj4 r4
 op5 obj5
+op6 obj6
 
 read_ obj1 HR
 read_ obj2 HR
