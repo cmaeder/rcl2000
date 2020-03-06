@@ -48,7 +48,7 @@ association PA between
 end
 
 aggregation SessionRoles between
-  S[0..1]
+  S[*]
   R[*] role activeRoles
 end
 

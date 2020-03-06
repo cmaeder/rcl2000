@@ -39,6 +39,7 @@ toSoil m = unlines $ let
   ++ map (\ (s, t, r) -> "!insert (" ++ cv s ++ "," ++ cv r
           ++ ") into " ++ aggName t)
     (concatMap (\ (s, (t, _, l)) -> map (s, t,) l) $ Map.toList us)
+  ++ ["!new RBAC('RBAC')"]
 
 new :: String -> (a -> String) -> Set.Set a -> [String]
 new b f =

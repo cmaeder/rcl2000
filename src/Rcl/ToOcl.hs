@@ -39,7 +39,7 @@ toSetClass t = case t of
       ++ if isElem s then "" else "->collectNested(c())->asSet"
     , end
     , "aggregation A" ++ c ++ " between"
-    , "  " ++ c ++ "[0..1]"
+    , "  " ++ c ++ "[*]"
     , "  " ++ className s ++ "[*]"
     , end ]
 
