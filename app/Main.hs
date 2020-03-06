@@ -7,12 +7,13 @@ import Data.List (find)
 import Data.Map (fromList)
 import Data.Maybe (fromMaybe)
 import Rcl.Ast
-import Rcl.Interpret (interprets)
+import Rcl.Interpret (interprets, getUserTypes)
 import Rcl.Parse (parser, parseFromFile, ParseError)
 import Rcl.Print (render, pStmts, Form (Form), Format (..))
 import Rcl.Read (readModel)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
+import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
@@ -107,7 +108,7 @@ reportParse us o eith = case eith of
     when (p || a) . putStrLn . render $ pStmts (form o) ast
     when (c || a) . putStrLn $ typeErrors us ast
     when (r || a) . putStrLn $ reduction us ast
-    when i $ do
+    when (i && not e) $ do
       str <- readFile (useFile o)
       let cont = str ++ ocl us ast
       case outFile o of
@@ -115,4 +116,16 @@ reportParse us o eith = case eith of
         out -> writeFile out cont
     when e $ do
       m <- readModel
-      putStrLn $ interprets m ast
+      if i then do
+        str <- readFile (useFile o)
+        let uts = getUserTypes m
+            cont = str ++ ocl uts ast
+            ls = toSoil m
+        case outFile o of
+          "" -> do
+            putStrLn cont
+            putStrLn ls
+          out -> do
+            writeFile (out ++ ".use") cont
+            writeFile (out ++ ".soil") ls
+        else putStrLn $ interprets m ast

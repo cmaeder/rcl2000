@@ -1,18 +1,20 @@
 {-# LANGUAGE TupleSections #-}
-module Rcl.ToSoil where
+module Rcl.ToSoil (toSoil) where
 
-import Data.Char
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Rcl.Ast
 import Rcl.Data
+import Rcl.ToOcl (aggName, cv)
 
-toSoil :: Model -> [String]
-toSoil m = let
+toSoil :: Model -> String
+toSoil m = unlines $ let
   ps = permissions m
   pl = Set.toList ps
   ss = sessions m
   sl = Map.toList ss
+  us = foldr (\ b n -> Map.delete (show b) n) (userSets m) primTypes
   in new "R" role (roles m)
   ++ new "U" name (users m)
   ++ new "OP" operation (operations m)
@@ -33,12 +35,10 @@ toSoil m = let
           ++ ") into SessionRoles")
     (concatMap (\ (i, s) -> map (i,) . Set.toList $ activeRoles s) sl)
   ++ map (\ s -> "!new " ++ cv s ++ "('" ++ cv s ++ "')")
-    (Map.keys $ userSets m)
-
--- | sanitize names for use
-cv :: String -> String
-cv = filter (\ c -> isAscii c && (isAlphaNum c || c == '_')) .
-  map (\ c -> if c `elem` "- " then '_' else c)
+    (Map.keys us)
+  ++ map (\ (s, t, r) -> "!insert (" ++ cv s ++ "," ++ cv r
+          ++ ") into " ++ aggName t)
+    (concatMap (\ (s, (t, _, l)) -> map (s, t,) l) $ Map.toList us)
 
 new :: String -> (a -> String) -> Set.Set a -> [String]
 new b f =

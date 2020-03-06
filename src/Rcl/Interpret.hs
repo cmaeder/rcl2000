@@ -1,4 +1,4 @@
-module Rcl.Interpret (interprets) where
+module Rcl.Interpret (interprets, getUserTypes) where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)

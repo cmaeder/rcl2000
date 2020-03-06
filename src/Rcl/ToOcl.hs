@@ -1,6 +1,6 @@
-module Rcl.ToOcl (ocl) where
+module Rcl.ToOcl (ocl, aggName, cv) where
 
-import Data.Char (toLower)
+import Data.Char (toLower, isAlphaNum, isAscii)
 import Data.List (nub)
 import Data.Map (toList)
 import Data.Maybe (isNothing)
@@ -12,7 +12,7 @@ import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
 
 toUse :: UserTypes -> [String]
-toUse us = let l = toList us in
+toUse us = let l = filter ((`notElem` map show primTypes) . fst) $ toList us in
   concatMap toSetClass (nub $ concatMap (toSubs . snd) l)
   ++ map toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ map toOp l ++ [end, "constraints", "context RBAC"]
@@ -23,11 +23,11 @@ toSubs t = case t of
   Set s -> t : toSubs s
 
 toClass :: (String, SetType) -> String
-toClass (s, t) = "class " ++ s ++ " < " ++ className t ++ " end"
+toClass (s, t) = "class " ++ cv s ++ " < " ++ className t ++ " end"
 
 toOp :: (String, SetType) -> String
-toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
-  ++ s ++ ".allInstances->any(true).c()"
+toOp (s, t) = "  " ++ cv s ++ "() : " ++ useType t ++ " = "
+  ++ cv s ++ ".allInstances->any(true).c()"
 
 toSetClass :: SetType -> [String]
 toSetClass t = case t of
@@ -42,6 +42,9 @@ toSetClass t = case t of
     , "  " ++ c ++ "[0..1]"
     , "  " ++ className s ++ "[*]"
     , end ]
+
+aggName :: SetType -> String
+aggName = ('A' :) . className
 
 roleName :: SetType -> String
 roleName t = case className t of
@@ -60,6 +63,11 @@ useType t = case t of
 
 end :: String
 end = "end"
+
+-- | sanitize names for use
+cv :: String -> String
+cv = filter (\ c -> isAscii c && (isAlphaNum c || c == '_')) .
+  map (\ c -> if c `elem` "- " then '_' else c)
 
 ocl :: UserTypes -> [Stmt] -> String
 ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
