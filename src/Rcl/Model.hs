@@ -1,4 +1,5 @@
-module Rcl.Model (initModel, addS, addU, addP, addR, toInts) where
+module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
+  , toInts) where
 
 import Data.Char (isAlphaNum, isAscii)
 import qualified Data.IntMap as IntMap
@@ -55,7 +56,7 @@ addS s m = let
       | k -> error $ "illegal RBAC or use keyword: " ++ s
       | p -> error $ "illegal prefix for: " ++ s
       | null s -> error "addS: illegal empty string"
-      | True -> addStr s m
+      | otherwise -> addStr s m
     _ -> m
 
 addStr :: String -> Model -> Model
@@ -67,8 +68,14 @@ addStr s m = let i = next m in m
 addU :: String -> Model -> Model
 addU u m = addS u m { users = Set.insert (Name u) $ users m }
 
+checkU :: String -> Model -> Bool
+checkU u m = Name u `Set.member` users m
+
 addR :: String -> Model -> Model
 addR r m = addS r m { roles = Set.insert (Role r) $ roles m }
+
+checkR :: String -> Model -> Bool
+checkR r m = Role r `Set.member` roles m
 
 addOp :: String -> Model -> Model
 addOp o m = addS o m
@@ -79,9 +86,13 @@ addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
-addP oP oBj m = let p = strP oP oBj in
-  addS (pStr p) . addObj oBj $ addOp oP m
-  { permissions = Set.insert p $ permissions m }
+addP oP oBj m = let
+  p = strP oP oBj
+  ps = permissions m
+  in if p `Set.member` ps
+    then error $ "permission already known: " ++ oP ++ " " ++ oBj
+    else addS (pStr p) . addObj oBj $ addOp oP m
+      { permissions = Set.insert p ps }
 
 initModel :: Model -> Model
 initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases

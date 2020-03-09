@@ -6,7 +6,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addS, addU, addP, addR, toInts)
+import Rcl.Model (addS, addU, checkU, addP, addR, checkR, toInts)
 
 readModel :: IO Model
 readModel = do
@@ -22,12 +22,18 @@ readModel = do
 
 readUA :: Model -> String -> Model
 readUA m s = case words s of
-  u : rs -> foldr (addUA u) (addU u m) rs
+  u : rs | checkU u m -> error $ "user already known: " ++ s
+    | checkR u m -> error $ "user already known as role: " ++ s
+    | otherwise -> foldr (addUA u) (addU u m) rs
   _ -> m
 
 readPA :: Model -> String -> Model
 readPA m s = case words s of
-  oP : oBj : rs -> foldr (addPA oP oBj) (addP oP oBj m) rs
+  oP : oBj : rs
+    | checkR oP m -> error $ "operation already known as role: " ++ s
+    | checkR oBj m -> error $ "object already known as role: " ++ oBj
+    | checkU oP m -> error $ "operation already known as user: " ++ s
+    | otherwise -> foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
   [p] -> error $ "provide two words op and obj for permission: " ++ p
   _ -> m
 
@@ -42,7 +48,10 @@ readS m s = case words s of
   _ -> m
 
 addSURs :: String -> String -> [String] -> Model -> Model
-addSURs s u rs m = addS s (addU u $ foldr addR m rs)
+addSURs s u rs m
+  | checkSid s m = error $ "session identifier already known: " ++ s
+  | not $ checkU u m = error $ "user unknown: " ++ u
+  | otherwise = addS s (foldr addR m rs)
   { sessions = let
       v = Session (Name u) . Set.fromList $ map Role rs
       is = illegalActiveRoles m v
@@ -50,12 +59,24 @@ addSURs s u rs m = addS s (addU u $ foldr addR m rs)
         ++ unwords (s : u : map role (Set.toList is)))
       (Set.null is) . Map.insert s v $ sessions m }
 
+checkOp :: String -> Model -> Bool
+checkOp s m = Operation s `Set.member` operations m
+  || Object s `Set.member` objects m
+  || s `Set.member` Set.map pStr (permissions m)
+
+checkSid :: String -> Model -> Bool
+checkSid s m = checkU s m || checkR s m || checkOp s m
+  || s `Map.member` sessions m
+
 -- user and role
 addUA :: String -> String -> Model -> Model
-addUA u r m = addR r m { ua = Set.insert (Name u, Role r) $ ua m }
+addUA u r m = if checkU r m then error $ "role already known as user: " ++ r
+  else addR r m { ua = Set.insert (Name u, Role r) $ ua m }
 
-addPA :: String -> String -> String -> Model -> Model
-addPA oP oBj r m = addR r m { pa = Set.insert (strP oP oBj, Role r) $ pa m }
+addPA :: P -> String -> Model -> Model
+addPA p r m = if checkU r m || checkOp r m
+  then error $ "role already known: " ++ r
+  else addR r m { pa = Set.insert (p, Role r) $ pa m }
 
 addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r $ if null js then m else (foldr addR m js)
@@ -68,11 +89,13 @@ addRH r js m = addR r $ if null js then m else (foldr addR m js)
 
 readSets :: Model -> String -> Model
 readSets m s = case words s of
-  n : vs@(_ : _) ->
-    let mts = mapM (findSetType m) vs
-        us = userSets m
-        r = addS n m
-    in if Map.member n us then error "duplicate user set" else case mts of
+  n : vs@(_ : _) -> let
+    mts = mapM (findSetType m) vs
+    us = userSets m
+    r = addS n m
+    in if Map.member n us then error $ "duplicate user set: " ++ s else
+      if checkSid n m then
+         error $ "name for set already known: " ++ s else case mts of
       Just ts@(t : rs) | all (== t) rs -> r
         { userSets = Map.insert n (Set t, joinValues m t vs, vs) us }
         | allPs ts -> r
