@@ -19,9 +19,8 @@ type Env = IntMap Value
 
 data TermVal = VTerm Value | VEmptySet | VNum Int deriving (Eq, Show)
 
-interprets :: Model -> [Stmt] -> String
-interprets m l = let
-  us = getUserTypes m
+interprets :: UserTypes -> Model -> [Stmt] -> String
+interprets us m l = let
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
   in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
   case uncurry (interpretError m) $ runReduce us s of
@@ -53,9 +52,6 @@ interpret m e s vs = case vs of
     VSet es -> mapM_
       (\ j -> interpret m (IntMap.insert i j e) s rs)
       $ Set.toList es
-
-getUserTypes :: Model -> UserTypes
-getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
 
 evalStmt :: Model -> Env -> Stmt -> Bool
 evalStmt m e = foldStmt FoldStmt

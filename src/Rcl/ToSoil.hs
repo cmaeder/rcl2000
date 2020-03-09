@@ -4,7 +4,6 @@ module Rcl.ToSoil (toSoil) where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast
 import Rcl.Data
 import Rcl.ToOcl (aggName, cv)
 
@@ -14,7 +13,7 @@ toSoil m = unlines $ let
   pl = Set.toList ps
   ss = sessions m
   sl = Map.toList ss
-  us = foldr (\ b n -> Map.delete (show b) n) (userSets m) primTypes
+  us = userSets m
   in new "R" role (roles m)
   ++ new "U" name (users m)
   ++ new "OP" operation (operations m)

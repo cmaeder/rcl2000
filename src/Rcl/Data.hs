@@ -59,6 +59,9 @@ emptyModel = Model
   , opsMap = Map.empty
   , next = 1 }
 
+getUserTypes :: Model -> UserTypes
+getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
+
 pStr :: P -> String
 pStr p = unwords [operation $ op p, object $ obj p]
 

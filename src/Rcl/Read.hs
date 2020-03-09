@@ -6,17 +6,17 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (initModel, addS, addU, addP, addR, toInts)
+import Rcl.Model (addS, addU, addP, addR, toInts)
 
 readModel :: IO Model
 readModel = do
+  rhs <- readFile "examples/rh.txt"
   uas <- readFile "examples/ua.txt"
   pas <- readFile "examples/pa.txt"
-  rhs <- readFile "examples/rh.txt"
   ses <- readFile "examples/s.txt"
   ts <- readFile "examples/sets.txt"
-  let m = initModel . foldl readSets (foldl readS (foldl readRH (foldl readPA
-        (foldl readUA emptyModel $ lines uas) $ lines pas) $ lines rhs)
+  let m = foldl readSets (foldl readS (foldl readPA (foldl readUA
+        (foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
         $ lines ses) $ lines ts
   return $ assert "read" (properStructure m) m
 
@@ -57,7 +57,7 @@ addPA :: String -> String -> String -> Model -> Model
 addPA oP oBj r m = addR r m { pa = Set.insert (strP oP oBj, Role r) $ pa m }
 
 addRH :: String -> [String] -> Model -> Model
-addRH r js m = addR r (foldr addR m js)
+addRH r js m = addR r $ if null js then m else (foldr addR m js)
     { rh = let
         k = Role r
         v = Map.insert k (Set.fromList $ map Role js) $ rh m
@@ -68,19 +68,23 @@ addRH r js m = addR r (foldr addR m js)
 readSets :: Model -> String -> Model
 readSets m s = case words s of
   n : vs@(_ : _) ->
-    let mt : ts = map (findSetType m) vs
+    let mts = mapM (findSetType m) vs
         us = userSets m
         r = addS n m
-    in case mt of
-      Just t -> if all (== mt) ts then r
+    in if Map.member n us then error "duplicate user set" else case mts of
+      Just ts@(t : rs) | all (== t) rs -> r
         { userSets = Map.insert n (Set t, joinValues m t vs, vs) us }
-        else case (t, ts) of
-          (ElemTy OP, Just (ElemTy OBJ) : _) -> r
-            { userSets = let ps = map pStr $ joinPs m vs in
-               Map.insert n (Set $ ElemTy P, toInts m ps, ps) us }
-          _ -> error $ "readSets1: " ++ s
-      _ -> error $ "readSets2: " ++ s
+        | allPs ts -> r
+        { userSets = let ps = map pStr $ joinPs m vs in
+          Map.insert n (Set $ ElemTy P, toInts m ps, ps) us }
+      _ -> error $ "readSets: " ++ s
   _ -> m
+
+allPs :: [SetType] -> Bool
+allPs l = case l of
+  (ElemTy OP : ElemTy OBJ : r) -> allPs r
+  [] -> True
+  _ -> False
 
 joinValues :: Model -> SetType -> [String] -> Value
 joinValues m t vs = case t of

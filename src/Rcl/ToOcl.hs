@@ -12,7 +12,7 @@ import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
 
 toUse :: UserTypes -> [String]
-toUse us = let l = filter ((`notElem` map show primTypes) . fst) $ toList us in
+toUse us = let l = toList us in
   concatMap toSetClass (nub $ concatMap (toSubs . snd) l)
   ++ map toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ map toOp l ++ [end, "constraints", "context RBAC"]
