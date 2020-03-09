@@ -63,7 +63,7 @@ getUserTypes :: Model -> UserTypes
 getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
 
 pStr :: P -> String
-pStr p = unwords [operation $ op p, object $ obj p]
+pStr p = operation (op p) ++ "_" ++ object (obj p)
 
 strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Object v

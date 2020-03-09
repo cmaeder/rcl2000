@@ -28,6 +28,7 @@ readUA m s = case words s of
 readPA :: Model -> String -> Model
 readPA m s = case words s of
   oP : oBj : rs -> foldr (addPA oP oBj) (addP oP oBj m) rs
+  [p] -> error $ "provide two words op and obj for permission: " ++ p
   _ -> m
 
 readRH :: Model -> String -> Model

@@ -1,11 +1,13 @@
 module Rcl.Model (initModel, addS, addU, addP, addR, toInts) where
 
+import Data.Char (isAlphaNum, isAscii)
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
 import Rcl.Ast
@@ -18,7 +20,7 @@ getRoles :: Map R (Set.Set R) -> R -> Set.Set R
 getRoles m r = Set.insert r $ juniors m Set.empty r
 
 insUserSet :: String -> Base -> [String] -> Model -> Model
-insUserSet s b l m = addS s m
+insUserSet s b l m = addStr s m
   { userSets = Map.insert s (Set $ ElemTy b, toInts m l, l) $ userSets m }
 
 toInts :: Model -> [String] -> Value
@@ -27,17 +29,40 @@ toInts m = Ints . IntSet.fromList . map (toInt m)
 toInt :: Model -> String -> Int
 toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
+-- | keywords for use (cf. use-mode.el)
+keywords :: Set.Set String
+keywords = Set.fromList $ let
+  l = map show primTypes
+  l1 = map ("SetOf" ++) l
+  l2 = map ('A' :) l1
+  in l ++ l1 ++ l2 ++ words "RH UA PA SessionRoles Builtin RBAC \
+  \ model enum class attributes operations constraints begin end inv \
+  \ pre post association aggregation between composition role init \
+  \ for in if then declare insert delete destroy new into from do let \
+  \ context abstract associationclass ordered else endif \
+  \ Real Integer Boolean Collection String OrderedSet Set Bag Sequence \
+  \ result self"
+
 addS :: String -> Model -> Model
 addS s m = let
+  b = all (\ c -> isAscii c && isAlphaNum c || c == '_') s
+  k = s `Set.member` keywords
+  p = any (`isPrefixOf` s) $ words "SetOfSet ASetOfSet"
   sm = strMap m
-  im = intMap m
-  i = next m
   in case Map.lookup s sm of
-    Nothing -> m {
-      strMap = Map.insert s i sm
-      , intMap = IntMap.insert i s im
-      , next = i + 1 }
+    Nothing
+      | not b -> error $ "illegal character in: " ++ s
+      | k -> error $ "illegal RBAC or use keyword: " ++ s
+      | p -> error $ "illegal prefix for: " ++ s
+      | null s -> error "addS: illegal empty string"
+      | True -> addStr s m
     _ -> m
+
+addStr :: String -> Model -> Model
+addStr s m = let i = next m in m
+  { strMap = Map.insert s i $ strMap m
+  , intMap = IntMap.insert i s $ intMap m
+  , next = i + 1 }
 
 addU :: String -> Model -> Model
 addU u m = addS u m { users = Set.insert (Name u) $ users m }
@@ -54,8 +79,9 @@ addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
-addP oP oBj m = addS (unwords [oP, oBj]) . addObj oBj $ addOp oP m
-  { permissions = Set.insert (strP oP oBj) $ permissions m }
+addP oP oBj m = let p = strP oP oBj in
+  addS (pStr p) . addObj oBj $ addOp oP m
+  { permissions = Set.insert p $ permissions m }
 
 initModel :: Model -> Model
 initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases

@@ -1,6 +1,6 @@
-module Rcl.ToOcl (ocl, aggName, cv) where
+module Rcl.ToOcl (ocl, aggName) where
 
-import Data.Char (toLower, isAlphaNum, isAscii)
+import Data.Char (toLower)
 import Data.List (nub)
 import Data.Map (toList)
 import Data.Maybe (isNothing)
@@ -23,11 +23,11 @@ toSubs t = case t of
   Set s -> t : toSubs s
 
 toClass :: (String, SetType) -> String
-toClass (s, t) = "class " ++ cv s ++ " < " ++ className t ++ " end"
+toClass (s, t) = "class " ++ s ++ " < " ++ className t ++ " end"
 
 toOp :: (String, SetType) -> String
-toOp (s, t) = "  " ++ cv s ++ "() : " ++ useType t ++ " = "
-  ++ cv s ++ ".allInstances->any(true).c()"
+toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
+  ++ s ++ ".allInstances->any(true).c()"
 
 toSetClass :: SetType -> [String]
 toSetClass t = case t of
@@ -63,11 +63,6 @@ useType t = case t of
 
 end :: String
 end = "end"
-
--- | sanitize names for use
-cv :: String -> String
-cv = filter (\ c -> isAscii c && (isAlphaNum c || c == '_')) .
-  map (\ c -> if c `elem` "- " then '_' else c)
 
 ocl :: UserTypes -> [Stmt] -> String
 ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
