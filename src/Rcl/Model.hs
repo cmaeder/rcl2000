@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
-import Rcl.Ast
+import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S

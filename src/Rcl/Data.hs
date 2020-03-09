@@ -9,7 +9,7 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 
-import Rcl.Ast
+import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..))
 import Rcl.Type (isElem, elemType)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)

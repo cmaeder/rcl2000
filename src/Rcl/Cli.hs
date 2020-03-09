@@ -1,12 +1,12 @@
 {-# LANGUAGE TupleSections #-}
-module Rcl.Cli where
+module Rcl.Cli (cli) where
 
 import Control.Monad (when)
 import Data.Char (toLower)
 import Data.List (find, isSuffixOf)
 import Data.Map (fromList)
 import Data.Maybe (fromMaybe)
-import Rcl.Ast
+import Rcl.Ast (UserTypes, SetType (..), Base (..), Stmt)
 import Rcl.Interpret (interprets, getUserTypes)
 import Rcl.Model (initModel)
 import Rcl.Parse (parser, parseFromFile, ParseError)

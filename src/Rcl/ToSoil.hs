@@ -4,7 +4,7 @@ module Rcl.ToSoil (toSoil) where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast
+import Rcl.Ast (Base (..))
 import Rcl.Data
 import Rcl.ToOcl (aggName)
 

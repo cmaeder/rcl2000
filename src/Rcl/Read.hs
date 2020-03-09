@@ -3,7 +3,7 @@ module Rcl.Read (readModel) where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast
+import Rcl.Ast (SetType (..), Base (..), assert)
 import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, checkR, toInts)

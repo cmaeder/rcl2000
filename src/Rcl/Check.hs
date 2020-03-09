@@ -8,7 +8,7 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (isSubsetOf)
 
-import Rcl.Ast
+import Rcl.Ast (SetType (..), Base, primTypes)
 import Rcl.Data
 
 properSessions :: Model -> Bool
