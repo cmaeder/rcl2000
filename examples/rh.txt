@@ -1,3 +1,32 @@
 r6 r4 r2
 r4 r1
 r9 r7 r5
+
+HR
+HW
+LR
+LW
+
+Oil_X
+Oil_Y
+Bank_A
+Bank_B
+
+Oil_X_read
+Oil_Y_read
+Bank_A_read
+Bank_B_read
+
+Oil_X_write
+Oil_Y_write
+Bank_A_write
+Bank_B_write
+
+Own_O1
+Own_O2
+ParentGrant_O1
+ParentGrant_O2
+Parent_O1
+Parent_O2
+Read_O1
+Read_O2

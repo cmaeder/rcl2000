@@ -3,32 +3,3 @@ u2 r5 r6 r7 r8 r9 r10
 u3 r9 r10 r11 r12 r13 r14
 
 u4
-
-uHR HR
-uHW HW
-uLR LR
-uLW LW
-
-uOil-X Oil-X
-uOil-Y Oil-Y
-uBank-A Bank-A
-uBank-B Bank-B
-
-uOil-X-read Oil-X-read
-uOil-Y-read Oil-Y-read
-uBank-A-read Bank-A-read
-uBank-B-read Bank-B-read
-
-uOil-X-write Oil-X-write
-uOil-Y-write Oil-Y-write
-uBank-A-write Bank-A-write
-uBank-B-write Bank-B-write
-
-owner1 Own_O1
-owner2 Own_O2
-pg1 ParentGrant_O1
-pg2 ParentGrant_O2
-parent1 Parent_O1
-parent2 Parent_O2
-reader1 Read_O1
-reader2 Read_O2

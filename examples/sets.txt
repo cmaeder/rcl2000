@@ -24,18 +24,18 @@ asr1 HR LW
 asr2 LR LW
 ASR asr1 asr2
 
-sr1 Bank-A-read Bank-A-write
-sr2 Bank-B-read Bank-B-write
-sr3 Oil-X-read Oil-X-write
-sr4 Oil-Y-read Oil-Y-write
+sr1 Bank_A_read Bank_A_write
+sr2 Bank_B_read Bank_B_write
+sr3 Oil_X_read Oil_X_write
+sr4 Oil_Y_read Oil_Y_write
 SR sr1 sr2 sr3 sr4
 
-Oil-R Oil-X-read Oil-Y-read
-Bank-R Bank-A-read Bank-B-read
-read Oil-R Bank-R
-Oil-W Oil-X-write Oil-Y-write
-Bank-W Bank-A-write Bank-B-write
-write Oil-W Bank-W
+Oil_R Oil_X_read Oil_Y_read
+Bank_R Bank_A_read Bank_B_read
+read Oil_R Bank_R
+Oil_W Oil_X_write Oil_Y_write
+Bank_W Bank_A_write Bank_B_write
+write Oil_W Bank_W
 GR read write
 
 OWN Own_O1 Own_O2
@@ -43,8 +43,8 @@ PARENTGRANT ParentGrant_O1 ParentGrant_O2
 PARENT Parent_O1 Parent_O2
 READ Read_O1 Read_O2
 
-OWNAPM add ParentGrant delete ParentGrant
-OWNRPM destroy O1 destroy O2
-PGPM add Parent delete Parent
-PPM add Read delete Read
+OWNAPM add ParentGrant delete_ ParentGrant
+OWNRPM destroy_ O1 destroy_ O2
+PGPM add Parent delete_ Parent
+PPM add Read delete_ Read
 RPM can_read O1 can_read O2
