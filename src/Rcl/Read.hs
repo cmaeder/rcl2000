@@ -1,12 +1,31 @@
-module Rcl.Read (readModel) where
+module Rcl.Read (readModel, readTypes) where
 
+import Data.List (find, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast (SetType (..), Base (..), assert)
+import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, checkR, toInts)
+
+readTypes :: IO UserTypes
+readTypes = do
+  ts <- readFile "examples/types.txt"
+  return . foldl readType Map.empty $ lines ts
+
+readType :: UserTypes -> String -> UserTypes
+readType u s = case words s of
+  r : l -> case strT r of
+    Just t -> if null l then error $ "missing names for: " ++ r
+      else foldr (`Map.insert` t) u l
+    Nothing -> error $ "illegal type: " ++ r
+  [] -> u
+
+strT :: String -> Maybe SetType
+strT s = case stripPrefix "SetOf" s of
+  Just r -> Set <$> strT r
+  Nothing -> ElemTy <$> find ((== s) . show) primTypes
 
 readModel :: IO Model
 readModel = do

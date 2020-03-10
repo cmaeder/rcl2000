@@ -1,46 +1,45 @@
-{-# LANGUAGE TupleSections #-}
 module Rcl.Cli (cli) where
 
 import Control.Monad (when)
 import Data.Char (toLower)
 import Data.List (find, isSuffixOf)
-import Data.Map (fromList)
+import qualified Data.Map as Map (empty)
 import Data.Maybe (fromMaybe)
-import Rcl.Ast (UserTypes, SetType (..), Base (..), Stmt)
+import Rcl.Ast (UserTypes, Stmt)
+import Rcl.Data (Model)
+import Rcl.Eval (evalInput)
 import Rcl.Interpret (interprets, getUserTypes)
 import Rcl.Model (initModel)
 import Rcl.Parse (parser, parseFromFile, ParseError)
 import Rcl.Print (render, pStmts, Form (Form), Format (..))
-import Rcl.Read (readModel)
+import Rcl.Read (readTypes, readModel)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 import System.Console.GetOpt
 
-userTypes :: UserTypes
-userTypes = fromList $ concatMap (\ (l, t) -> map (, t) l)
-  [(["CU"], Set . Set $ ElemTy U)
-  , (["CP"], Set . Set $ ElemTy P)
-  , (["CR", "read", "write", "AR", "ASR", "SR"], Set . Set $ ElemTy R)
-  , (["GR"], Set . Set . Set $ ElemTy R)
-  , (["RR", "WR", "OWN", "PARENTGRANT", "PARENT", "READ"], Set $ ElemTy R)
-  , (["wp", "rp", "OWNAPM", "OWNRPM", "PGPM", "PPM", "RPM"], Set $ ElemTy P)]
-
 cli :: String -> [String] -> IO ()
-cli prN args = case args of
-    [] -> putStrLn $
-      usageInfo ("usage: " ++ prN ++ " [options] <file>+") options
-    _ -> case getOpt Permute options args of
-      (o, n, []) -> case n of
-        [] -> putStrLn "missing file arguments"
-        _ -> mapM_ (processFile userTypes $ foldl (flip id) defaultOpts o) n
+cli prN args = case getOpt Permute options args of
+      (os, n, []) -> let o = foldl (flip id) defaultOpts os in
+        if help o then putStrLn $
+          usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
+        else case n of
+        [] -> if null os then readModel >>= evalInput [] . initModel else
+          putStrLn "unexpected options without file arguments"
+        _ -> do
+          eith <- if onlyPrint o then return $ Right Map.empty else
+            if getTypes o then fmap Right readTypes else fmap Left readModel
+          mapM_ (processFile eith o) n
       (_, _, errs) -> mapM_ putStrLn errs
 
 -- | describe all available options
 options :: [OptDescr (Opts -> Opts)]
 options =
-    [ Option "n" ["nopars"]
+    [ Option "h" ["help"]
+      (NoArg $ \ o -> o {help = True})
+      "show help message"
+    , Option "n" ["nopars"]
       (NoArg $ \ o -> o {parens = False, pprint = True})
       "pretty print without parentheses"
     , Option "p" ["print"] (NoArg $ \ o -> o {pprint = True})
@@ -49,8 +48,12 @@ options =
       "type check"
     , Option "r" ["reduce"] (NoArg $ \ o -> o {reduce = True})
       "reduce and reconstruct"
+    , Option "t" ["types"] (NoArg $ \ o -> o {getTypes = True})
+      "read only types (incompatible with -e, -i and .soil output)"
     , Option "e" ["evaluate"] (NoArg $ \ o -> o {evaluate = True})
       "evaluate formulas"
+    , Option "i" ["interactive"] (NoArg $ \ o -> o {prompt = True})
+      "prompt for interactive input"
     , Option "f" ["format"]
       (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
       "use format LaTeX, Ascii or Unicode (default)"
@@ -68,7 +71,10 @@ data Opts = Opts
   , check :: Bool
   , reduce :: Bool
   , evaluate :: Bool
+  , getTypes :: Bool
   , toOcl :: Bool
+  , prompt :: Bool
+  , help :: Bool
   , useFile :: String
   , outFile :: String }
 
@@ -80,43 +86,51 @@ defaultOpts = Opts
   , check = False
   , reduce = False
   , evaluate = False
+  , getTypes = False
   , toOcl = False
+  , prompt = False
+  , help = False
   , useFile = "use/RBAC.use"
   , outFile = "use/test" }
+
+onlyPrint :: Opts -> Bool
+onlyPrint o = not $ or [check o, reduce o, evaluate o, toOcl o, prompt o]
 
 form :: Opts -> Form
 form o = let low = map toLower in
   Form (fromMaybe Uni $ find (\ f -> low (show f) == low (format o))
     [LaTeX, Ascii]) $ parens o
 
-processFile :: UserTypes -> Opts -> String -> IO ()
-processFile us o file = parseFromFile parser file >>= reportParse us o
+processFile :: Either Model UserTypes -> Opts -> String -> IO ()
+processFile eith o file = parseFromFile parser file >>= reportParse eith o
 
-reportParse :: UserTypes -> Opts -> Either ParseError [Stmt] -> IO ()
-reportParse us o eith = case eith of
+reportParse :: Either Model UserTypes -> Opts -> Either ParseError [Stmt]
+  -> IO ()
+reportParse mus o eith = case eith of
   Left err -> print err
   Right ast -> do
     let p = pprint o
         c = check o
         r = reduce o
-        i = toOcl o
+        t = toOcl o
         e = evaluate o
-        a = all (== False) [p, c, r, i, e]
+        i = prompt o
         out = outFile o
         suf = ".use"
         use = if suf `isSuffixOf` out then out else out ++ suf
-    when (p || a) . putStrLn . render $ pStmts (form o) ast
-    when (c || a) . putStrLn $ typeErrors us ast
-    when (r || a) . putStrLn $ reduction us ast
-    when (i && not e) $ do
+        us = either getUserTypes id mus
+    when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) ast
+    when c . putStrLn $ typeErrors us ast
+    when r . putStrLn $ reduction us ast
+    when t $ do
       str <- readFile (useFile o)
-      let cont = str ++ ocl us ast
-      writeFile use cont
-    when e $ do
-      m <- readModel
-      let uts = getUserTypes m
-      if i then do
-          str <- readFile (useFile o)
-          writeFile use $ str ++ ocl uts ast
-          writeFile (out ++ ".soil") $ toSoil m
-        else putStrLn $ interprets uts (initModel m) ast
+      writeFile use $ str ++ ocl us ast
+      case mus of
+        Left m -> writeFile (out ++ ".soil") $ toSoil m
+        _ -> putStrLn "no .soil file written for option -t"
+    case mus of
+      Left m -> do
+        when e . putStrLn $ interprets us (initModel m) ast
+        when i $ evalInput ast m
+      Right _ -> when (e || i) $ putStrLn
+        "options -e or -i are incompatible with -t"

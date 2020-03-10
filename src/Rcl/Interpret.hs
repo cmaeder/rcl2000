@@ -1,4 +1,4 @@
-module Rcl.Interpret (interprets, getUserTypes) where
+module Rcl.Interpret (eval, interprets, getUserTypes) where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
@@ -149,6 +149,7 @@ sameNesting v1 v2 = case (v1, v2) of
   (VSet _, Ints _) -> sameNesting v1 . VSet $ toVSet v2
 
 apply :: Model -> String -> IntSet -> IntSet
-apply m s is = let im = Map.findWithDefault IntMap.empty s $ fctMap m in
-  IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i im)
+apply m s is = let
+  im = Map.findWithDefault (error $ "apply: " ++ s) s $ fctMap m
+  in IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i im)
   $ IntSet.toList is
