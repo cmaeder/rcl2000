@@ -107,11 +107,19 @@ eval us m e = foldSet FoldSet
           $ (if o == Inter then IntSet.intersection else IntSet.union) is js
         _ -> VSet . (if o == Inter then Set.intersection else Set.union)
           (toVSet v1) $ toVSet v2
-  , foldUn = \ (UnOp _ s) o (Ints is) -> let p = sUnOp (typeOfSet us s) o
-      in case o of
-      Permissions True -> Ints . apply m p $ apply m "r" is
-      Roles True -> Ints . apply m "r" $ apply m p is
-      _ -> Ints $ apply m p is
+  , foldUn = \ (UnOp _ s) o v -> let p = sUnOp (typeOfSet us s) o
+      in case v of
+      Ints is -> case o of
+        Permissions True -> Ints . apply m p $ apply m "r" is
+        Roles True -> Ints . apply m "r" $ apply m p is
+        AO -> assert "eval3" (not $ IntSet.null is) . Ints $ IntSet.deleteMax is
+        OE -> assert "eval4" (not $ IntSet.null is) . Ints
+          . IntSet.singleton $ IntSet.findMax is
+        _ -> Ints $ apply m p is
+      VSet vs -> case o of
+        AO -> assert "eval5" (not $ Set.null vs) . VSet $ Set.deleteMax vs
+        OE -> assert "eval6" (not $ Set.null vs) $ Set.findMax vs
+        _ -> error "eval7"
   , foldPrim = evalPrim m e }
 
 evalPrim :: Model -> Env -> Set -> Value
