@@ -116,8 +116,11 @@ eval us m e = foldSet FoldSet
 
 evalPrim :: Model -> Env -> Set -> Value
 evalPrim m e s = case s of
-  PrimSet p -> maybe (error $ "evalPrim1: " ++ p) (\ (_, v, _) -> v)
-    . Map.lookup p $ userSets m
+  PrimSet p -> case Map.lookup p $ userSets m of
+    Just (_, v, _) -> v
+    Nothing -> case Map.lookup p $ strMap m of
+      Just i -> Ints $ IntSet.singleton i
+      Nothing -> error $ "evalPrim1: " ++ p
   Var v@(MkVar i _ _) -> fromMaybe (error $ "evalPrim2: " ++ stVar v)
     $ IntMap.lookup i e
   _ -> error "evalPrim: not primitive"

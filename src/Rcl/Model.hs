@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes)
+import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes, unOps, stUnOp)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -43,6 +43,7 @@ keywords = Set.fromList $ let
   \ context abstract associationclass ordered else endif \
   \ Real Integer Boolean Collection String OrderedSet Set Bag Sequence \
   \ result self"
+  ++ map stUnOp unOps
 
 addS :: String -> Model -> Model
 addS s m = let
