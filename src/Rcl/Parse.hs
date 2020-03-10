@@ -86,7 +86,10 @@ opsSet = BinOp Ops <$> (pString (const stOps) Ops
   *> pch '(' *> set <* pch ',') <*> set <* pch ')'
 
 primSet :: Parser Set
-primSet = (PrimSet <$> many1 letter <* skip) <|> parenSet
+primSet = (PrimSet <$> setName <* skip) <|> parenSet
+
+setName :: Parser String
+setName = (:) <$> letter <*> many (alphaNum <|> char '_')
 
 unOpSet :: Parser Set
 unOpSet = UnOp <$> choice pUnOps <*> applSet

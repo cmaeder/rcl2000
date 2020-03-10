@@ -1,7 +1,7 @@
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
   , toInts) where
 
-import Data.Char (isAlphaNum, isAscii)
+import Data.Char (isAlphaNum, isAscii, isLetter)
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.IntSet as IntSet
@@ -56,6 +56,8 @@ addS s m = let
       | k -> error $ "illegal RBAC or use keyword: " ++ s
       | p -> error $ "illegal prefix for: " ++ s
       | null s -> error "addS: illegal empty string"
+      | not . isLetter $ head s ->
+        error $ "string must start with a letter: " ++ s
       | otherwise -> addStr s m
     _ -> m
 

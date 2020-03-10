@@ -30,9 +30,10 @@ loop l m = do
         outputStrLn "enter set expression"
         loop [] m
       | not $ null s -> do
+        let us = getUserTypes m
         case parse (set <* eof) "" $ dropWhile isSpace s of
-          Right a -> case typeOfSet (getUserTypes m) a of
-            Just _ -> outputStrLn . stValue m $ eval m IntMap.empty a
+          Right a -> case typeOfSet us a of
+            Just _ -> outputStrLn . stValue m $ eval us m IntMap.empty a
             Nothing -> outputStrLn $ "wongly typed set: " ++ ppSet a
           Left err -> outputStrLn $ show err
         loop [] m

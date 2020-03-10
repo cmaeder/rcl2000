@@ -1,4 +1,4 @@
-module Rcl.Interpret (eval, interprets, getUserTypes) where
+module Rcl.Interpret (eval, interprets) where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
@@ -23,12 +23,12 @@ interprets :: UserTypes -> Model -> [Stmt] -> String
 interprets us m l = let
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
   in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
-  case uncurry (interpretError m) $ runReduce us s of
+  case uncurry (interpretError us m) $ runReduce us s of
     Nothing -> "verified: " ++ ppStmt s
     Just e -> e) ws
 
-interpretError :: Model -> Stmt -> Vars -> Maybe String
-interpretError m s vs = case interpret m IntMap.empty s $ reverse vs of
+interpretError :: UserTypes -> Model -> Stmt -> Vars -> Maybe String
+interpretError us m s vs = case interpret us m IntMap.empty s $ reverse vs of
   Right () -> Nothing
   Left e -> Just $ (if IntMap.null e then "falsified: " else
     "counter example: " ++ printEnv m vs e ++ "\n  in: ") ++ ppStmt s
@@ -42,19 +42,17 @@ printVar vs k e = case find (\ (MkVar i _ _, _) -> i == k) vs of
   Just (v, _) -> stVar v ++ "=" ++ e
   Nothing -> ""
 
-interpret :: Model -> Env -> Stmt -> Vars -> Either Env ()
-interpret m e s vs = case vs of
-  [] -> if evalStmt m e s then Right () else Left e
-  (MkVar i _ _, a) : rs -> case eval m e a of
-    Ints is -> mapM_
-      (\ j -> interpret m (IntMap.insert i (Ints $ IntSet.singleton j) e) s rs)
-      $ IntSet.toList is
-    VSet es -> mapM_
-      (\ j -> interpret m (IntMap.insert i j e) s rs)
+interpret :: UserTypes -> Model -> Env -> Stmt -> Vars -> Either Env ()
+interpret us m e s vs = case vs of
+  [] -> if evalStmt us m e s then Right () else Left e
+  (MkVar i _ _, a) : rs -> case eval us m e a of
+    Ints is -> mapM_ (\ j -> interpret us m (IntMap.insert i
+      (Ints $ IntSet.singleton j) e) s rs) $ IntSet.toList is
+    VSet es -> mapM_ (\ j -> interpret us m (IntMap.insert i j e) s rs)
       $ Set.toList es
 
-evalStmt :: Model -> Env -> Stmt -> Bool
-evalStmt m e = foldStmt FoldStmt
+evalStmt :: UserTypes -> Model -> Env -> Stmt -> Bool
+evalStmt us m e = foldStmt FoldStmt
   { foldBool = \ _ o b1 b2 -> (if o == Impl then (<=) else (&&)) b1 b2
   , foldCmp = \ _ o t1 t2 -> case o of
       Elem -> case (t1, t2) of
@@ -70,7 +68,7 @@ evalStmt m e = foldStmt FoldStmt
         _ -> t1 /= t2
       _ -> case (t1, t2) of
         (VNum i1, VNum i2) -> cmpOp o i1 i2
-        _ -> error "evalStmt: nums" } (evalTerm m e)
+        _ -> error "evalStmt: nums" } (evalTerm us m e)
 
 cmpOp :: CmpOp -> Int -> Int -> Bool
 cmpOp o = case o of
@@ -82,15 +80,15 @@ cmpOp o = case o of
   Ne -> (/=)
   Elem -> error "cmpOp"
 
-evalTerm :: Model -> Env -> Term -> TermVal
-evalTerm m e t = case t of
-  Term card s -> let v = eval m e s in
+evalTerm :: UserTypes -> Model -> Env -> Term -> TermVal
+evalTerm us m e t = case t of
+  Term card s -> let v = eval us m e s in
     if card then VNum $ vSize v else VTerm v
   EmptySet -> VEmptySet
   Num n -> VNum n
 
-eval :: Model -> Env -> Set -> Value
-eval m e = let us = getUserTypes m in foldSet FoldSet
+eval :: UserTypes -> Model -> Env -> Set -> Value
+eval us m e = foldSet FoldSet
   { foldBin = \ _ o v1 v2 -> case o of
       Ops -> Ints . IntSet.unions . map
         (\ p -> Map.findWithDefault IntSet.empty p $ opsMap m)
