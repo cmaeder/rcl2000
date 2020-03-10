@@ -8,6 +8,14 @@ import Rcl.Ast (Base (..))
 import Rcl.Data
 import Rcl.ToOcl (aggName)
 
+transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
+transReduce m =
+  Map.mapWithKey ( \ i s -> let
+    d = Map.fromList . map (\ a -> (a, a))
+      . Set.toList $ juniors m Set.empty i
+    in Set.filter ( \ j -> Map.null $ Map.filter (Set.member j)
+      $ Map.intersection m $ Map.delete j d) s) m
+
 toSoil :: Model -> String
 toSoil m = unlines $ let
   ps = permissions m
@@ -27,7 +35,7 @@ toSoil m = unlines $ let
   ++ insert "UA" name role (Set.toList $ ua m)
   ++ insert "PA" pStr role (Set.toList $ pa m)
   ++ insert "RH" role role (concatMap (\ (r, l) -> map (r,) $ Set.toList l)
-    . Map.toList $ rh m)
+    . Map.toList . transReduce $ rh m)
   ++ insert "SessionRoles" id role (concatMap (\ (i, s) -> map (i,)
     . Set.toList $ activeRoles s) sl)
   ++ map (\ s -> mkNew s s) ("RBAC" : Map.keys us)
