@@ -9,12 +9,12 @@ import Rcl.Data
 import Rcl.ToOcl (aggName)
 
 transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
-transReduce m =
-  Map.mapWithKey ( \ i s -> let
-    d = Map.fromList . map (\ a -> (a, a))
-      . Set.toList $ juniors m Set.empty i
+transReduce m = let
+  c = Map.mapWithKey ( \ i _ -> juniors m Set.empty i) m
+  in Map.map ( \ s -> let
+    d = Map.fromList . map (\ a -> (a, a)) $ Set.toList s
     in Set.filter ( \ j -> Map.null $ Map.filter (Set.member j)
-      $ Map.intersection m $ Map.delete j d) s) m
+      $ Map.intersection c $ Map.delete j d) s) c
 
 toSoil :: Model -> String
 toSoil m = unlines $ let
