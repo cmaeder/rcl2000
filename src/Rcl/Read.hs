@@ -24,7 +24,7 @@ readType u s = case words s of
 
 strT :: String -> Maybe SetType
 strT s = case stripPrefix "SetOf" s of
-  Just r -> Set <$> strT r
+  Just r -> SetOf <$> strT r
   Nothing -> ElemTy <$> find ((== s) . show) primTypes
 
 readModel :: IO Model
@@ -116,10 +116,10 @@ readSets m s = case words s of
       if checkSid n m then
          error $ "name for set already known: " ++ s else case mts of
       Just ts@(t : rs) | all (== t) rs -> r
-        { userSets = Map.insert n (Set t, joinValues m t vs, vs) us }
+        { userSets = Map.insert n (SetOf t, joinValues m t vs, vs) us }
         | allPs ts -> r
         { userSets = let ps = map pStr $ joinPs m vs in
-          Map.insert n (Set $ ElemTy P, toInts m ps, ps) us }
+          Map.insert n (SetOf $ ElemTy P, toInts m ps, ps) us }
       _ -> error $ "readSets: " ++ s
   _ -> m
 

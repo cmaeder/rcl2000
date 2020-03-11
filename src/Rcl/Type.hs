@@ -112,21 +112,19 @@ isElemOrSet s = (== Just s) . mElemOrSet
 mElemOrSet :: SetType -> Maybe Base
 mElemOrSet t = case t of
   ElemTy i -> Just i
-  Set (ElemTy i) -> Just i -- p 215 "general notation device"
+  SetOf (ElemTy i) -> Just i -- p 215 "general notation device"
   _ -> Nothing
 
 mkSetType :: Base -> Maybe SetType
-mkSetType = Just . Set . ElemTy
+mkSetType = Just . SetOf . ElemTy
 
 isSet :: SetType -> Bool
 isSet = isJust . elemType
 
 elemType :: SetType -> Maybe SetType
 elemType t = case t of
-  Set s -> Just s
+  SetOf s -> Just s
   _ -> Nothing
 
 isElem :: SetType -> Bool
-isElem t = case t of
-  ElemTy _ -> True
-  _ -> False
+isElem = foldSetType (const False) $ const True

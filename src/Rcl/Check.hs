@@ -59,15 +59,16 @@ properStructure m = let
 
 checkValue :: (SetType, Value, a) -> Bool
 checkValue p = case p of
-  (Set (ElemTy _), Ints _, _) -> True
-  (Set e@(Set _), VSet s, a) -> all (\ v -> checkValue (e, v, a)) $ Set.toList s
+  (SetOf (ElemTy _), Ints _, _) -> True
+  (SetOf e@(SetOf _), VSet s, a) ->
+    all (\ v -> checkValue (e, v, a)) $ Set.toList s
   (ElemTy _, Ints vs, _) -> IntSet.size vs == 1
   _ -> False
 
 baseType :: SetType -> Base
 baseType s = case s of
   ElemTy b -> b
-  Set e -> baseType e
+  SetOf e -> baseType e
 
 getInts :: Value -> IntSet
 getInts v = case v of

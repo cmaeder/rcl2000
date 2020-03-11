@@ -20,10 +20,10 @@ toUse us = let l = toList us in
 toSubs :: SetType -> [SetType]
 toSubs t = case t of
   ElemTy _ -> []
-  Set s -> t : toSubs s
+  SetOf s -> t : toSubs s
 
 toClass :: (String, SetType) -> String
-toClass (s, t) = "class " ++ s ++ " < " ++ className t ++ " end"
+toClass (s, t) = "class " ++ s ++ " < " ++ stSet t ++ " end"
 
 toOp :: (String, SetType) -> String
 toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
@@ -32,7 +32,7 @@ toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
 toSetClass :: SetType -> [String]
 toSetClass t = case t of
   ElemTy _ -> error "toSetClass"
-  Set s -> let c = className t in
+  SetOf s -> let c = stSet t in
     [ "class " ++ c
     , "operations"
     , "  c() : " ++ useType t ++ " = " ++ roleName s
@@ -40,26 +40,19 @@ toSetClass t = case t of
     , end
     , "aggregation A" ++ c ++ " between"
     , "  " ++ c ++ "[*]"
-    , "  " ++ className s ++ "[*]"
+    , "  " ++ stSet s ++ "[*]"
     , end ]
 
 aggName :: SetType -> String
-aggName = ('A' :) . className
+aggName = ('A' :) . stSet
 
 roleName :: SetType -> String
-roleName t = case className t of
+roleName t = case stSet t of
   c : r -> toLower c : r
   "" -> error "roleName"
 
-className :: SetType -> String
-className t = case t of
-  ElemTy b -> show b
-  Set s -> "SetOf" ++ className s
-
 useType :: SetType -> String
-useType t = case t of
-  ElemTy b -> show b
-  Set s -> "Set(" ++ useType s ++ ")"
+useType = foldSetType (("Set(" ++) . (++ ")")) show
 
 end :: String
 end = "end"

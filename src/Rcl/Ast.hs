@@ -36,7 +36,7 @@ data UnOp = AO | OE | User | Roles Bool | Sessions
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 
-data SetType = ElemTy Base | Set SetType deriving (Eq, Show)
+data SetType = ElemTy Base | SetOf SetType deriving (Eq, Show)
 data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
 type UserTypes = Map String SetType
 
@@ -69,6 +69,11 @@ foldSet r s = case s of
   BinOp o s1 s2 -> foldBin r s o (foldSet r s1) $ foldSet r s2
   UnOp o p -> foldUn r s o $ foldSet r p
   _ -> foldPrim r s
+
+foldSetType :: (a -> a) -> (Base -> a) -> SetType -> a
+foldSetType f g s = case s of
+  ElemTy b -> g b
+  SetOf t -> f $ foldSetType f g t
 
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
@@ -165,20 +170,22 @@ stImpl = "=>"
 lImpl :: String
 lImpl = "\\Rightarrow"
 
-stSet :: SetType -> String
-stSet t = case t of
-  ElemTy b -> show b
-  Set s -> '{' : show s ++ "}"
+-- | list of unicode characters legal in statement
+keySigns :: String
+keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
+  ++ concatMap csCmpOp [Elem, Le, Ge, Ne]
 
+-- | replacement for Control.Exception.assert that requires compiler options
+assert :: String -> Bool -> a -> a
+assert s b a = if b then a else error $ "assert: " ++ s
+
+-- | OCL compliant class name
+stSet :: SetType -> String
+stSet = foldSetType ("SetOf" ++) show
+
+-- | currently unused type representation
 stType :: Type -> String
 stType t = case t of
   SetTy s -> stSet s
   NatTy -> "\x2115" -- N
   EmptySetTy -> "{}"
-
-keySigns :: String
-keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
-  ++ concatMap csCmpOp [Elem, Le, Ge, Ne]
-
-assert :: String -> Bool -> a -> a
-assert s b a = if b then a else error $ "assert: " ++ s

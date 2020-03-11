@@ -22,7 +22,7 @@ getRoles m r = Set.insert r $ juniors m Set.empty r
 
 insUserSet :: String -> Base -> [String] -> Model -> Model
 insUserSet s b l m = addStr s m
-  { userSets = Map.insert s (Set $ ElemTy b, toInts m l, l) $ userSets m }
+  { userSets = Map.insert s (SetOf $ ElemTy b, toInts m l, l) $ userSets m }
 
 toInts :: Model -> [String] -> Value
 toInts m = Ints . IntSet.fromList . map (toInt m)
