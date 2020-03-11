@@ -117,6 +117,9 @@ configuration.
 ## Usage
 
 ```
+find . -name rcl2000-exe
+# find the binary and put it into your PATH
+# or use "stack run --" or "stack exec rcl2000-exe --" instead of "rcl2000-exe"
 rcl2000-exe -o Rcl Stmts.rcl
 use Rcl.use Rcl.soil
 ```
@@ -146,10 +149,10 @@ the *assigned* roles of the user.
 
 [sets.txt](examples/sets.txt) contains user defined sets of known
 entities like roles, users, etc. The leading word in a line must a new
-name all following words must be know and they must be of the same
+name, all following words must be known and they must be of the same
 type to form a new homogeneous set with the given elements. This way
 sets of sets can be defined to describe conflicts like `CR`. The
-actual types of user defined names is not longer taken from the
+actual types of user defined names is no longer taken from the
 [types.txt](examples/types.txt) file but derived from these set
 definitions.
 
@@ -169,7 +172,11 @@ the same way as the internal evaluation that is triggered using the
 `-e` option.
 
 The `-i` option sends rcl2000 into interactive mode that can be
-terminated by entering `q` or pressing `Ctrl-C`.
+terminated by entering `q` or pressing `Ctrl-C`. You may also try to
+enter `h` for help or some set expressions. This feature is still
+provisional.
+
+The `-h` option displays a usage message.
 
 [1]: https://dl.acm.org/doi/10.1145/382912.382913
 [2]: https://sourceforge.net/projects/useocl
