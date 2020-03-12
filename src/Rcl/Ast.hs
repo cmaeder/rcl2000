@@ -183,6 +183,16 @@ assert s b a = if b then a else error $ "assert: " ++ s
 stSet :: SetType -> String
 stSet = foldSetType ("SetOf" ++) show
 
+-- | USE compliant and disambiguated names
+useOp :: Maybe Base -> UnOp -> String
+useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
+  in case o of
+  User -> if t == Just S then u else "users"
+  Roles _ -> case t of
+      Just r -> map toLower (show r) ++ u
+      _ -> u
+  _ -> u
+
 -- | currently unused type representation
 stType :: Type -> String
 stType t = case t of

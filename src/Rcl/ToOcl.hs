@@ -7,7 +7,7 @@ import Data.Maybe (isNothing)
 
 import Rcl.Ast
 import Rcl.Reduce (runReduce, Vars)
-import Rcl.Type (wellTyped, typeOfSet, elemType, isElem)
+import Rcl.Type (wellTyped, typeOfSet, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
 
@@ -141,14 +141,4 @@ pBinOp o = text $ case o of
   Ops -> "ops"
 
 pUnOp :: Maybe SetType -> UnOp -> Doc
-pUnOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
-  in text $ case o of
-  User -> if t == Just (ElemTy S) then u else "users"
-  Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
-      Just (ElemTy r) -> case r of
-        U -> 'u' : u
-        P -> 'p' : u
-        S -> 's' : u
-        _ -> u
-      _ -> u
-  _ -> u
+pUnOp t = text . useOp (fmap (foldSetType id id) t)

@@ -70,13 +70,20 @@ uOp = alts [stUnion, [chUnion], lUnion]
 
 interSet :: Parser Set
 interSet = mayBe (BinOp Inter)
-  <$> applSet <*> optionMaybe (iOp *> interSet)
+  <$> minusSet <*> optionMaybe (iOp *> interSet)
 
 iOp :: Parser String
 iOp = alts [stInter, [chInter], lInter]
 
 mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
+
+minusSet :: Parser Set
+minusSet = mayBe (BinOp Minus)
+  <$> applSet <*> optionMaybe (pch '-' *> (braceSet <|> primSet))
+
+braceSet :: Parser Set
+braceSet = pch '{' *> set <* pch '}'
 
 applSet :: Parser Set
 applSet = unOpSet <|> opsSet <|> primSet

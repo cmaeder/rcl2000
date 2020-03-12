@@ -11,7 +11,7 @@ import Data.Map (Map)
 import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes, unOps, stUnOp)
+import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes, unOps, useOp)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -35,15 +35,17 @@ keywords :: Set.Set String
 keywords = Set.fromList $ let
   l = map show primTypes
   l1 = map ("SetOf" ++) l
-  l2 = map ('A' :) l1
-  in l ++ l1 ++ l2 ++ words "RH UA PA SessionRoles Builtin RBAC \
+  rl b = useOp (Just b) . Roles
+  in l ++ l1 ++ map ('A' :) l1
+  ++ map (useOp Nothing) unOps
+  ++ [rl b s | b <- [R, S, U, P], s <- [False, True]]
+  ++ words "user RH UA PA SessionRoles Builtin RBAC \
   \ model enum class attributes operations constraints begin end inv \
   \ pre post association aggregation between composition role init \
   \ for in if then declare insert delete destroy new into from do let \
   \ context abstract associationclass ordered else endif \
   \ Real Integer Boolean Collection String OrderedSet Set Bag Sequence \
   \ result self"
-  ++ map stUnOp unOps
 
 addS :: String -> Model -> Model
 addS s m = let

@@ -99,7 +99,7 @@ tyAppl o t = case o of
     ElemTy S -> Just $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
     _ -> Nothing
-  Roles _ | any (`isElemOrSet` t) [U, P, S]
+  Roles _ | any (`isElemOrSet` t) [R, U, P, S]
     -> mkSetType R -- U + P + S -> 2^R
   Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
   Permissions _ | isElemOrSet R t -> mkSetType P -- R -> 2^P
