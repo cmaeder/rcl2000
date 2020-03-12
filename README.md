@@ -66,7 +66,7 @@ haskell): "`AO(OE(CR))`" versus "`AO OE CR`".
 
 As in the [paper][1] the functions `user` and `roles` are overloaded
 and functions `roles` and `permissions` have "`*`" variants that
-consider a role hierarchy. (The supported latex suffix is "`_{*}`".)
+consider a role hierarchy. (The supported latex suffix is "`^{*}`".)
 Also the general notational device for set-valued functions is
 respected. This allows whole sets instead of single values as
 arguments. (Only the `user` function for sessions is not set-valued.)
