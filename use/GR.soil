@@ -1,30 +1,30 @@
-!new R('Oil_X_read')
-!new R('Oil_Y_read')
 !new R('Bank_A_read')
-!new R('Bank_B_read')
-!new R('Oil_X_write')
-!new R('Oil_Y_write')
 !new R('Bank_A_write')
+!new R('Bank_B_read')
 !new R('Bank_B_write')
-!new Oil_R('Oil_R')
-!new Oil_W('Oil_W')
+!new R('Oil_X_read')
+!new R('Oil_X_write')
+!new R('Oil_Y_read')
+!new R('Oil_Y_write')
+!new RBAC('RBAC')
 !new Bank_R('Bank_R')
 !new Bank_W('Bank_W')
-!insert (Oil_R, Oil_X_read) into ElemOfR
-!insert (Oil_R, Oil_Y_read) into ElemOfR
-!insert (Oil_W, Oil_X_write) into ElemOfR
-!insert (Oil_W, Oil_Y_write) into ElemOfR
-!insert (Bank_R, Bank_A_read) into ElemOfR
-!insert (Bank_R, Bank_B_read) into ElemOfR
-!insert (Bank_W, Bank_A_write) into ElemOfR
-!insert (Bank_W, Bank_B_write) into ElemOfR
-!new read('read')
-!new read('write')
-!insert (read, Oil_R) into ElemOfSetOfR
-!insert (read, Bank_R) into ElemOfSetOfR
-!insert (write, Oil_W) into ElemOfSetOfR
-!insert (write, Bank_W) into ElemOfSetOfR
 !new GR('GR')
-!insert (GR, read) into ElemOfSetOfSetOfR
-!insert (GR, write) into ElemOfSetOfSetOfR
-!new RBAC('RBAC')
+!new Oil_R('Oil_R')
+!new Oil_W('Oil_W')
+!new read('read')
+!new write('write')
+!insert (Bank_R,Bank_A_read) into ASetOfR
+!insert (Bank_R,Bank_B_read) into ASetOfR
+!insert (Bank_W,Bank_A_write) into ASetOfR
+!insert (Bank_W,Bank_B_write) into ASetOfR
+!insert (GR,read) into ASetOfSetOfSetOfR
+!insert (GR,write) into ASetOfSetOfSetOfR
+!insert (Oil_R,Oil_X_read) into ASetOfR
+!insert (Oil_R,Oil_Y_read) into ASetOfR
+!insert (Oil_W,Oil_X_write) into ASetOfR
+!insert (Oil_W,Oil_Y_write) into ASetOfR
+!insert (read,Oil_R) into ASetOfSetOfR
+!insert (read,Bank_R) into ASetOfSetOfR
+!insert (write,Oil_W) into ASetOfSetOfR
+!insert (write,Bank_W) into ASetOfSetOfR
