@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
   , toInts) where
 
@@ -18,7 +19,17 @@ sessionsOfU :: Model -> U -> Map String S
 sessionsOfU m u = Map.filter ((== u) . user) $ sessions m
 
 getRoles :: Map R (Set.Set R) -> R -> Set.Set R
-getRoles m r = Set.insert r $ juniors m Set.empty r
+getRoles m r = Set.insert r $ Map.findWithDefault Set.empty r m
+
+toList :: Map R (Set.Set R) -> [(R, R)]
+toList = concatMap (\ (k, s) -> map (k,) $ Set.toList s) . Map.toList
+
+fromList :: [(R, R)] -> Map R (Set.Set R)
+fromList = foldr
+  (\ (r1, r2) -> Map.insertWith Set.union r1 $ Set.singleton r2) Map.empty
+
+invert :: Map R (Set.Set R) -> Map R (Set.Set R)
+invert = fromList . map (\ (a, b) -> (b, a)) . toList
 
 insUserSet :: String -> Base -> [String] -> Model -> Model
 insUserSet s b l m = addStr s m
@@ -100,7 +111,11 @@ addP oP oBj m = let
       { permissions = Set.insert p ps }
 
 initModel :: Model -> Model
-initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases
+initModel = flip (foldr initFctMap) fcts . initRH . initOpsMap . initBases
+
+initRH :: Model -> Model
+initRH m = let n = transClosure $ rh m in
+  m { rh = n, inv = invert n }
 
 -- | insert initial base sets
 initBases :: Model -> Model
@@ -117,8 +132,8 @@ initOpsMap m =
     in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
 
 fcts :: [(Base, UnOp)]
-fcts = map toR [U, P, S, R] ++
-  [(S, User), (R, User), (U, Sessions), (R, Permissions True), (P, Objects)]
+fcts = map toR [U, P, S, R] ++ [(S, User), (R, User)
+  , (R, Roles False), (U, Sessions), (R, Permissions True), (P, Objects)]
 
 toR :: Base -> (Base, UnOp)
 toR b = (b, Roles True)
@@ -148,9 +163,9 @@ function bo m = let
   (S, Roles _) -> IntMap.fromList $ map (\ (s, Session _ as) ->
         (toInt m s, IntSet.fromList . map (toInt m . role)
         $ Set.toList as)) ss
-  (_, Roles _) -> IntMap.fromList $ map (\ r ->
+  (R, Roles b) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . role)
-        . Set.toList $ getRoles (rh m) r)) rs
+        . Set.toList $ getRoles ((if b then inv else rh) m) r)) rs
   (_, Sessions) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m)
         . Map.keys $ sessionsOfU m u)) us

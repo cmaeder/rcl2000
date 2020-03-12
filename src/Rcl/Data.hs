@@ -34,6 +34,7 @@ data Model = Model
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- direct junior roles
+  , inv :: Map R (Set.Set R) -- inverse senior roles
   , strMap :: Map String Int
   , intMap :: IntMap String
   , fctMap :: Map String (IntMap IntSet)
@@ -53,6 +54,7 @@ emptyModel = Model
   , ua = Set.empty
   , pa = Set.empty
   , rh = Map.empty
+  , inv = Map.empty
   , strMap = Map.empty
   , intMap = IntMap.empty
   , fctMap = Map.empty
@@ -89,6 +91,9 @@ juniors m visited r = let s = Map.findWithDefault Set.empty r m
   in if Set.null s then s else Set.unions . (s :)
   . map (juniors m $ Set.insert r visited) . Set.toList $ s \\ visited
 
+transClosure :: Map R (Set.Set R) -> Map R (Set.Set R)
+transClosure m = Map.mapWithKey (const . juniors m Set.empty) m
+
 getStrings :: Model -> Base -> Set.Set String
 getStrings m b = case b of
   U -> Set.map name $ users m
@@ -102,24 +107,20 @@ getStrings m b = case b of
 sUnOp :: Maybe SetType -> UnOp -> String
 sUnOp t o = let u = take 1 $ show o
   in case o of
-  User -> if t == Just (ElemTy S) then "us" else "U"
-  Objects -> "Ob"
-  Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
-      Just (ElemTy r) -> case r of
-        U -> "ur"
-        P -> "pr"
-        S -> "sr"
-        R -> "r"
-        _ -> u
-      _ -> u
+  User -> if t == Just (ElemTy S) then "u" else u
+  Objects -> "B"
+  Roles b -> case t >>= \ s -> if isElem s then Just s else elemType s of
+    Just (ElemTy r) -> if r == R then if b then "s" else "j" else show r ++ "r"
+    _ -> u
   _ -> u
 
 stValue :: Model -> Value -> String
 stValue m v = case v of
     Ints is -> case IntSet.maxView is of
       Just (i, s) | IntSet.null s -> toStr i m
-      _ -> '{' : unwords (map (`toStr` m) $ IntSet.toList is) ++ "}"
-    VSet vs -> '{' : unwords (map (stValue m) $ Set.toList vs) ++ "}"
+      _ -> '{' : unwords (Set.toList . Set.fromList
+        . map (`toStr` m) $ IntSet.toList is) ++ "}"
+    VSet vs -> '{' : unwords (Set.toList $ Set.map (stValue m) vs) ++ "}"
 
 toStr :: Int -> Model -> String
 toStr i = IntMap.findWithDefault (error $ "toStr: " ++ show i) i . intMap

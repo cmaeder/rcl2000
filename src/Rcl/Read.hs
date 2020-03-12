@@ -101,7 +101,7 @@ addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r $ if null js then m else (foldr addR m js)
     { rh = let
         k = Role r
-        v = Map.insert k (Set.fromList $ map Role js) $ rh m
+        v = Map.insertWith Set.union k (Set.fromList $ map Role js) $ rh m
         c = rhCycle v k
         cs = map role $ Set.toList c
       in assert ("cyclic role: " ++ unwords (r : cs)) (Set.null c) v }
