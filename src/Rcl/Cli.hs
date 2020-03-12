@@ -130,7 +130,8 @@ reportParse mus o eith = case eith of
         _ -> putStrLn "no .soil file written for option -t"
     case mus of
       Left m -> do
-        when e . putStrLn $ interprets us (initModel m) ast
-        when i $ evalInput ast m
+        let n = initModel m
+        when e . putStrLn $ interprets us n ast
+        when i $ evalInput ast n
       Right _ -> when (e || i) $ putStrLn
         "options -e or -i are incompatible with -t"
