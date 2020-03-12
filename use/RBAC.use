@@ -14,7 +14,6 @@ end
 
 class R
 operations
-  getRoles() : Set(R) = Set{self}->union(juniors()) // overwrite
   juniors() : Set(R) = junior->closure(junior)->asSet
   seniors() : Set(R) = senior->closure(senior)->asSet
 constraints
@@ -60,18 +59,19 @@ operations
   R() : Set(R) = R.allInstances
   S() : Set(S) = S.allInstances
   U() : Set(U) = U.allInstances
+  rroles(rs : Set(R)): Set(R) = rs->union(rs->collect(juniors()))->asSet
+  rroles_(rs : Set(R)): Set(R) = rs->union(rs->collect(seniors()))->asSet
   uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
   proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
   sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
-  uroles_(us : Set(U)): Set(R) = uroles(us)->collect(getRoles())->asSet
-  proles_(ps : Set(P)): Set(R) = proles(ps)->collect(getRoles())->asSet
-  sroles_(ss : Set(S)): Set(R) = sroles(ss)->collect(getRoles())->asSet
+  uroles_(us : Set(U)): Set(R) = rroles(uroles(us))
+  proles_(ps : Set(P)): Set(R) = rroles_(proles(ps))
+  sroles_(ss : Set(S)): Set(R) = rroles(sroles(ss))
   user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
   sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
   permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
-  permissions_(rs : Set(R)): Set(P) =
-    permissions(rs->collect(getRoles())->asSet)
+  permissions_(rs : Set(R)): Set(P) = permissions(rroles(rs))
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
