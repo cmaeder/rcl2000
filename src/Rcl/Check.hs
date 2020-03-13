@@ -112,4 +112,5 @@ checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
       else let ru = rolesOfU m u in if p `elem` permsOfRs m ru
          then ["roles of user '" ++ n ++ "' not activated: " ++
            unwords (map role . Set.toList $ Set.intersection rs ru)]
-         else ("missing assigned roles for user: " ++ n) : errs
+         else (if pm then (("missing assigned roles for user: " ++ n) :)
+               else id) errs

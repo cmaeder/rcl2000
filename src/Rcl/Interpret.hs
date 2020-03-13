@@ -23,9 +23,8 @@ interprets :: UserTypes -> Model -> [Stmt] -> String
 interprets us m l = let
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
   in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
-  case uncurry (interpretError us m) $ runReduce us s of
-    Nothing -> "verified: " ++ ppStmt s
-    Just e -> e) ws
+  fromMaybe ("verified: " ++ ppStmt s) . uncurry (interpretError us m)
+    $ runReduce us s) ws
 
 interpretError :: UserTypes -> Model -> Stmt -> Vars -> Maybe String
 interpretError us m s vs = case interpret us m IntMap.empty s $ reverse vs of

@@ -1,10 +1,12 @@
 module Rcl.Eval (evalInput) where
 
+import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (insert, toList)
 
 import Rcl.Ast
+import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Parse (set, parser)
@@ -38,19 +40,32 @@ loop l m = do
       us = getAllUserTypes m
       fp = parseAndType us parser typeErrors s
       sp = parseAndType us (spaces *> set <* eof) typeSet s
+      ck w k = isLeft sp && ckCmd w k
       in case words s of
       [] -> loop l m
-      [w] | w `elem` [":q", "q", "quit", "exit"] && isLeft sp -> return ()
-        | w `elem` [":h", "h", "help"] && isLeft sp -> printHelpText >> loop l m
+      [w] | ck w "exit" -> return ()
+        | ck w "quit" -> return ()
+        | ck w "help" -> printHelpText >> loop l m
+      [w, si, oP, oBj] | ck w "access" -> do
+         let ls = checkAccess m si (Operation oP) $ Object oBj
+         outputStr (if null ls then "access granted\n" else
+                        unlines $ "access denied" : ls)
+         loop l m
       _ -> case (sp, fp) of
         (Right a, _) -> outputStrLn (stValue m $ eval us m IntMap.empty a)
           >> loop l m
-        (_, Right f) -> outputStrLn (interprets us m f)
+        (_, Right f) -> outputStr (interprets us m f)
           >> loop l m
         (Left err1, Left err2) -> do
           outputStrLn err1
           outputStrLn err2
           loop l m
+
+ckCmd :: String -> String -> Bool
+ckCmd w k = map toLower w `elem` keys k
+
+keys :: String -> [String]
+keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
 typeSet :: UserTypes -> Set -> String
 typeSet us a = maybe ("wrongly typed set: " ++ ppSet a) (const "")
@@ -66,5 +81,7 @@ parseAndType us p tc s = case parse p "" s of
 printHelpText :: InputT IO ()
 printHelpText =
   outputStrLn $ unlines
-  ["enter set or statement or any of the following commands"
-  , ":h, help, :q, quit, or exit"]
+  ["enter set or statement or any of the following commands."
+  , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
+  , "help, quit, or exit"
+  , "access <session id> <operation> <obj>" ]
