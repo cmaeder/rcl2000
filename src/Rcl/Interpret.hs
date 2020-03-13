@@ -12,7 +12,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Data
 import Rcl.Print (ppStmt)
-import Rcl.Reduce (Vars, runReduce)
+import Rcl.Reduce (runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 
 type Env = IntMap Value

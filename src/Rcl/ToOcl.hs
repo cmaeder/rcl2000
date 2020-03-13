@@ -6,7 +6,7 @@ import Data.Map (toList)
 import Data.Maybe (isNothing)
 
 import Rcl.Ast
-import Rcl.Reduce (runReduce, Vars)
+import Rcl.Reduce (runReduce)
 import Rcl.Type (wellTyped, typeOfSet, isElem)
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
   parens, braces, int)
@@ -131,7 +131,7 @@ pBoolOp o = text $ case o of
 pCmpOp :: CmpOp -> Doc
 pCmpOp o = text $ case o of
   Ne -> "<>"
-  _ -> stCmpOp o
+  _ -> sCmpOp Ascii o
 
 pBinOp :: BinOp -> Doc
 pBinOp o = text $ case o of

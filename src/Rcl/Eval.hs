@@ -84,4 +84,12 @@ printHelpText =
   ["enter set or statement or any of the following commands."
   , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
   , "help, quit, or exit"
-  , "access <session id> <operation> <obj>" ]
+  , "access <sessionId> <operation> <object>" ]
+{-
+  , "session add|del <sessionId> [<user> <roles>*]"
+  , "role add|del <role> <juniorRole>*"
+  , "user add|del <user> <roles>*"
+  , "permission add <operation> <object> <roles>*"
+  , "permission del <operation>_<object>"
+  , "value add|del <name> <name>+" ]
+-}

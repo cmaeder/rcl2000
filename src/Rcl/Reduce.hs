@@ -1,10 +1,10 @@
-module Rcl.Reduce (reduction, Vars, runReduce) where
+module Rcl.Reduce (reduction, runReduce) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
 import Rcl.Ast
-import Rcl.Print (ppStmt, ppSet)
+import Rcl.Print (prStmt, ppSet)
 import Rcl.Type (typeOfSet, elemType)
 
 replaceAO :: Stmt -> Stmt
@@ -46,8 +46,6 @@ replOE e r = foldSet mapSet
       OE | p == e -> r
       _ -> UnOp o p }
 
-type Vars = [(Var, Set)]
-
 reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
 reduce us i s = case findSimpleOE s of
   Nothing -> pure s
@@ -87,12 +85,10 @@ replMinus = foldSet mapSet
 
 reduceAndReconstruct :: UserTypes -> Stmt -> String
 reduceAndReconstruct us s = let
-  (r, vs) = runReduce us s
+  p@(r, vs) = runReduce us s
   n = replaceMinus (construct us r vs)
   in assert "reduceAndReconstruct" (n == s)
-  $ concatMap (\ (i, e) ->
-      '\x2200' : stVar i ++ '\x220A' : ppSet e ++ "\x2219")
-    (reverse vs) ++ ' ' : ppStmt r
+  $ prStmt p
 
 reduction :: UserTypes -> [Stmt] -> String
 reduction us = unlines . map (reduceAndReconstruct us)

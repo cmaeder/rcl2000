@@ -35,10 +35,11 @@ data UnOp = AO | OE | User | Roles Bool | Sessions
 -- AO: all other, OE: one element, object ~> objects, Bool for * suffix
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
-
 data SetType = ElemTy Base | SetOf SetType deriving (Eq, Show)
 data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
+data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
 type UserTypes = Map String SetType
+type Vars = [(Var, Set)]
 
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]
@@ -78,32 +79,23 @@ foldSetType f g s = case s of
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
 
-chEmpty :: Char
-chEmpty = '\x2205'
+sEmpty :: Format -> String
+sEmpty m = case m of
+  LaTeX -> "\\emptyset"
+  Uni -> "\x2205"
+  Ascii -> "{}"
 
-lEmpty :: String
-lEmpty = "\\emptyset"
+sUnion :: Format -> String
+sUnion m = case m of
+  LaTeX -> "\\cup"
+  Uni -> "\x222A"
+  Ascii -> "+"
 
-stEmpty :: String
-stEmpty = "{}"
-
-chUnion :: Char
-chUnion = '\x222A'
-
-lUnion :: String
-lUnion = "\\cup"
-
-stUnion :: String
-stUnion = "+"
-
-chInter :: Char
-chInter = '\x2229'
-
-lInter :: String
-lInter = "\\cap"
-
-stInter :: String
-stInter = "&"
+sInter :: Format -> String
+sInter m = case m of
+  LaTeX -> "\\cap"
+  Uni -> "\x2229"
+  Ascii -> "&"
 
 stOps :: String
 stOps = "operations"
@@ -126,54 +118,63 @@ lUnOp o = case stUnOp o of
   s@(_ : _) | last s == '*' -> init s ++ "^{*}"
   s -> s
 
-stCmpOp :: CmpOp -> String
-stCmpOp o = case o of
-  Elem -> "in"
-  Eq -> "="
-  Le -> "<="
-  Lt -> "<"
-  Ge -> ">="
-  Gt -> ">"
-  Ne -> "/="
+sCmpOp :: Format -> CmpOp -> String
+sCmpOp m o = case m of
+  Ascii -> case o of
+    Elem -> "in"
+    Eq -> "="
+    Le -> "<="
+    Lt -> "<"
+    Ge -> ">="
+    Gt -> ">"
+    Ne -> "/="
+  Uni -> case o of
+    Elem -> "\x2208"
+    Le -> "\x2264"
+    Ge -> "\x2265"
+    Ne -> "\x2260"
+    _ -> sCmpOp Ascii o
+  LaTeX -> case o of
+    Elem -> "\\in"
+    Le -> "\\leq"
+    Ge -> "\\geq"
+    Ne -> "\\neq"
+    _ -> sCmpOp Ascii o
 
-csCmpOp :: CmpOp -> String
-csCmpOp o = case o of
-  Elem -> "\x2208"
-  Le -> "\x2264"
-  Ge -> "\x2265"
-  Ne -> "\x2260"
-  _ -> stCmpOp o
+sAnd :: Format -> String
+sAnd m = case m of
+  LaTeX -> "\\land"
+  Uni -> "\x2227"
+  Ascii -> "/\\"
 
-lCmpOp :: CmpOp -> String
-lCmpOp o = case o of
-  Elem -> "\\in"
-  Le -> "\\leq"
-  Ge -> "\\geq"
-  Ne -> "\\neq"
-  _ -> stCmpOp o
+sImpl :: Format -> String
+sImpl m = case m of
+  LaTeX -> "\\Rightarrow"
+  Uni -> "\x21D2"
+  Ascii -> "=>"
 
-chAnd :: Char
-chAnd = '\x2227'
+sAll :: Format -> String
+sAll m = case m of
+  LaTeX -> "\\forall{}"
+  Uni -> "\x2200"
+  Ascii -> "forAll "
 
-stAnd :: String
-stAnd = "/\\"
+sIn :: Format -> String
+sIn m = case m of
+  LaTeX -> "\\in{}"
+  Uni -> "\x220A"
+  Ascii -> ":"
 
-lAnd :: String
-lAnd = "\\land"
-
-chImpl :: Char
-chImpl = '\x21D2'
-
-stImpl :: String
-stImpl = "=>"
-
-lImpl :: String
-lImpl = "\\Rightarrow"
+sDot :: Format -> String
+sDot m = case m of
+  LaTeX -> "\\cdot{}"
+  Uni -> "\x2219"
+  Ascii -> "."
 
 -- | list of unicode characters legal in statement
 keySigns :: String
-keySigns = [chAnd, chImpl, chUnion, chInter, chEmpty]
-  ++ concatMap csCmpOp [Elem, Le, Ge, Ne]
+keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
+  ++ concatMap (sCmpOp Uni) [Elem, Le, Ge, Ne]
 
 -- | replacement for Control.Exception.assert that requires compiler options
 assert :: String -> Bool -> a -> a
@@ -192,10 +193,3 @@ useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
       Just r -> map toLower (show r) ++ u
       _ -> u
   _ -> u
-
--- | currently unused type representation
-stType :: Type -> String
-stType t = case t of
-  SetTy s -> stSet s
-  NatTy -> "\x2115" -- N
-  EmptySetTy -> "{}"

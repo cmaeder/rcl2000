@@ -10,11 +10,11 @@ parser = skip *> many1 stmt <* eof
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
-  <$> impl <*> optionMaybe (alts [stAnd, [chAnd], lAnd, "^"] *> stmt)
+  <$> impl <*> optionMaybe (alts sAnd *> stmt)
 
 impl :: Parser Stmt
 impl = mayBe (BoolOp Impl)
-  <$> cmp <*> optionMaybe (alts [stImpl, [chImpl], lImpl] *> cmp)
+  <$> cmp <*> optionMaybe (alts sImpl *> cmp)
 
 cmp :: Parser Stmt
 cmp = cmpSet <|> cmpCard
@@ -44,36 +44,23 @@ pTerm :: Parser Term
 pTerm = Term False <$> set
 
 emptySet :: Parser Term
-emptySet = EmptySet <$ alts [stEmpty, [chEmpty], lEmpty]
+emptySet = EmptySet <$ alts sEmpty
 
 setCmpOp :: Parser CmpOp
-setCmpOp = let
-  lOps = [Elem, Ne]
-  aOps = Eq : lOps
-  in choice $ map (pString stCmpOp) aOps
-  ++ map (pString csCmpOp) lOps
-  ++ map (pString lCmpOp) lOps
+setCmpOp = let lOps = [Elem, Ne] in choice $ pString (sCmpOp Ascii) Eq
+    : concatMap (\ f -> map (pString $ sCmpOp f) lOps) forms
 
 cmpOp :: Parser CmpOp
-cmpOp = let
-  cmpOps = [Eq, Le, Lt, Ge, Gt, Ne]
-  altCmpOps = [Le, Ge, Ne]
-  in choice $ map (pString stCmpOp) cmpOps
-  ++ map (pString csCmpOp) altCmpOps
-  ++ map (pString lCmpOp) altCmpOps
+cmpOp = let cmpOps = [Le, Ge, Ne] in choice
+  $ map (pString $ sCmpOp Ascii) [Eq, Lt, Gt]
+  ++ concatMap (\ f -> map (pString $ sCmpOp f) cmpOps) forms
 
 set :: Parser Set
-set = mayBe (BinOp Union) <$> interSet <*> optionMaybe (uOp *> set)
-
-uOp :: Parser String
-uOp = alts [stUnion, [chUnion], lUnion]
+set = mayBe (BinOp Union) <$> interSet <*> optionMaybe (alts sUnion *> set)
 
 interSet :: Parser Set
 interSet = mayBe (BinOp Inter)
-  <$> minusSet <*> optionMaybe (iOp *> interSet)
-
-iOp :: Parser String
-iOp = alts [stInter, [chInter], lInter]
+  <$> minusSet <*> optionMaybe (alts sInter *> interSet)
 
 mayBe :: (a -> a -> a) -> a -> Maybe a -> a
 mayBe f a = maybe a $ f a
@@ -111,8 +98,11 @@ parenSet = pch '(' *> set <* pch ')'
 pch :: Char -> Parser Char
 pch c = char c <* skip
 
-alts :: [String] -> GenParser Char () String
-alts = choice . map (pString id)
+forms :: [Format]
+forms = [Ascii, Uni, LaTeX]
+
+alts :: (Format -> String) -> GenParser Char () String
+alts f = choice $ map (pString id . f) forms
 
 pString :: (a -> String) -> a -> Parser a
 pString pr a = let s = pr a in
