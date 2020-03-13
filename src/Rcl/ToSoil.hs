@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Rcl.ToSoil (toSoil) where
 
 import qualified Data.Map as Map
@@ -32,13 +31,13 @@ toSoil m = unlines $ let
   ++ set "user" fst (name . user . snd) sl
   ++ insert "UA" name role (Set.toList $ ua m)
   ++ insert "PA" pStr role (Set.toList $ pa m)
-  ++ insert "RH" role role (concatMap (\ (r, l) -> map (r,) $ Set.toList l)
-    . Map.toList . transReduce $ rh m)
-  ++ insert "SessionRoles" id role (concatMap (\ (i, s) -> map (i,)
+  ++ insert "RH" role role (concatMap (\ (r, l)
+    -> map (\ e -> (r, e)) $ Set.toList l) . Map.toList . transReduce $ rh m)
+  ++ insert "SessionRoles" id role (concatMap (\ (i, s) -> map (\ e -> (i, e))
     . Set.toList $ activeRoles s) sl)
   ++ map (\ s -> mkNew s s) ("RBAC" : Map.keys us)
-  ++ map (\ (s, t, r) -> mkInsert s r $ aggName t)
-    (concatMap (\ (s, (t, _, l)) -> map (s, t,) l) $ Map.toList us)
+  ++ map (\ (s, t, r) -> mkInsert s r $ aggName t) (concatMap
+     (\ (s, (t, _, l)) -> map (\ e -> (s, t, e)) l) $ Map.toList us)
 
 mkNew :: String -> String -> String
 mkNew c n = "!new " ++ c ++ "('" ++ n ++ "')"

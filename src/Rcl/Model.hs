@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
   , toInts) where
 
@@ -22,7 +21,7 @@ getRoles :: Map R (Set.Set R) -> R -> Set.Set R
 getRoles m r = Set.insert r $ Map.findWithDefault Set.empty r m
 
 toList :: Map R (Set.Set R) -> [(R, R)]
-toList = concatMap (\ (k, s) -> map (k,) $ Set.toList s) . Map.toList
+toList = concatMap (\ (k, s) -> map (\ e -> (k, e)) $ Set.toList s) . Map.toList
 
 fromList :: [(R, R)] -> Map R (Set.Set R)
 fromList = foldr
@@ -152,13 +151,13 @@ function bo m = let
   (S, User) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
     (toInt m s, IntSet.singleton (toInt m u))) ss
   (_, User) -> IntMap.fromList $ map (\ r ->
-        (toInt m $ role r, IntSet.fromList $ map (toInt m . name)
+        (toInt m $ role r, IntSet.fromList . map (toInt m . name)
         . Set.toList $ usersOfR m r)) rs
   (U, Roles _) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m . role)
         . Set.toList $ rolesOfU m u)) us
   (P, Roles _) -> IntMap.fromList $ map (\ p ->
-        (toInt m $ pStr p, IntSet.fromList $ map (toInt m . role)
+        (toInt m $ pStr p, IntSet.fromList . map (toInt m . role)
         . Set.toList $ rolesOfP m p)) ps
   (S, Roles _) -> IntMap.fromList $ map (\ (s, Session _ as) ->
         (toInt m s, IntSet.fromList . map (toInt m . role)
