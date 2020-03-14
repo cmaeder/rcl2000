@@ -6,31 +6,34 @@ import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 import Data.List (find, partition)
 import qualified Data.Map as Map
-import Data.Maybe (isNothing, fromMaybe, mapMaybe)
+import Data.Maybe (isNothing, mapMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Print (ppStmt)
+import Rcl.Print (ppStmt, ppSet)
 import Rcl.Reduce (runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 
 type Env = IntMap Value
 
-data TermVal = VTerm Value | VEmptySet | VNum Int deriving (Eq, Show)
+data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
+  deriving (Eq, Show)
 
 interprets :: UserTypes -> Model -> [Stmt] -> String
 interprets us m l = let
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
   in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
-  fromMaybe ("verified: " ++ ppStmt s) . uncurry (interpretError us m)
-    $ runReduce us s) ws
+  (\ r -> if null r then "verified: " ++ ppStmt s else r)
+  . interpretError us m $ runReduce us s) ws
 
-interpretError :: UserTypes -> Model -> Stmt -> Vars -> Maybe String
-interpretError us m s vs = case interpret us m IntMap.empty s $ reverse vs of
-  Right () -> Nothing
-  Left e -> Just $ (if IntMap.null e then "falsified: " else
-    "counter example: " ++ printEnv m vs e ++ "\n  in: ") ++ ppStmt s
+interpretError :: UserTypes -> Model -> (Stmt, Vars) -> String
+interpretError us m (s, vs) =
+  case interpret us m IntMap.empty (s, reverse vs) of
+    Right () -> ""
+    Left (Left f) -> f
+    Left (Right e) -> (if IntMap.null e then "falsified: " else
+      "counter example: " ++ printEnv m vs e ++ "\n  in: ") ++ ppStmt s
 
 printEnv :: Model -> Vars -> Env -> String
 printEnv m vs e = unwords . map
@@ -41,33 +44,44 @@ printVar vs k e = case find (\ (MkVar i _ _, _) -> i == k) vs of
   Just (v, _) -> stVar v ++ "=" ++ e
   Nothing -> ""
 
-interpret :: UserTypes -> Model -> Env -> Stmt -> Vars -> Either Env ()
-interpret us m e s vs = case vs of
-  [] -> if evalStmt us m e s then Right () else Left e
+interpret :: UserTypes -> Model -> Env -> (Stmt, Vars)
+  -> Either (Either String Env) ()
+interpret us m e (s, vs) = case vs of
+  [] -> case evalStmt us m e s of
+    Right b -> if b then Right () else Left $ Right e
+    Left f -> Left $ Left f
   (MkVar i _ _, a) : rs -> case eval us m e a of
-    Ints is -> mapM_ (\ j -> interpret us m (IntMap.insert i
-      (Ints $ IntSet.singleton j) e) s rs) $ IntSet.toList is
-    VSet es -> mapM_ (\ j -> interpret us m (IntMap.insert i j e) s rs)
-      $ Set.toList es
+    Right v -> case v of
+      Ints is -> mapM_ (\ j -> interpret us m (IntMap.insert i
+        (Ints $ IntSet.singleton j) e) (s, rs)) $ IntSet.toList is
+      VSet es -> mapM_ (\ j -> interpret us m (IntMap.insert i j e) (s, rs))
+        $ Set.toList es
+    Left f -> Left $ Left f
 
-evalStmt :: UserTypes -> Model -> Env -> Stmt -> Bool
+evalStmt :: UserTypes -> Model -> Env -> Stmt -> Either String Bool
 evalStmt us m e = foldStmt FoldStmt
-  { foldBool = \ _ o b1 b2 -> (if o == Impl then (<=) else (&&)) b1 b2
-  , foldCmp = \ _ o t1 t2 -> case o of
+  { foldBool = \ _ o e1 e2 -> case (e1, e2) of
+    (Left _, _) -> e1
+    (_, Left _) -> e2
+    (Right b1, Right b2) -> Right $ (if o == Impl then (<=) else (&&)) b1 b2
+  , foldCmp = \ c o t1 t2 -> let t = ppStmt c in case (t1, t2) of
+    (Error s, _) -> Left s
+    (_, Error s) -> Left s
+    _ -> case o of
       Elem -> case (t1, t2) of
         (VTerm (Ints is), VTerm (Ints js)) ->
-           is `IntSet.isSubsetOf` js && IntSet.size is == 1
-        (VTerm v1, VTerm (VSet s)) -> Set.member v1 s
-        _ -> error "evalStmt: elem"
-      Eq -> case (t1, t2) of
+           Right $ is `IntSet.isSubsetOf` js && IntSet.size is == 1
+        (VTerm v1, VTerm (VSet s)) -> Right $ Set.member v1 s
+        _ -> Left $ "unexpected: " ++ t
+      Eq -> Right $ case (t1, t2) of
         (VTerm v1, VEmptySet) -> vNull v1
         _ -> t1 == t2
-      Ne -> case (t1, t2) of
+      Ne -> Right $ case (t1, t2) of
         (VTerm v1, VEmptySet) -> not $ vNull v1
         _ -> t1 /= t2
       _ -> case (t1, t2) of
-        (VNum i1, VNum i2) -> cmpOp o i1 i2
-        _ -> error "evalStmt: nums" } (evalTerm us m e)
+        (VNum i1, VNum i2) -> Right $ cmpOp o i1 i2
+        _ -> Left $ "unexpected: " ++ t } (evalTerm us m e)
 
 cmpOp :: CmpOp -> Int -> Int -> Bool
 cmpOp o = case o of
@@ -81,55 +95,74 @@ cmpOp o = case o of
 
 evalTerm :: UserTypes -> Model -> Env -> Term -> TermVal
 evalTerm us m e t = case t of
-  Term card s -> let v = eval us m e s in
-    if card then VNum $ vSize v else VTerm v
+  Term card s -> case eval us m e s of
+    Left f -> Error f
+    Right v -> if card then VNum $ vSize v else VTerm v
   EmptySet -> VEmptySet
   Num n -> VNum n
 
-eval :: UserTypes -> Model -> Env -> Set -> Value
+eval :: UserTypes -> Model -> Env -> Set -> Either String Value
 eval us m e = foldSet FoldSet
-  { foldBin = \ _ o v1 v2 -> case o of
-      Ops -> Ints . IntSet.unions . map
-        (\ p -> Map.findWithDefault IntSet.empty p $ opsMap m)
-        $ case (v1, v2) of
-          (Ints rs, Ints os) ->
-            [ (r, ob) | r <- IntSet.toList rs, ob <- IntSet.toList os ]
-          _ -> []
-      Minus -> case (v1, v2) of
-        (VSet s, _) -> assert "eval1" (Set.member v2 s) . VSet $ Set.delete v2 s
-        (Ints is, Ints js) -> assert "eval2"
-          (js `IntSet.isSubsetOf` is && IntSet.size js == 1)
-          . Ints $ is IntSet.\\ js
-        _ -> Ints IntSet.empty
-      _ -> assert "eval3" (sameNesting v1 v2) $ case (v1, v2) of
-        (Ints is, Ints js) -> Ints
+  { foldBin = \ (BinOp _ s1 s2) o v1 v2 -> let
+      t1 = ppSet s1
+      t2 = ppSet s2 in case (v1, v2) of
+    (Left _, _) -> v1
+    (_, Left _) -> v2
+    (Right r1, Right r2) -> case o of
+      Ops -> case (r1, r2) of
+        (Ints rs, Ints os) -> Right . Ints . IntSet.unions
+          $ map (\ p -> Map.findWithDefault IntSet.empty p $ opsMap m)
+          [(r, ob) | r <- IntSet.toList rs, ob <- IntSet.toList os]
+        (VSet _, _) -> Left $ "unexpected set of set for "
+          ++ stOps ++ " first argument: " ++ t1
+        (_, VSet _) -> Left $ "unexpected set of set for "
+          ++ stOps ++ " second argument: " ++ t2
+      Minus -> case (r1, r2) of
+        (VSet s, _) -> if r2 `Set.member` s then
+           Right . VSet $ Set.delete r2 s else
+           Left $ t2 ++ " is no member of nested set: " ++ t1
+        (Ints is, Ints js) -> if js `IntSet.isSubsetOf` is
+          && IntSet.size js == 1 then Right . Ints $ is IntSet.\\ js
+          else Left $ t2 ++ " is no member of simple set : " ++ t1
+        _ -> Left $ "unexpected minus set: " ++ t2
+      _ -> if sameNesting r1 r2 then case (r1, r2) of
+        (Ints is, Ints js) -> Right . Ints
           $ (if o == Inter then IntSet.intersection else IntSet.union) is js
-        _ -> VSet . (if o == Inter then Set.intersection else Set.union)
-          (toVSet v1) $ toVSet v2
-  , foldUn = \ (UnOp _ s) o v -> let p = sUnOp (typeOfSet us s) o in case v of
-      Ints is -> case o of
-        Permissions True -> Ints . apply m p $ apply m "j" is
-        Roles True | p `elem` ["Ur", "Sr"] -> Ints . apply m "j" $ apply m p is
-          | p == "Pr" -> Ints . apply m "s" $ apply m p is
-        AO -> assert "eval3" (not $ IntSet.null is) . Ints $ IntSet.deleteMax is
-        OE -> assert "eval4" (not $ IntSet.null is) . Ints
-          . IntSet.singleton $ IntSet.findMax is
-        _ -> Ints $ apply m p is
-      VSet vs -> case o of
-        AO -> assert "eval5" (not $ Set.null vs) . VSet $ Set.deleteMax vs
-        OE -> assert "eval6" (not $ Set.null vs) $ Set.findMax vs
-        _ -> error "eval7"
+        _ -> Right . VSet . (if o == Inter then Set.intersection else Set.union)
+          (toVSet r1) $ toVSet r2
+        else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
+  , foldUn = \ (UnOp _ s) o v -> let
+      p = sUnOp (typeOfSet us s) o
+      t = ppSet s in case v of
+      Right (Ints is) -> case o of
+        Permissions True -> Right . Ints . apply m p $ apply m "j" is
+        Roles True | p `elem` ["Ur", "Sr"] ->
+            Right . Ints . apply m "j" $ apply m p is
+          | p == "Pr" -> Right . Ints . apply m "s" $ apply m p is
+        AO -> if IntSet.null is then Left $ "empty set for AO: " ++ t
+          else Right . Ints $ IntSet.deleteMax is
+        OE -> if IntSet.null is then Left $ "empty set for OE: " ++ t
+          else Right . Ints . IntSet.singleton $ IntSet.findMax is
+        _ -> Right . Ints $ apply m p is
+      Right (VSet vs) -> case o of
+        AO -> if Set.null vs then Left $ "empty set of set for AO: " ++ t
+          else Right . VSet $ Set.deleteMax vs
+        OE -> if Set.null vs then Left $ "empty set of set for OE: " ++ t
+          else Right $ Set.findMax vs
+        _ -> Left $ "unexpected set of set for " ++ stUnOp o ++ ": " ++ t
+      _ -> v
   , foldPrim = evalPrim m e }
 
-evalPrim :: Model -> Env -> Set -> Value
+evalPrim :: Model -> Env -> Set -> Either String Value
 evalPrim m e s = case s of
   PrimSet p -> case Map.lookup p $ userSets m of
-    Just (_, v, _) -> v
+    Just (_, v, _) -> Right v
     Nothing -> case Map.lookup p $ strMap m of
-      Just i -> Ints $ IntSet.singleton i
-      Nothing -> error $ "evalPrim1: " ++ p
-  Var v@(MkVar i _ _) -> fromMaybe (error $ "evalPrim2: " ++ stVar v)
-    $ IntMap.lookup i e
+      Just i -> Right . Ints $ IntSet.singleton i
+      Nothing -> Left $ "unknown set: " ++ p
+  Var v@(MkVar i _ _) -> case IntMap.lookup i e of
+    Just r -> Right r
+    Nothing -> Left $ "unknown variable: " ++ stVar v
   _ -> error "evalPrim: not primitive"
 
 toVSet :: Value -> Set.Set Value
@@ -161,7 +194,3 @@ apply m s is = let
   im = Map.findWithDefault (error $ "apply: " ++ s) s $ fctMap m
   in IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i im)
   $ IntSet.toList is
-
--- | replacement for Control.Exception.assert that requires compiler options
-assert :: String -> Bool -> a -> a
-assert s b a = if b then a else error $ "assert: " ++ s

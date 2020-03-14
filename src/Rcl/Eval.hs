@@ -52,8 +52,11 @@ loop l m = do
                         unlines $ "access denied" : ls)
          loop l m
       _ -> case (sp, fp) of
-        (Right a, _) -> outputStrLn (stValue m $ eval us m IntMap.empty a)
-          >> loop l m
+        (Right a, _) -> do
+          outputStrLn $ case eval us m IntMap.empty a of
+            Left f -> f
+            Right v -> stValue m v
+          loop l m
         (_, Right f) -> outputStr (interprets us m f)
           >> loop l m
         (Left err1, Left err2) -> do
