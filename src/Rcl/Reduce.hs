@@ -4,7 +4,7 @@ import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
 import Rcl.Ast
-import Rcl.Print (prStmt, ppSet)
+import Rcl.Print (prStmt, ppStmt, ppSet, ppType)
 import Rcl.Type (typeOfSet, elemType)
 
 replaceAO :: Stmt -> Stmt
@@ -61,15 +61,20 @@ reduce us i s = case findSimpleOE s of
 runReduce :: UserTypes -> Stmt -> (Stmt, Vars)
 runReduce us s = runState (reduce us 1 $ replaceAO s) []
 
-construct :: UserTypes -> Stmt -> Vars -> Stmt
-construct us = foldl (\ r (i, t) -> replaceVar us i t r)
+construct :: Stmt -> Vars -> Stmt
+construct = foldl (flip replaceVar)
 
-replaceVar :: UserTypes -> Var -> Set -> Stmt -> Stmt
-replaceVar us i = foldStmt mapStmt . mapTerm . replVar us i
+checkVar :: UserTypes -> (Var, Set) -> String
+checkVar us (i@(MkVar _ _ t), r) = let s = typeOfSet us r >>= elemType in
+  if s == t then "" else
+    "type missmatch in variable " ++ stVar i ++ ':' : ppType t
+    ++ " versus " ++ ppSet r ++ ':' : ppType s
 
-replVar :: UserTypes -> Var -> Set -> Set -> Set
-replVar us i@(MkVar _ _ t) r =
-  assert "replVar" ((typeOfSet us r >>= elemType) == t) . foldSet mapSet
+replaceVar :: (Var, Set) -> Stmt -> Stmt
+replaceVar = foldStmt mapStmt . mapTerm . replVar
+
+replVar :: (Var, Set) -> Set -> Set
+replVar (i, r) = foldSet mapSet
   { foldPrim = \ s -> case s of
     Var v | i == v -> UnOp OE r
     _ -> s }
@@ -80,15 +85,17 @@ replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 replMinus :: Set -> Set
 replMinus = foldSet mapSet
   { foldBin = \ _ o s1 s2 -> case o of
-      Minus -> assert "replMinus" (s2 == UnOp OE s1) $ UnOp AO s1
+      Minus | s2 == UnOp OE s1 -> UnOp AO s1
       _ -> BinOp o s1 s2 }
 
-reduceAndReconstruct :: UserTypes -> Stmt -> String
+reduceAndReconstruct :: UserTypes -> Stmt -> [String]
 reduceAndReconstruct us s = let
   p@(r, vs) = runReduce us s
-  n = replaceMinus (construct us r vs)
-  in assert "reduceAndReconstruct" (n == s)
-  $ prStmt p
+  t = prStmt p
+  errs = filter (not . null) $ map (checkVar us) vs
+  n = replaceMinus (construct r vs)
+  in if null errs then if n == s then [t] else ["given: " ++ ppStmt s
+  , "reduced: " ++ t, "reconstructed: " ++ ppStmt n] else errs
 
 reduction :: UserTypes -> [Stmt] -> String
-reduction us = unlines . map (reduceAndReconstruct us)
+reduction us = unlines . concatMap (reduceAndReconstruct us)

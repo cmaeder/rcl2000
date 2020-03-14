@@ -161,3 +161,7 @@ apply m s is = let
   im = Map.findWithDefault (error $ "apply: " ++ s) s $ fctMap m
   in IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i im)
   $ IntSet.toList is
+
+-- | replacement for Control.Exception.assert that requires compiler options
+assert :: String -> Bool -> a -> a
+assert s b a = if b then a else error $ "assert: " ++ s

@@ -37,7 +37,7 @@ readModel = do
   let m = foldl readSets (foldl readS (foldl readPA (foldl readUA
         (foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
         $ lines ses) $ lines ts
-  return $ assert "read" (properStructure m) m
+  if properStructure m then return m else error "readModel"
 
 readUA :: Model -> String -> Model
 readUA m s = case words s of
@@ -74,9 +74,9 @@ addSURs s u rs m
   { sessions = let
       v = Session (Name u) . Set.fromList $ map Role rs
       is = illegalActiveRoles m v
-      in assert ("invalid session roles: "
-        ++ unwords (s : u : map role (Set.toList is)))
-      (Set.null is) . Map.insert s v $ sessions m }
+      in if Set.null is then Map.insert s v $ sessions m
+         else error $ "invalid session roles: "
+        ++ unwords (s : u : map role (Set.toList is))}
 
 checkOp :: String -> Model -> Bool
 checkOp s m = Operation s `Set.member` operations m
@@ -99,12 +99,12 @@ addPA p r m = if checkU r m || checkOp r m
 
 addRH :: String -> [String] -> Model -> Model
 addRH r js m = addR r $ if null js then m else (foldr addR m js)
-    { rh = let
-        k = Role r
-        v = Map.insertWith Set.union k (Set.fromList $ map Role js) $ rh m
-        c = rhCycle v k
-        cs = map role $ Set.toList c
-      in assert ("cyclic role: " ++ unwords (r : cs)) (Set.null c) v }
+  { rh = let
+    k = Role r
+    v = Map.insertWith Set.union k (Set.fromList $ map Role js) $ rh m
+    c = rhCycle v k
+    cs = map role $ Set.toList c
+    in if Set.null c then v else error $ "cyclic role: " ++ unwords (r : cs) }
 
 readSets :: Model -> String -> Model
 readSets m s = case words s of

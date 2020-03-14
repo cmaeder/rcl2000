@@ -179,10 +179,6 @@ keySigns :: String
 keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
   ++ concatMap (sCmpOp Uni) [Elem, Le, Ge, Ne]
 
--- | replacement for Control.Exception.assert that requires compiler options
-assert :: String -> Bool -> a -> a
-assert s b a = if b then a else error $ "assert: " ++ s
-
 -- | OCL compliant class name
 stSet :: SetType -> String
 stSet = foldSetType ("SetOf" ++) show

@@ -1,5 +1,5 @@
-module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet,
-  Form (..), Format (..), form, pStmts, rStmt, pSet, Doc, render) where
+module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar, ppType,
+  Form (..), Format (..), pStmts, rStmt, pSet, Doc, render) where
 
 import Rcl.Ast
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep, vcat,
@@ -22,16 +22,24 @@ ppTerm = render . pTerm form
 ppSet :: Set -> String
 ppSet = render . pSet form
 
+ppVar :: (Var, Set) -> String
+ppVar = render . pVar form
+
 form :: Form
 form = Form Uni True
+
+ppType :: Maybe SetType -> String
+ppType = maybe "Unknown" stSet
 
 pStmts :: Form -> [Stmt] -> Doc
 pStmts m = vcat . map (lStmt m)
 
 rStmt :: Form -> (Stmt, Vars) -> Doc
-rStmt m (s, vs) = sep [cat . map (\ (i, e) -> let f = format m in hcat
-  $ map text [sAll f, stVar i, sIn f] ++ [pSet m e, text $ sDot f])
-  $ reverse vs, lStmt m s]
+rStmt m (s, vs) = sep [cat . map (pVar m) $ reverse vs, lStmt m s]
+
+pVar :: Form -> (Var, Set) -> Doc
+pVar m (i, e) = let f = format m in hcat $ map text [sAll f, stVar i, sIn f]
+  ++ [pSet m e, text $ sDot f]
 
 lStmt :: Form -> Stmt -> Doc
 lStmt m s = let d = pStmt m s in case format m of
