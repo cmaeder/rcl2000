@@ -44,6 +44,9 @@ type Vars = [(Var, Set)]
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]
 
+forms :: [Format]
+forms = [Ascii, Uni, LaTeX]
+
 mapStmt :: FoldStmt Term Stmt
 mapStmt = FoldStmt
   { foldBool = const BoolOp

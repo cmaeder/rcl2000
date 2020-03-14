@@ -39,30 +39,28 @@ options =
     [ Option "h" ["help"]
       (NoArg $ \ o -> o {help = True})
       "show help message"
+    , Option "f" ["format"]
+      (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
+      "print to stdout using format LaTeX, Ascii or Unicode (default)"
     , Option "n" ["nopars"]
       (NoArg $ \ o -> o {parens = False, pprint = True})
       "pretty print without parentheses"
-    , Option "p" ["print"] (NoArg $ \ o -> o {pprint = True})
-      "pretty print"
     , Option "c" ["check"] (NoArg $ \ o -> o {check = True})
-      "type check"
+      "report type checking errors"
     , Option "r" ["reduce"] (NoArg $ \ o -> o {reduce = True})
-      "reduce and reconstruct"
+      "show reductions and check reconstruction"
     , Option "t" ["types"] (NoArg $ \ o -> o {getTypes = True})
-      "read only types (incompatible with -e, -i and .soil output)"
+      "read user defined types from file"
+    , Option "u" ["use-file"]
+      (ReqArg (\ f o -> o {useFile = f, toOcl = True}) "<file>")
+      "include RBAC use file in output file"
+    , Option "o" ["output-file"]
+      (ReqArg (\ f o -> o {outFile = f, toOcl = True}) "<file>")
+      "write use (and soil) to .use (and .soil) output file(s)"
     , Option "e" ["evaluate"] (NoArg $ \ o -> o {evaluate = True})
       "evaluate formulas"
     , Option "i" ["interactive"] (NoArg $ \ o -> o {prompt = True})
-      "prompt for interactive input"
-    , Option "f" ["format"]
-      (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
-      "use format LaTeX, Ascii or Unicode (default)"
-    , Option "u" ["use-file"]
-      (ReqArg (\ f o -> o {useFile = f, toOcl = True}) "<file>")
-      "include use file <file>"
-    , Option "o" ["output-file"]
-      (ReqArg (\ f o -> o {outFile = f, toOcl = True}) "<file>")
-      "write output to file <file>" ]
+      "prompt for interactive input" ]
 
 data Opts = Opts
   { parens :: Bool

@@ -98,9 +98,6 @@ parenSet = pch '(' *> set <* pch ')'
 pch :: Char -> Parser Char
 pch c = char c <* skip
 
-forms :: [Format]
-forms = [Ascii, Uni, LaTeX]
-
 alts :: (Format -> String) -> GenParser Char () String
 alts f = choice $ map (pString id . f) forms
 
