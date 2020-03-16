@@ -87,7 +87,7 @@ pPrimSet :: Set -> Doc
 pPrimSet s = text $ case s of
   PrimSet t -> t
   Var v -> stVar v
-  _ -> error "no prim set"
+  _ -> error "pPrimSet"
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
 pParenSet o s = case s of

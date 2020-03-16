@@ -110,9 +110,9 @@ eval us m e = foldSet FoldSet
     (_, Left _) -> v2
     (Right r1, Right r2) -> case o of
       Ops -> case (r1, r2) of
-        (Ints rs, Ints os) -> Right . Ints . IntSet.unions
-          $ map (\ p -> Map.findWithDefault IntSet.empty p $ opsMap m)
-          [(r, ob) | r <- IntSet.toList rs, ob <- IntSet.toList os]
+        (Ints rs, Ints os) -> Right . Ints $ IntSet.unions
+          [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
+            | r <- IntSet.toList rs, ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " first argument: " ++ t1
         (_, VSet _) -> Left $ "unexpected set of set for "
@@ -163,7 +163,7 @@ evalPrim m e s = case s of
   Var v@(MkVar i _ _) -> case IntMap.lookup i e of
     Just r -> Right r
     Nothing -> Left $ "unknown variable: " ++ stVar v
-  _ -> error "evalPrim: not primitive"
+  _ -> error "evalPrim"
 
 toVSet :: Value -> Set.Set Value
 toVSet v = case v of
