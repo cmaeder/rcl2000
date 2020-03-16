@@ -13,17 +13,19 @@ import Rcl.Interpret (eval, interprets)
 import Rcl.Model (initSess)
 import Rcl.Parse (set, parser)
 import Rcl.Read (addSURs)
-import Rcl.Print (ppSet, ppStmt)
+import Rcl.Print (ppSet, lineStmt)
 import Rcl.Type (typeOfSet, typeErrors)
 
 import System.Console.Haskeline
-import System.Console.Haskeline.History
+import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
 import Text.ParserCombinators.Parsec
 
 evalInput :: [Stmt] -> Model -> IO ()
-evalInput l m = let ls = map ppStmt l in
-  runInputT defaultSettings $
-    modifyHistory (flip (foldr addHistory) ls) >> loop l m
+evalInput l m = let ls = map lineStmt l in do
+  prefs <- readPrefs ".haskeline"
+  runInputTWithPrefs prefs
+    defaultSettings { historyFile = Just ".haskeline_history" }
+    $ modifyHistory (flip (foldr addHistoryRemovingAllDupes) ls) >> loop l m
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =

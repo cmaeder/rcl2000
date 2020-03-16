@@ -1,9 +1,9 @@
 module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar, ppType,
-  Form (..), Format (..), pStmts, rStmt, pSet, Doc, render) where
+  Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
 import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep, vcat,
-  parens, braces, int)
+  parens, braces, int, renderStyle, style, mode, Mode (OneLineMode))
 
 data Form = Form { format :: Format, prParen :: Bool }
 
@@ -15,6 +15,9 @@ prStmt = render . rStmt form
 
 ppStmt :: Stmt -> String
 ppStmt = render . pStmt form
+
+lineStmt :: Stmt -> String
+lineStmt = renderStyle style { mode = OneLineMode} . pStmt form
 
 ppTerm :: Term -> String
 ppTerm = render . pTerm form
