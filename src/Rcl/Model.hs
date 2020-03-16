@@ -1,5 +1,5 @@
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
-  , toInts) where
+  , toInts, initSess) where
 
 import Data.Char (isAlphaNum, isAscii, isLetter)
 import qualified Data.IntMap as IntMap
@@ -30,8 +30,10 @@ fromList = foldr
 invert :: Map R (Set.Set R) -> Map R (Set.Set R)
 invert = fromList . map (\ (a, b) -> (b, a)) . toList
 
-insUserSet :: String -> Base -> [String] -> Model -> Model
-insUserSet s b l m = addStr s m
+insUserSet :: Base -> Model -> Model
+insUserSet b m = let
+  l = Set.toList $ getStrings m b
+  s = show b in addStr s m
   { userSets = Map.insert s (SetOf $ ElemTy b, toInts m l, l) $ userSets m }
 
 toInts :: Model -> [String] -> Value
@@ -118,9 +120,7 @@ initRH m = let n = transClosure $ rh m in
 
 -- | insert initial base sets
 initBases :: Model -> Model
-initBases m = foldr
-  (\ b n -> insUserSet (show b) b (Set.toList $ getStrings m b) n)
-  m primTypes
+initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
 initOpsMap m =
@@ -174,3 +174,7 @@ function bo m = let
   (_, Objects) -> IntMap.fromList $ map (\ p@(Permission _ (Object ob)) ->
         (toInt m $ pStr p, IntSet.singleton (toInt m ob))) ps
   _ -> error "function"
+
+initSess :: Model -> Model
+initSess = insUserSet S
+  . flip (foldr initFctMap) [(S, Roles False), (S, User), (U, Sessions)]

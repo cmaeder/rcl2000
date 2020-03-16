@@ -1,4 +1,4 @@
-module Rcl.Read (readModel, readTypes) where
+module Rcl.Read (readModel, readTypes, addSURs) where
 
 import Data.List (find, stripPrefix)
 import qualified Data.Map as Map
@@ -63,20 +63,22 @@ readRH m s = case words s of
 
 readS :: Model -> String -> Model
 readS m s = case words s of
-  i : u : rs -> addSURs i u rs m
+  i : u : rs -> case addSURs i u rs m of
+    Left e -> error e
+    Right n -> n
   _ -> m
 
-addSURs :: String -> String -> [String] -> Model -> Model
+addSURs :: String -> String -> [String] -> Model -> Either String Model
 addSURs s u rs m
-  | checkSid s m = error $ "session identifier already known: " ++ s
-  | not $ checkU u m = error $ "user unknown: " ++ u
-  | otherwise = addS s (foldr addR m rs)
-  { sessions = let
+  | checkSid s m = Left $ "session identifier already known: " ++ s
+  | not $ checkU u m = Left $ "user unknown: " ++ u
+  | otherwise = let
       v = Session (Name u) . Set.fromList $ map Role rs
       is = illegalActiveRoles m v
-      in if Set.null is then Map.insert s v $ sessions m
-         else error $ "invalid session roles: "
-        ++ unwords (s : u : map role (Set.toList is))}
+      in if Set.null is then Right $ addS s (foldr addR m rs)
+        { sessions = Map.insert s v $ sessions m }
+         else Left $ "unassigned roles for user of session: "
+           ++ unwords (s : u : map role (Set.toList is))
 
 checkOp :: String -> Model -> Bool
 checkOp s m = Operation s `Set.member` operations m

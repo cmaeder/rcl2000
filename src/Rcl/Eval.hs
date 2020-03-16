@@ -1,15 +1,18 @@
 module Rcl.Eval (evalInput) where
 
+import Control.Monad (unless)
 import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
-import qualified Data.Map as Map (insert, toList)
+import qualified Data.Map as Map (member, delete, insert, toList)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
+import Rcl.Model (initSess)
 import Rcl.Parse (set, parser)
+import Rcl.Read (addSURs)
 import Rcl.Print (ppSet, ppStmt)
 import Rcl.Type (typeOfSet, typeErrors)
 
@@ -51,6 +54,21 @@ loop l m = do
          outputStr (if null ls then "access granted\n" else
                         unlines $ "access denied" : ls)
          loop l m
+      w : ad : si : urs | ck w "session" && ckAd ad ->
+        if isAdd ad then case urs of
+          [] -> do
+            outputStrLn $ "missing user and roles for session: " ++ si
+            loop l m
+          u : rs -> case addSURs si u rs m of
+            Left e -> outputStrLn e >> loop l m
+            Right n -> do
+              outputStrLn $ "session added: " ++ si
+              loop l $ initSess n
+        else let ses = sessions m in if si `Map.member` ses then do
+            unless (null urs) . outputStrLn $ "ignoring: " ++ unwords urs
+            outputStrLn $ "session deleted: " ++ si
+            loop l $ initSess m { sessions = Map.delete si ses }
+          else outputStrLn ("unknown session: " ++ si) >> loop l m
       _ -> case (sp, fp) of
         (Right a, _) -> do
           outputStrLn $ case eval us m IntMap.empty a of
@@ -66,6 +84,12 @@ loop l m = do
 
 ckCmd :: String -> String -> Bool
 ckCmd w k = map toLower w `elem` keys k
+
+ckAd :: String -> Bool
+ckAd s = map toLower s `elem` ["add", "del", "delete"]
+
+isAdd :: String -> Bool
+isAdd s = map toLower s == "add"
 
 keys :: String -> [String]
 keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
@@ -87,9 +111,9 @@ printHelpText =
   ["enter set or statement or any of the following commands."
   , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
   , "help, quit, or exit"
-  , "access <sessionId> <operation> <object>" ]
+  , "access <sessionId> <operation> <object>"
+  , "session add|del <sessionId> [<user> <roles>*]"]
 {-
-  , "session add|del <sessionId> [<user> <roles>*]"
   , "role add|del <role> <juniorRole>*"
   , "user add|del <user> <roles>*"
   , "permission add <operation> <object> <roles>*"
