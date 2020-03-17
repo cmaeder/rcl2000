@@ -132,9 +132,7 @@ strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
   . t (Operation, operations, OP)
   . t (Object, objects, OBJ)
   . t (id, Map.keysSet . sessions, S)
-  $ (case words v of
-    [oP, oBj] -> t (const $ strP oP oBj, permissions, P)
-    _ -> id) []
+  $ t (id, Set.map pStr . permissions, P) []
 
 illegalActiveRoles :: Model -> S -> Set.Set R
 illegalActiveRoles m s = activeRoles s \\ rolesOfU m (user s)

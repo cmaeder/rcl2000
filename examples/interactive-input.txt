@@ -1,0 +1,21 @@
+h
+S
+user s1
+sessions u1
+roles u1
+roles u2
+roles* r1
+roles r9
+a s1 op1_obj2
+a s1 op1_obj1
+a s2 op1_obj1
+permissions r1
+roles op1_obj1
+roles op1_obj2
+roles* op1_obj2
+s add s4 u1 r4
+roles s4
+roles* s4
+sessions u1
+s del s3
+sessions u1

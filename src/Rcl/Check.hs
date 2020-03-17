@@ -86,31 +86,27 @@ checkInts m b =
 permsOfRs :: Model -> Set.Set R -> Set.Set P
 permsOfRs m = Set.unions . map (permissionsOfR m) . Set.toList
 
-checkAccess :: Model -> String -> OP -> OBJ -> [String]
-checkAccess m s op1@(Operation oP) obj2@(Object oBj) =
-  let p = strP oP oBj
-      ps = pStr p
-      pm = p `Set.member` permissions m
-      rs = rolesOfP m p
-      rl = Set.toList rs
-      nr = null rl
-      nn = not nr
-      us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
-      usr = null us
-      usn = not usr
-      l = [(op1 `Set.notMember` operations m, "unknown operation: " ++ oP)
-        , (obj2 `Set.notMember` objects m, "unknown object: " ++ oBj)
-        , (not pm, "unknown permission: " ++ ps)
-        , (pm && nr, "no roles for permission: " ++ ps)
-        , (nn, "required roles: " ++ unwords (map role rl))
-        , (nn && usr, "no user with roles for permission: " ++ ps)
-        , (usn, "possible users: " ++ unwords us)]
-      errs = map snd $ filter fst l
-  in case Map.lookup s $ sessions m of
-    Nothing -> ("unknown session: " ++ s) : errs
-    Just (Session u@(Name n) as) -> if p `elem` permsOfRs m as then []
-      else let ru = rolesOfU m u in if p `elem` permsOfRs m ru
+checkAccess :: Model -> String -> String -> [String]
+checkAccess m s ps = case Map.lookup s $ sessions m of
+    Nothing -> ["unknown session: " ++ s]
+    Just (Session u@(Name n) as) -> case Set.maxView . Set.filter
+        ((ps ==) . pStr) $ permissions m of
+      Nothing -> ["unknown permission: " ++ ps]
+      Just (p, _) -> if p `elem` permsOfRs m as then []
+        else let
+         ru = rolesOfU m u
+         rs = rolesOfP m p
+         rl = Set.toList rs
+         nr = null rl
+         nn = not nr
+         us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
+         usr = null us
+         usn = not usr in if p `elem` permsOfRs m ru
          then ["roles of user '" ++ n ++ "' not activated: " ++
            unwords (map role . Set.toList $ Set.intersection rs ru)]
-         else (if pm then (("missing assigned roles for user: " ++ n) :)
-               else id) errs
+         else ("missing assigned roles for user: " ++ n) :
+               map snd (filter fst
+           [ (nr, "no roles for permission: " ++ ps)
+           , (nn, "required roles: " ++ unwords (map role rl))
+           , (nn && usr, "no user with roles for permission: " ++ ps)
+           , (usn, "possible users: " ++ unwords us)])

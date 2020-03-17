@@ -5,6 +5,7 @@ import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (member, delete, insert, toList)
+import Data.Maybe (fromMaybe)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
@@ -39,6 +40,7 @@ getAllUserTypes m =
 loop :: [Stmt] -> Model -> InputT IO ()
 loop l m = do
   i <- getInputLine "rcl2000> "
+  outputStrLn $ fromMaybe "" i
   case i of
     Nothing -> return () -- Ctrl-D pressed
     Just s -> let
@@ -51,8 +53,8 @@ loop l m = do
       [w] | ck w "exit" -> return ()
         | ck w "quit" -> return ()
         | ck w "help" -> printHelpText >> loop l m
-      [w, si, oP, oBj] | ck w "access" -> do
-         let ls = checkAccess m si (Operation oP) $ Object oBj
+      [w, si, p] | ck w "access" -> do
+         let ls = checkAccess m si p
          outputStr (if null ls then "access granted\n" else
                         unlines $ "access denied" : ls)
          loop l m
@@ -113,7 +115,7 @@ printHelpText =
   ["enter set or statement or any of the following commands."
   , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
   , "help, quit, or exit"
-  , "access <sessionId> <operation> <object>"
+  , "access <sessionId> <permission>"
   , "session add|del <sessionId> [<user> <roles>*]"]
 {-
   , "role add|del <role> <juniorRole>*"
