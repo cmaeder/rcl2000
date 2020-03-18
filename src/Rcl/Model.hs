@@ -99,7 +99,9 @@ addOp o m = addS o m
   { operations = Set.insert (Operation o) $ operations m }
 
 addObj :: String -> Model -> Model
-addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
+addObj o m = if '_' `elem` o then
+  error $ "an object must not contain an underscore: " ++ o
+  else addS o m { objects = Set.insert (Object o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
