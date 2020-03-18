@@ -74,6 +74,10 @@ usersOfR :: Model -> R -> Set.Set U
 usersOfR m r = Set.foldr
   (\ (u, v) -> if r == v then Set.insert u else id) Set.empty $ ua m
 
+rolesOfR :: Map R (Set.Set R) -> Set.Set R -> Set.Set R
+rolesOfR m s = Set.unions $ s
+  : map (flip (Map.findWithDefault Set.empty) m) (Set.toList s)
+
 rolesOfU :: Model -> U -> Set.Set R
 rolesOfU m u = Set.foldr
   (\ (v, r) -> if u == v then Set.insert r else id) Set.empty $ ua m
@@ -135,7 +139,7 @@ strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
   $ t (id, Set.map pStr . permissions, P) []
 
 illegalActiveRoles :: Model -> S -> Set.Set R
-illegalActiveRoles m s = activeRoles s \\ rolesOfU m (user s)
+illegalActiveRoles m s = activeRoles s \\ rolesOfR (rh m) (rolesOfU m $ user s)
 
 rhCycle :: Map R (Set.Set R) -> R -> Set.Set R
 rhCycle m k = let rs = juniors m Set.empty k in
