@@ -94,8 +94,8 @@ checkAccess m s ps = case Map.lookup s $ sessions m of
       Nothing -> ["unknown permission: " ++ ps]
       Just (p, _) -> if p `elem` permsOfRs m as then []
         else let
-         ru = rolesOfU m u
-         rs = rolesOfP m p
+         ru = rolesOfR (rh m) $ rolesOfU m u
+         rs = rolesOfR (inv m) $ rolesOfP m p
          rl = Set.toList rs
          nr = null rl
          nn = not nr
