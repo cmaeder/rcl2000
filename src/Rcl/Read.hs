@@ -7,7 +7,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addS, addU, checkU, addP, addR, checkR, toInts)
+import Rcl.Model (addS, addU, checkU, addP, addR, checkR, toInts, initRH)
 
 readTypes :: IO UserTypes
 readTypes = do
@@ -35,7 +35,7 @@ readModel = do
   ses <- readFile "examples/s.txt"
   ts <- readFile "examples/sets.txt"
   let m = foldl readSets (foldl readS (foldl readPA (foldl readUA
-        (foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
+        (initRH . foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
         $ lines ses) $ lines ts
   if properStructure m then return m else error "readModel"
 

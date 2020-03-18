@@ -1,5 +1,5 @@
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
-  , toInts, initSess) where
+  , toInts, initRH, initSess) where
 
 import Data.Char (isAlphaNum, isAscii, isLetter)
 import qualified Data.IntMap as IntMap
@@ -114,7 +114,7 @@ addP oP oBj m = let
       { permissions = Set.insert p ps }
 
 initModel :: Model -> Model
-initModel = flip (foldr initFctMap) fcts . initRH . initOpsMap . initBases
+initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases
 
 initRH :: Model -> Model
 initRH m = let n = transClosure $ rh m in
