@@ -14,6 +14,7 @@ end
 
 class R
 operations
+  getRoles() : Set(R) = juniors()->including(self)
   juniors() : Set(R) = junior->closure(junior)->asSet
   seniors() : Set(R) = senior->closure(senior)->asSet
 constraints
@@ -30,7 +31,7 @@ attributes
   user : U
 constraints
 inv onlyActiveAssignedRoles:
-  user.r->includesAll(activeRoles)
+  user.r.getRoles()->includesAll(activeRoles)
 end
 
 class U

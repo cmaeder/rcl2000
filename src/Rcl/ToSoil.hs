@@ -40,7 +40,7 @@ toSoil m = unlines $ let
      (\ (s, (t, _, l)) -> map (\ e -> (s, t, e)) l) $ Map.toList us)
 
 mkNew :: String -> String -> String
-mkNew c n = "!new " ++ c ++ "('" ++ n ++ "')"
+mkNew c n = "!create " ++ n ++ " : " ++ c
 
 new :: Base -> (a -> String) -> Set.Set a -> [String]
 new b f = map (mkNew (show b) . f) . Set.toList

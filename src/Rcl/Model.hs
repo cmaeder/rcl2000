@@ -57,7 +57,7 @@ keywords = Set.fromList $ let
   \ for in if then declare insert delete destroy new into from do let \
   \ context abstract associationclass ordered else endif \
   \ Real Integer Boolean Collection String OrderedSet Set Bag Sequence \
-  \ result self"
+  \ result self create set"
 
 addS :: String -> Model -> Model
 addS s m = let
