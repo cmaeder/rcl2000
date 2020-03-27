@@ -70,9 +70,12 @@ pStr p = operation (op p) ++ "_" ++ object (obj p)
 strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Object v
 
+usersOfRs :: Model -> Set.Set R -> Set.Set U
+usersOfRs m r = Set.foldr
+  (\ (u, v) -> if v `Set.member` r then Set.insert u else id) Set.empty $ ua m
+
 usersOfR :: Model -> R -> Set.Set U
-usersOfR m r = Set.foldr
-  (\ (u, v) -> if r == v then Set.insert u else id) Set.empty $ ua m
+usersOfR m = usersOfRs m . rolesOfR (inv m) . Set.singleton
 
 rolesOfR :: Map R (Set.Set R) -> Set.Set R -> Set.Set R
 rolesOfR m s = Set.unions $ s

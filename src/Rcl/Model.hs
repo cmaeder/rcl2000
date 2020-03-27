@@ -152,9 +152,9 @@ function bo m = let
   in case bo of
   (S, User) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
     (toInt m s, IntSet.singleton (toInt m u))) ss
-  (_, User) -> IntMap.fromList $ concatMap (\ o -> map (\ r ->
+  (_, User) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . name)
-        . Set.toList $ usersOfR m r)) . Set.toList $ getRoles (inv m) o) rs
+        . Set.toList $ usersOfR m r)) rs
   (U, Roles _) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m . role)
         . Set.toList $ rolesOfU m u)) us
