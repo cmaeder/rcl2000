@@ -30,14 +30,11 @@ properStructure m = let
   h = rh m
   uSets = userSets m
   vs = Map.elems uSets
-  ks = Map.keys uSets
   im = intMap m
   sm = strMap m
   strs = Map.keysSet sm
   is = IntMap.keysSet im
   in all ((`Set.member` us) . user) ss
-  && all (null . strToBase m) ks
-  && all ((<= 1) . length . strToBase m) (Map.keys sm)
   && all ((`isSubsetOf` rs) . activeRoles) ss
   && Set.map op ps `isSubsetOf` operations m
   && Set.map obj ps `isSubsetOf` objects m

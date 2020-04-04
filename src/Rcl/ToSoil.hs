@@ -6,7 +6,7 @@ import qualified Data.Set as Set
 
 import Rcl.Ast (Base (..), SetType (..), baseType, foldSetType)
 import Rcl.Data
-import Rcl.ToOcl (aggName, tr)
+import Rcl.ToOcl (aggName, tr, enc)
 
 transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
 transReduce m = let c = transClosure m in Map.map ( \ s -> let
@@ -66,4 +66,4 @@ code :: SetType -> String -> String
 code = maybe tr codeB . baseSet
 
 codeB :: Base -> String -> String
-codeB b s = map toLower (show b) ++ '_' : s
+codeB b s = map toLower (show b) ++ '_' : enc s

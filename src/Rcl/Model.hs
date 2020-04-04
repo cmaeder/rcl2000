@@ -1,17 +1,15 @@
-module Rcl.Model (initModel, addS, addU, checkU, addP, addR, checkR
+module Rcl.Model (initModel, addS, addU, checkU, addP, addR
   , toInts, initRH, initSess) where
 
-import Data.Char (isAlphaNum, isAscii, isLetter)
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
-import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes, unOps, useOp)
+import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -42,37 +40,10 @@ toInts m = Ints . IntSet.fromList . map (toInt m)
 toInt :: Model -> String -> Int
 toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
--- | keywords for use (cf. use-mode.el)
-keywords :: Set.Set String
-keywords = Set.fromList $ let
-  l = map show primTypes
-  l1 = map ("SetOf" ++) l
-  rl b = useOp (Just b) . Roles
-  in l ++ l1 ++ map ('A' :) l1
-  ++ map (useOp Nothing) unOps
-  ++ [rl b s | b <- [R, S, U, P], s <- [False, True]]
-  ++ words "user RH UA PA SessionRoles Builtin RBAC \
-  \ model enum class attributes operations constraints begin end inv \
-  \ pre post association aggregation between composition role init \
-  \ for in if then declare insert delete destroy new into from do let \
-  \ context abstract associationclass ordered else endif \
-  \ Real Integer Boolean Collection String OrderedSet Set Bag Sequence \
-  \ result self create set"
-
 addS :: String -> Model -> Model
-addS s m = let
-  b = all (\ c -> isAscii c && isAlphaNum c || c == '_') s
-  k = s `Set.member` keywords
-  p = any (`isPrefixOf` s) $ words "SetOfSet ASetOfSet"
-  sm = strMap m
-  in case Map.lookup s sm of
+addS s m = case Map.lookup s $ strMap m of
     Nothing
-      | not b -> error $ "illegal character in: " ++ s
-      | k -> error $ "illegal RBAC or use keyword: " ++ s
-      | p -> error $ "illegal prefix for: " ++ s
       | null s -> error "addS: illegal empty string"
-      | not . isLetter $ head s ->
-        error $ "string must start with a letter: " ++ s
       | otherwise -> addStr s m
     _ -> m
 
@@ -90,9 +61,6 @@ checkU u m = Name u `Set.member` users m
 
 addR :: String -> Model -> Model
 addR r m = addS r m { roles = Set.insert (Role r) $ roles m }
-
-checkR :: String -> Model -> Bool
-checkR r m = Role r `Set.member` roles m
 
 addOp :: String -> Model -> Model
 addOp o m = addS o m

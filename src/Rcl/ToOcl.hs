@@ -1,9 +1,11 @@
-module Rcl.ToOcl (ocl, aggName, tr) where
+module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
-import Data.Char (toLower, isDigit, isUpper, isAscii)
+import Data.Char (ord, toLower, toUpper,
+  isDigit, isAsciiUpper, isAscii, isAlphaNum)
 import Data.List (nub)
 import Data.Map (toList)
 import Data.Maybe (isNothing)
+import Numeric (showHex)
 
 import Rcl.Ast
 import Rcl.Reduce (runReduce)
@@ -22,12 +24,19 @@ toSubs t = case t of
   ElemTy _ -> []
   SetOf s -> t : toSubs s
 
--- | translate user set names
+-- | translate user _c_onflict set names
 tr :: String -> String
 tr s = if s `elem` map show primTypes
-  || all (\ c -> isDigit c || isUpper c && isAscii c) s
+  || all (\ c -> isDigit c || isAsciiUpper c) s
   && s `notElem` words "RRAC RH UA PA HR SU"
-  then s else "c_" ++ s
+  then s else "c_" ++ enc s
+
+-- | code out non-valid characters
+enc :: String -> String
+enc = concatMap $ \ c -> case c of
+  '_' -> "__"
+  _ | isAscii c && isAlphaNum c -> [c]
+    | otherwise -> '_' : map toUpper (showHex (ord c) "_")
 
 toClass :: (String, SetType) -> String
 toClass (s, t) = "class " ++ tr s ++ " < " ++ stSet t ++ " end"
