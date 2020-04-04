@@ -79,6 +79,9 @@ foldSetType f g s = case s of
   ElemTy b -> g b
   SetOf t -> f $ foldSetType f g t
 
+baseType :: SetType -> Base
+baseType = foldSetType id id
+
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
 

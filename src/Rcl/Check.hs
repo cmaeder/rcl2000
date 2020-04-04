@@ -8,7 +8,7 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (isSubsetOf)
 
-import Rcl.Ast (SetType (..), Base, primTypes)
+import Rcl.Ast (SetType (..), Base, primTypes, baseType)
 import Rcl.Data
 
 properSessions :: Model -> Bool
@@ -64,11 +64,6 @@ checkValue p = case p of
     all (\ v -> checkValue (e, v, a)) $ Set.toList s
   (ElemTy _, Ints vs, _) -> IntSet.size vs == 1
   _ -> False
-
-baseType :: SetType -> Base
-baseType s = case s of
-  ElemTy b -> b
-  SetOf e -> baseType e
 
 getInts :: Value -> IntSet
 getInts v = case v of

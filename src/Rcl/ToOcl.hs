@@ -1,6 +1,6 @@
-module Rcl.ToOcl (ocl, aggName) where
+module Rcl.ToOcl (ocl, aggName, tr) where
 
-import Data.Char (toLower)
+import Data.Char (toLower, isDigit, isUpper, isAscii)
 import Data.List (nub)
 import Data.Map (toList)
 import Data.Maybe (isNothing)
@@ -22,12 +22,19 @@ toSubs t = case t of
   ElemTy _ -> []
   SetOf s -> t : toSubs s
 
+-- | translate user set names
+tr :: String -> String
+tr s = if s `elem` map show primTypes
+  || all (\ c -> isDigit c || isUpper c && isAscii c) s
+  && s `notElem` words "RRAC RH UA PA HR SU"
+  then s else "c_" ++ s
+
 toClass :: (String, SetType) -> String
-toClass (s, t) = "class " ++ s ++ " < " ++ stSet t ++ " end"
+toClass (s, t) = "class " ++ tr s ++ " < " ++ stSet t ++ " end"
 
 toOp :: (String, SetType) -> String
-toOp (s, t) = "  " ++ s ++ "() : " ++ useType t ++ " = "
-  ++ s ++ ".allInstances->any(true).c()"
+toOp (s, t) = "  " ++ tr s ++ "() : " ++ useType t ++ " = "
+  ++ tr s ++ ".allInstances->any(true).c()"
 
 toSetClass :: SetType -> [String]
 toSetClass t = case t of
@@ -112,7 +119,7 @@ setToOcl us = foldSet FoldSet
   , foldUn = \ (UnOp _ s) o d ->
         cat [pUnOp (typeOfSet us s) o, parens $ singleSet us s d]
   , foldPrim = \ s -> text $ case s of
-      PrimSet t -> t ++ "()"
+      PrimSet t -> tr t ++ "()"
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
