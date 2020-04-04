@@ -12,7 +12,7 @@ import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
 import Rcl.Parse (parser, parseFromFile, ParseError)
 import Rcl.Print (render, pStmts, Form (Form), Format (..))
-import Rcl.Read (readTypes, readModel)
+import Rcl.Read (readTypes, readModel, readMyFile)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
@@ -121,7 +121,7 @@ reportParse mus o eith = case eith of
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do
-      str <- readFile (useFile o)
+      str <- readMyFile (useFile o)
       writeFile use $ str ++ ocl us ast
       case mus of
         Left m -> writeFile (out ++ ".soil") $ toSoil m

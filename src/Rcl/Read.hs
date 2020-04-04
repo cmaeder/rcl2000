@@ -1,5 +1,8 @@
-module Rcl.Read (readModel, readTypes, addSURs) where
+{-# LANGUAGE ScopedTypeVariables #-}
+module Rcl.Read (readModel, readTypes, addSURs, readMyFile) where
 
+
+import Control.Exception (handle, IOException)
 import Data.List (find, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -9,9 +12,20 @@ import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, toInts, initRH)
 
+import System.Directory (doesFileExist)
+
+readMyFile :: FilePath -> IO String
+readMyFile f = handle (\ (e :: IOException) -> do
+  print e
+  return "") $ do
+  b <- doesFileExist f
+  if b then readFile f else do
+    putStrLn $ "missing file: " ++ f
+    return ""
+
 readTypes :: IO UserTypes
 readTypes = do
-  ts <- readFile "examples/types.txt"
+  ts <- readMyFile "examples/types.txt"
   return . foldl readType Map.empty $ lines ts
 
 readType :: UserTypes -> String -> UserTypes
@@ -29,11 +43,11 @@ strT s = case stripPrefix "SetOf" s of
 
 readModel :: IO Model
 readModel = do
-  rhs <- readFile "examples/rh.txt"
-  uas <- readFile "examples/ua.txt"
-  pas <- readFile "examples/pa.txt"
-  ses <- readFile "examples/s.txt"
-  ts <- readFile "examples/sets.txt"
+  rhs <- readMyFile "examples/rh.txt"
+  uas <- readMyFile "examples/ua.txt"
+  pas <- readMyFile "examples/pa.txt"
+  ses <- readMyFile "examples/s.txt"
+  ts <- readMyFile "examples/sets.txt"
   let m = foldl readSets (foldl readS (foldl readPA (foldl readUA
         (initRH . foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
         $ lines ses) $ lines ts
