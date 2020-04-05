@@ -53,8 +53,8 @@ loop l m = do
       [w] | ck w "exit" -> return ()
         | ck w "quit" -> return ()
         | ck w "help" -> printHelpText >> loop l m
-      [w, si, p] | ck w "access" -> do
-         let ls = checkAccess m si p
+      [w, si, oP, oBj] | ck w "access" -> do
+         let ls = checkAccess m si oP oBj
          outputStr (if null ls then "access granted\n" else
                         unlines $ "access denied" : ls)
          loop l m
@@ -115,7 +115,7 @@ printHelpText =
   ["enter set or statement or any of the following commands."
   , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
   , "help, quit, or exit"
-  , "access <sessionId> <permission>"
+  , "access <sessionId> <operation> <object>"
   , "session add|del <sessionId> [<user> <roles>*]"]
 {-
   , "role add|del <role> <juniorRole>*"

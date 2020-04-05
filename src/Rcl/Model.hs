@@ -125,7 +125,7 @@ function bo m = let
         . Map.keys $ sessionsOfU m u)) us
   (_, Permissions _) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . pStr)
-        . Set.toList $ permissionsOfR m r)) rs
+        . Set.toList . permissionsOfRs m $ Set.singleton r)) rs
   (_, Objects) -> IntMap.fromList $ map (\ p@(Permission _ (Object ob)) ->
         (toInt m $ pStr p, IntSet.singleton (toInt m ob))) ps
   _ -> error "function"

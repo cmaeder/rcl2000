@@ -78,27 +78,36 @@ checkInts m b =
 permsOfRs :: Model -> Set.Set R -> Set.Set P
 permsOfRs m = Set.unions . map (permissionsOfR m) . Set.toList
 
-checkAccess :: Model -> String -> String -> [String]
-checkAccess m s ps = case Map.lookup s $ sessions m of
-    Nothing -> ["unknown session: " ++ s]
-    Just (Session u@(Name n) as) -> case Set.maxView . Set.filter
-        ((ps ==) . pStr_) $ permissions m of
-      Nothing -> ["unknown permission: " ++ ps]
-      Just (p, _) -> if p `elem` permsOfRs m as then []
+checkAccess :: Model -> String -> String -> String -> [String]
+checkAccess m s oP oBj = let
+  p = strP oP oBj
+  ps = pStr p
+  o1 = op p `Set.member` operations m
+  o2 = obj p `Set.member` objects m
+  pc = p `Set.member` permissions m
+  errs = map snd $ filter fst
+    [ (not o1, "unknown operation: " ++ oP)
+    , (not o2, "unknown object: " ++ oBj)
+    , (o1 && o2 && not pc, "unknown permission: " ++ ps)]
+  in case Map.lookup s $ sessions m of
+    Nothing -> ("unknown session: " ++ s) : errs
+    Just (Session u@(Name n) as) -> if pc then
+        if p `elem` permsOfRs m as then []
         else let
-         ru = rolesOfR (rh m) $ rolesOfU m u
-         rs = rolesOfR (inv m) $ rolesOfP m p
-         rl = Set.toList rs
-         nr = null rl
-         nn = not nr
-         us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
-         usr = null us
-         usn = not usr in if p `elem` permsOfRs m ru
-         then ["roles of user '" ++ n ++ "' not activated: " ++
-           unwords (map role . Set.toList $ Set.intersection rs ru)]
-         else ("missing assigned roles for user: " ++ n) :
-               map snd (filter fst
-           [ (nr, "no roles for permission: " ++ ps)
-           , (nn, "required roles: " ++ unwords (map role rl))
-           , (nn && usr, "no user with roles for permission: " ++ ps)
-           , (usn, "possible users: " ++ unwords us)])
+          ru = rolesOfR (rh m) $ rolesOfU m u
+          rs = rolesOfR (inv m) $ rolesOfP m p
+          rl = Set.toList rs
+          nr = null rl
+          nn = not nr
+          us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
+          usr = null us
+          usn = not usr in if p `elem` permsOfRs m ru
+          then ["roles of user '" ++ n ++ "' not activated: " ++
+            unwords (map role . Set.toList $ Set.intersection rs ru)]
+          else ("missing assigned roles for user: " ++ n) :
+            map snd (filter fst
+            [ (nr, "no roles for permission: " ++ ps)
+            , (nn, "required roles: " ++ unwords (map role rl))
+            , (nn && usr, "no user with roles for permission: " ++ ps)
+            , (usn, "possible users: " ++ unwords us)])
+       else errs

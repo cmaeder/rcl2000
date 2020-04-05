@@ -95,9 +95,12 @@ rolesOfP :: Model -> P -> Set.Set R
 rolesOfP m p = Set.foldr
   (\ (v, r) -> if p == v then Set.insert r else id) Set.empty $ pa m
 
+permissionsOfRs :: Model -> Set.Set R -> Set.Set P
+permissionsOfRs m r = Set.foldr
+  (\ (p, v) -> if v `Set.member` r then Set.insert p else id) Set.empty $ pa m
+
 permissionsOfR :: Model -> R -> Set.Set P
-permissionsOfR m r = Set.foldr
-  (\ (p, v) -> if r == v then Set.insert p else id) Set.empty $ pa m
+permissionsOfR m = permissionsOfRs m . rolesOfR (rh m) . Set.singleton
 
 juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
 juniors m visited r = let s = Map.findWithDefault Set.empty r m

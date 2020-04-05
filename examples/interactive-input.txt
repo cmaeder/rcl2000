@@ -6,9 +6,9 @@ roles u1
 roles u2
 roles* r1
 roles r9
-a s1 op1_obj2
-a s1 op1_obj1
-a s2 op1_obj1
+a s1 op1 obj2
+a s1 op1 obj1
+a s2 op1 obj1
 permissions r1
 roles op1_obj1
 roles op1_obj2
