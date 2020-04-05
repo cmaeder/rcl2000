@@ -1,8 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Rcl.Read (readModel, readTypes, addSURs, readMyFile) where
 
-
 import Control.Exception (handle, IOException)
+import Control.Monad (foldM, when)
 import Data.List (find, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -26,15 +26,20 @@ readMyFile f = handle (\ (e :: IOException) -> do
 readTypes :: IO UserTypes
 readTypes = do
   ts <- readMyFile "examples/types.txt"
-  return . foldl readType Map.empty $ lines ts
+  foldM readType Map.empty $ lines ts
 
-readType :: UserTypes -> String -> UserTypes
+readType :: UserTypes -> String -> IO UserTypes
 readType u s = case words s of
   r : l -> case strT r of
-    Just t -> if null l then error $ "missing names for: " ++ r
-      else foldr (`Map.insert` t) u l
-    Nothing -> error $ "illegal type: " ++ r
-  [] -> u
+    Just t -> if null l then do
+      putStrLn $ "missing names for: " ++ r
+      return u
+      else return $ foldr (`Map.insert` t) u l
+    Nothing -> do
+      putStrLn $ "illegal type: " ++ r
+      putStrLn $ "ignoring names: " ++ unwords l
+      return u
+  [] -> return u
 
 strT :: String -> Maybe SetType
 strT s = case stripPrefix "SetOf" s of
@@ -44,38 +49,56 @@ strT s = case stripPrefix "SetOf" s of
 readModel :: IO Model
 readModel = do
   rhs <- readMyFile "examples/rh.txt"
+  m1 <- foldM readRH emptyModel $ lines rhs
   uas <- readMyFile "examples/ua.txt"
+  m2 <- foldM readUA (initRH m1) $ lines uas
   pas <- readMyFile "examples/pa.txt"
+  m3 <- foldM readPA m2 $ lines pas
   ses <- readMyFile "examples/s.txt"
+  m4 <- foldM readS m3 $ lines ses
   ts <- readMyFile "examples/sets.txt"
-  let m = foldl readSets (foldl readS (foldl readPA (foldl readUA
-        (initRH . foldl readRH emptyModel $ lines rhs) $ lines uas) $ lines pas)
-        $ lines ses) $ lines ts
-  if properStructure m then return m else error "readModel"
+  m5 <- foldM readSets m4 $ lines ts
+  if properStructure m5 then return m5 else do
+    putStrLn "internal model error after readModel"
+    putStrLn "please report this and include your input files"
+    return m5
 
-readUA :: Model -> String -> Model
+readUA :: Model -> String -> IO Model
 readUA m s = case words s of
-  u : rs | checkU u m -> error $ "user already known: " ++ s
-    | otherwise -> foldr (addUA u) (addU u m) rs
-  _ -> m
+  u : rs -> do
+    when (checkU u m) . putStrLn $ "user already known: " ++ s
+    return $ foldr (addUA u) (addU u m) rs
+  _ -> return m
 
-readPA :: Model -> String -> Model
+readPA :: Model -> String -> IO Model
 readPA m s = case words s of
-  oP : oBj : rs -> foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
-  [p] -> error $ "provide two words op and obj for permission: " ++ p
-  _ -> m
+  oP : oBj : rs -> do
+    let ps = permissions m
+        p = strP oP oBj
+        p_ = pStr_ p
+    if p `Set.member` ps then putStrLn $ "permission already known: " ++ s
+      else when (p_ `elem` map pStr_ (Set.toList ps))
+      . putStrLn $ "WARN: overlapping permission representation: " ++ p_
+    return $ foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
+  [p] -> do
+    putStrLn $ "provide two words op and obj for (ignored) permission: " ++ p
+    return m
+  _ -> return m
 
-readRH :: Model -> String -> Model
+readRH :: Model -> String -> IO Model
 readRH m s = case words s of
   r : rs -> addRH r rs m
-  _ -> m
+  _ -> return m
 
-readS :: Model -> String -> Model
+readS :: Model -> String -> IO Model
 readS m s = case words s of
   i : u : rs -> case addSURs i u rs m of
-    Left e -> error e
-    Right n -> n
-  _ -> m
+    Left e -> do
+      putStrLn e
+      putStrLn $ "ignoring session: " ++ s
+      return m
+    Right n -> return n
+  _ -> return m
 
 addSURs :: String -> String -> [String] -> Model -> Either String Model
 addSURs s u rs m
@@ -100,30 +123,46 @@ addPA :: P -> String -> Model -> Model
 addPA p r m =
   addR r m { pa = Set.insert (p, Role r) $ pa m }
 
-addRH :: String -> [String] -> Model -> Model
-addRH r js m = addR r $ if null js then m else (foldr addR m js)
-  { rh = let
-    k = Role r
-    v = Map.insertWith Set.union k (Set.fromList $ map Role js) $ rh m
-    c = rhCycle v k
-    cs = map role $ Set.toList c
-    in if Set.null c then v else error $ "cyclic role: " ++ unwords (r : cs) }
+addRH :: String -> [String] -> Model -> IO Model
+addRH r js m = let
+  m1 = addR r $ foldr addR m js
+  k = Role r
+  in if null js then do
+    when (k `Set.member` roles m) . putStrLn $ "role already known: " ++ r
+    return m1
+  else do
+    let rh0 = rh m
+        v = Map.insertWith Set.union k (Set.fromList $ map Role js) rh0
+        c = rhCycle v k
+        cs = map role $ Set.toList c
+    when (k `Map.member` rh0) . putStrLn $ "senior role already known: " ++ r
+    if Set.null c then return m1 { rh = v } else do
+      putStrLn $ "cyclic role: " ++ unwords (r : cs)
+      putStrLn $ "ignoring hierarchy of: " ++ unwords (r : js)
+      return m1
 
-readSets :: Model -> String -> Model
+readSets :: Model -> String -> IO Model
 readSets m s = case words s of
   n : vs@(_ : _) -> let
     mts = mapM (findSetType m) vs
     us = userSets m
     r = addS n m
-    in if Map.member n us then error $ "duplicate user set: " ++ s else
-      case mts of
-      Just ts@(t : rs) | all (== t) rs -> r
+    ign = putStrLn $ "ignoring user set: " ++ s
+    in if Map.member n us then do
+      putStrLn $ "known user set: " ++ n
+      ign
+      return m
+    else case mts of
+      Just ts@(t : rs) | all (== t) rs -> return r
         { userSets = Map.insert n (SetOf t, joinValues m t vs, vs) us }
-        | allPs ts -> r
+        | allPs ts -> return r
         { userSets = let ps = map pStr $ joinPs m vs in
           Map.insert n (SetOf $ ElemTy P, toInts m ps, ps) us }
-      _ -> error $ "readSets: " ++ s
-  _ -> m
+      _ -> do
+        putStrLn $ "unknown or inhomogeneous elements: " ++ unwords vs
+        ign
+        return m
+  _ -> return m
 
 allPs :: [SetType] -> Bool
 allPs l = case l of
