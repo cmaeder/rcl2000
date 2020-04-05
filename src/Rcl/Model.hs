@@ -78,12 +78,13 @@ initBases :: Model -> Model
 initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
-initOpsMap m =
-  m { opsMap = Set.foldr
+initOpsMap m = m { opsMap = foldr
     (\ (Permission (Operation oP) (Object oBj), Role r) n ->
     let p = (toInt m r, toInt m oBj)
         is = Map.findWithDefault IntSet.empty p n
-    in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
+    in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty
+    . concatMap (\ r -> map (\ p -> (p, r)) . Set.toList $ permissionsOfR m r)
+    . Set.toList $ roles m }
 
 fcts :: [(Base, UnOp)]
 fcts = map toR [U, P, S, R] ++ [(S, User), (R, User)
