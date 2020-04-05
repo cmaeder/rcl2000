@@ -121,7 +121,7 @@ reportParse mus o eith = case eith of
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do
-      str <- readMyFile (useFile o)
+      str <- readMyFile "" (useFile o)
       writeFile use $ str ++ ocl us ast
       case mus of
         Left m -> writeFile (out ++ ".soil") $ toSoil m

@@ -12,20 +12,28 @@ import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, initRH)
 
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, doesDirectoryExist)
+import System.FilePath ((</>))
 
-readMyFile :: FilePath -> IO String
-readMyFile f = handle (\ (e :: IOException) -> do
+readMyFile :: FilePath -> FilePath -> IO String
+readMyFile d fn = if null fn then return "" else
+  handle (\ (e :: IOException) -> do
   print e
   return "") $ do
-  b <- doesFileExist f
-  if b then readFile f else do
-    putStrLn $ "missing file: " ++ f
-    return ""
+  bd <- if null d then return True else doesDirectoryExist d
+  let f = if null d then fn else d </> fn
+  if bd then do
+    b <- doesFileExist f
+    if b then readFile f else do
+      putStrLn $ "missing file: " ++ f
+      return ""
+    else do
+      putStrLn $ "missing directory: " ++ d
+      return ""
 
 readTypes :: IO UserTypes
 readTypes = do
-  ts <- readMyFile "examples/types.txt"
+  ts <- readMyFile "examples" "types.txt"
   foldM readType Map.empty $ lines ts
 
 readType :: UserTypes -> String -> IO UserTypes
@@ -48,15 +56,16 @@ strT s = case stripPrefix "SetOf" s of
 
 readModel :: IO Model
 readModel = do
-  rhs <- readMyFile "examples/rh.txt"
+  let rf = readMyFile "examples"
+  rhs <- rf "rh.txt"
   m1 <- foldM readRH emptyModel $ lines rhs
-  uas <- readMyFile "examples/ua.txt"
+  uas <- rf "ua.txt"
   m2 <- foldM readUA (initRH m1) $ lines uas
-  pas <- readMyFile "examples/pa.txt"
+  pas <- rf "pa.txt"
   m3 <- foldM readPA m2 $ lines pas
-  ses <- readMyFile "examples/s.txt"
+  ses <- rf "s.txt"
   m4 <- foldM readS m3 $ lines ses
-  ts <- readMyFile "examples/sets.txt"
+  ts <- rf "sets.txt"
   m5 <- foldM readSets m4 $ lines ts
   if properStructure m5 then return m5 else do
     putStrLn "internal model error after readModel"
