@@ -159,7 +159,10 @@ evalPrim m e s = case s of
     Just (_, v, _) -> Right v
     Nothing -> case Map.lookup p $ strMap m of
       Just i -> Right . Ints $ IntSet.singleton i
-      Nothing -> Left $ "unknown set: " ++ p
+      Nothing ->
+        let ps = filter ((== p) . pStr_) . Set.toList $ permissions m in
+        if null ps then Left $ "unknown set: " ++ p
+        else Right . toInts m $ map pStr ps
   Var v@(MkVar i _ _) -> case IntMap.lookup i e of
     Just r -> Right r
     Nothing -> Left $ "unknown variable: " ++ stVar v

@@ -32,7 +32,7 @@ getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
   foldr (\ o -> Map.insert (object o) $ ElemTy OBJ)
   (foldr (\ p -> Map.insert (fst p) $ ElemTy S)
-  (foldr (\ p -> Map.insert (pStr p) $ ElemTy P)
+  (foldr (\ p -> Map.insert (pStr_ p) $ ElemTy P)
   (foldr (\ u -> Map.insert (name u) $ ElemTy U)
   (foldr (\ r -> Map.insert (role r) $ ElemTy R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m

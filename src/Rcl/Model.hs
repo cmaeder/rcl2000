@@ -1,5 +1,5 @@
-module Rcl.Model (initModel, addS, addU, checkU, addP, addR
-  , toInts, initRH, initSess) where
+module Rcl.Model (initModel, addS, addU, checkU, addP, addR, initRH, initSess)
+where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
@@ -33,12 +33,6 @@ insUserSet b m = let
   l = Set.toList $ getStrings m b
   s = show b in addStr s m
   { userSets = Map.insert s (SetOf $ ElemTy b, toInts m l, l) $ userSets m }
-
-toInts :: Model -> [String] -> Value
-toInts m = Ints . IntSet.fromList . map (toInt m)
-
-toInt :: Model -> String -> Int
-toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
 addS :: String -> Model -> Model
 addS s m = if null s then error "addS" else case Map.lookup s $ strMap m of

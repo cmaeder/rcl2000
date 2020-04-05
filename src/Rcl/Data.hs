@@ -64,8 +64,14 @@ emptyModel = Model
 getUserTypes :: Model -> UserTypes
 getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
 
+pStrC :: Char -> P -> String
+pStrC c p = operation (op p) ++ c : object (obj p)
+
 pStr :: P -> String
-pStr p = operation (op p) ++ "_" ++ object (obj p)
+pStr = pStrC ' '
+
+pStr_ :: P -> String
+pStr_ = pStrC '_'
 
 strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Object v
@@ -124,13 +130,23 @@ sUnOp t o = let u = take 1 $ show o
 stValue :: Model -> Value -> String
 stValue m v = case v of
     Ints is -> case IntSet.maxView is of
-      Just (i, s) | IntSet.null s -> toStr i m
-      _ -> '{' : unwords (Set.toList . Set.fromList
+      Just (i, s) | IntSet.null s -> rb $ toStr i m
+      _ -> '{' : unwords (map rb . Set.toList . Set.fromList
         . map (`toStr` m) $ IntSet.toList is) ++ "}"
     VSet vs -> '{' : unwords (Set.toList $ Set.map (stValue m) vs) ++ "}"
 
+-- | replace space
+rb :: String -> String
+rb = map ( \ c -> if c == ' ' then '_' else c)
+
 toStr :: Int -> Model -> String
 toStr i = IntMap.findWithDefault (error $ "toStr: " ++ show i) i . intMap
+
+toInts :: Model -> [String] -> Value
+toInts m = Ints . IntSet.fromList . map (toInt m)
+
+toInt :: Model -> String -> Int
+toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
 strToBase :: Model -> String -> [Base]
 strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id

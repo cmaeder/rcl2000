@@ -82,7 +82,7 @@ checkAccess :: Model -> String -> String -> [String]
 checkAccess m s ps = case Map.lookup s $ sessions m of
     Nothing -> ["unknown session: " ++ s]
     Just (Session u@(Name n) as) -> case Set.maxView . Set.filter
-        ((ps ==) . pStr) $ permissions m of
+        ((ps ==) . pStr_) $ permissions m of
       Nothing -> ["unknown permission: " ++ ps]
       Just (p, _) -> if p `elem` permsOfRs m as then []
         else let

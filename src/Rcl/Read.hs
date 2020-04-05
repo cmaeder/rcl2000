@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addS, addU, checkU, addP, addR, toInts, initRH)
+import Rcl.Model (addS, addU, checkU, addP, addR, initRH)
 
 import System.Directory (doesFileExist)
 
