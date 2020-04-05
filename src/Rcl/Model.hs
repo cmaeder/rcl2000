@@ -41,10 +41,8 @@ toInt :: Model -> String -> Int
 toInt m v = Map.findWithDefault (error $ "toInt: " ++ v) v $ strMap m
 
 addS :: String -> Model -> Model
-addS s m = case Map.lookup s $ strMap m of
-    Nothing
-      | null s -> error "addS: illegal empty string"
-      | otherwise -> addStr s m
+addS s m = if null s then error "addS" else case Map.lookup s $ strMap m of
+    Nothing -> addStr s m
     _ -> m
 
 addStr :: String -> Model -> Model
@@ -67,19 +65,12 @@ addOp o m = addS o m
   { operations = Set.insert (Operation o) $ operations m }
 
 addObj :: String -> Model -> Model
-addObj o m = if '_' `elem` o then
-  error $ "an object must not contain an underscore: " ++ o
-  else addS o m { objects = Set.insert (Object o) $ objects m }
+addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
-addP oP oBj m = let
-  p = strP oP oBj
-  ps = permissions m
-  in if p `Set.member` ps
-    then error $ "permission already known: " ++ oP ++ " " ++ oBj
-    else addS (pStr p) . addObj oBj $ addOp oP m
-      { permissions = Set.insert p ps }
+addP oP oBj m = let p = strP oP oBj in addS (pStr p) . addObj oBj $ addOp oP m
+  { permissions = Set.insert p $ permissions m }
 
 initModel :: Model -> Model
 initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases
