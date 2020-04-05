@@ -13,27 +13,22 @@ import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, initRH)
 
 import System.Directory (doesFileExist, doesDirectoryExist)
-import System.FilePath ((</>))
 
-readMyFile :: FilePath -> FilePath -> IO String
-readMyFile d fn = if null fn then return "" else
+readMyFile :: FilePath -> IO String
+readMyFile f = if null f then return "" else
   handle (\ (e :: IOException) -> do
   print e
   return "") $ do
-  bd <- if null d then return True else doesDirectoryExist d
-  let f = if null d then fn else d </> fn
-  if bd then do
+  bd <- doesDirectoryExist f
+  if bd then return "" else do
     b <- doesFileExist f
     if b then readFile f else do
       putStrLn $ "missing file: " ++ f
       return ""
-    else do
-      putStrLn $ "missing directory: " ++ d
-      return ""
 
-readTypes :: FilePath -> FilePath -> IO UserTypes
-readTypes d f = do
-  ts <- readMyFile d f
+readTypes :: FilePath -> IO UserTypes
+readTypes f = do
+  ts <- readMyFile f
   foldM readType Map.empty $ lines ts
 
 readType :: UserTypes -> String -> IO UserTypes
@@ -54,10 +49,10 @@ strT s = case stripPrefix "SetOf" s of
   Just r -> SetOf <$> strT r
   Nothing -> ElemTy <$> find ((== s) . show) primTypes
 
-readModel :: FilePath -> [FilePath] -> IO Model
-readModel d l = case l of
+readModel :: [FilePath] -> IO Model
+readModel l = case l of
   [rhf, uaf, paf, sf, uf] -> do
-    let rf = readMyFile d
+    let rf = readMyFile
     rhs <- rf rhf
     m1 <- foldM readRH emptyModel $ lines rhs
     uas <- rf uaf

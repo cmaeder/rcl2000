@@ -18,7 +18,7 @@ import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 import System.Console.GetOpt
-import System.FilePath (addExtension)
+import System.FilePath ((</>), addExtension)
 
 cli :: String -> [String] -> IO ()
 cli prN args = case getOpt Permute options args of
@@ -26,15 +26,15 @@ cli prN args = case getOpt Permute options args of
         if help o then putStrLn $
           usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
         else let
-          rm = readModel (dir o)
-            $ map (\ f -> addExtension (f o) "txt")
+          rm = readModel
+            $ map (\ f -> dir o </> addExtension (f o) "txt")
             [rhFile, uaFile, paFile, sessFile, setsFile]
           in case n of
         [] -> if null os then rm >>= evalInput [] . initModel else
           putStrLn "unexpected options without file arguments"
         _ -> do
           eith <- if onlyPrint o then return $ Right Map.empty else
-            if getTypes o then fmap Right . readTypes (dir o) $ typesFile o
+            if getTypes o then fmap Right . readTypes $ dir o </> typesFile o
             else fmap Left rm
           mapM_ (processFile eith o) n
       (_, _, errs) -> mapM_ putStrLn errs
@@ -141,7 +141,7 @@ reportParse mus o eith = case eith of
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do
-      str <- readMyFile "" (useFile o)
+      str <- readMyFile (useFile o)
       writeFile use $ str ++ ocl us ast
       case mus of
         Left m -> writeFile (out ++ ".soil") $ toSoil m
