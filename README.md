@@ -12,8 +12,8 @@ stack run examples/AhnSandhuPaper2000.rcl
 ```
 
 Via the file [stack.yaml](stack.yaml) the compilation uses the latest
-Glasgow haskell compiler version. Currently this is `ghc-8.8.2` as
-specified by the resolver version `lts-15.3`, see
+Glasgow haskell compiler version. Currently this is `ghc-8.8.3` as
+specified by the resolver version `lts-15.6`, see
 [https://www.stackage.org/](https://www.stackage.org/). Compilation
 should also succeed with older ghc versions (down to `ghc-7.10.2` of
 `lts-3.22`). Apart from the `--pedantic` flag the haskell sources are
