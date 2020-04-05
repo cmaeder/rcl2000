@@ -18,18 +18,24 @@ import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 import System.Console.GetOpt
+import System.FilePath (addExtension)
 
 cli :: String -> [String] -> IO ()
 cli prN args = case getOpt Permute options args of
       (os, n, []) -> let o = foldl (flip id) defaultOpts os in
         if help o then putStrLn $
           usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
-        else case n of
-        [] -> if null os then readModel >>= evalInput [] . initModel else
+        else let
+          rm = readModel (dir o)
+            $ map (\ f -> addExtension (f o) "txt")
+            [rhFile, uaFile, paFile, sessFile, setsFile]
+          in case n of
+        [] -> if null os then rm >>= evalInput [] . initModel else
           putStrLn "unexpected options without file arguments"
         _ -> do
           eith <- if onlyPrint o then return $ Right Map.empty else
-            if getTypes o then fmap Right readTypes else fmap Left readModel
+            if getTypes o then fmap Right . readTypes (dir o) $ typesFile o
+            else fmap Left rm
           mapM_ (processFile eith o) n
       (_, _, errs) -> mapM_ putStrLn errs
 
@@ -73,6 +79,13 @@ data Opts = Opts
   , toOcl :: Bool
   , prompt :: Bool
   , help :: Bool
+  , dir :: String
+  , typesFile :: String
+  , rhFile :: String
+  , uaFile :: String
+  , paFile :: String
+  , sessFile :: String
+  , setsFile :: String
   , useFile :: String
   , outFile :: String }
 
@@ -88,6 +101,13 @@ defaultOpts = Opts
   , toOcl = False
   , prompt = False
   , help = False
+  , dir = "examples"
+  , typesFile = "types.txt"
+  , rhFile = "rh"
+  , uaFile = "ua"
+  , paFile = "pa"
+  , sessFile = "s"
+  , setsFile = "sets"
   , useFile = "use/RBAC.use"
   , outFile = "use/test" }
 

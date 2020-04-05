@@ -31,9 +31,9 @@ readMyFile d fn = if null fn then return "" else
       putStrLn $ "missing directory: " ++ d
       return ""
 
-readTypes :: IO UserTypes
-readTypes = do
-  ts <- readMyFile "examples" "types.txt"
+readTypes :: FilePath -> FilePath -> IO UserTypes
+readTypes d f = do
+  ts <- readMyFile d f
   foldM readType Map.empty $ lines ts
 
 readType :: UserTypes -> String -> IO UserTypes
@@ -54,23 +54,25 @@ strT s = case stripPrefix "SetOf" s of
   Just r -> SetOf <$> strT r
   Nothing -> ElemTy <$> find ((== s) . show) primTypes
 
-readModel :: IO Model
-readModel = do
-  let rf = readMyFile "examples"
-  rhs <- rf "rh.txt"
-  m1 <- foldM readRH emptyModel $ lines rhs
-  uas <- rf "ua.txt"
-  m2 <- foldM readUA (initRH m1) $ lines uas
-  pas <- rf "pa.txt"
-  m3 <- foldM readPA m2 $ lines pas
-  ses <- rf "s.txt"
-  m4 <- foldM readS m3 $ lines ses
-  ts <- rf "sets.txt"
-  m5 <- foldM readSets m4 $ lines ts
-  if properStructure m5 then return m5 else do
-    putStrLn "internal model error after readModel"
-    putStrLn "please report this and include your input files"
-    return m5
+readModel :: FilePath -> [FilePath] -> IO Model
+readModel d l = case l of
+  [rhf, uaf, paf, sf, uf] -> do
+    let rf = readMyFile d
+    rhs <- rf rhf
+    m1 <- foldM readRH emptyModel $ lines rhs
+    uas <- rf uaf
+    m2 <- foldM readUA (initRH m1) $ lines uas
+    pas <- rf paf
+    m3 <- foldM readPA m2 $ lines pas
+    ses <- rf sf
+    m4 <- foldM readS m3 $ lines ses
+    ts <- rf uf
+    m5 <- foldM readSets m4 $ lines ts
+    if properStructure m5 then return m5 else do
+      putStrLn "internal model error after readModel"
+      putStrLn "please report this and include your input files"
+      return m5
+  _ -> error "readModel"
 
 readUA :: Model -> String -> IO Model
 readUA m s = case words s of
