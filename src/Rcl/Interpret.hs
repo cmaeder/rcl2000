@@ -11,7 +11,7 @@ import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Print (ppStmt, ppSet)
+import Rcl.Print (prStmt, ppStmt, ppSet)
 import Rcl.Reduce (runReduce)
 import Rcl.Type (wellTyped, typeOfSet)
 
@@ -23,9 +23,9 @@ data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
 interprets :: UserTypes -> Model -> [Stmt] -> String
 interprets us m l = let
   (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
-  in unlines $ mapMaybe snd es ++ map (\ (s, _) ->
-  (\ r -> if null r then "verified: " ++ ppStmt s else r)
-  . interpretError us m $ runReduce us s) ws
+  in unlines $ mapMaybe snd es ++ map (\ (s, _) -> let p = runReduce us s in
+  (\ r -> prStmt p ++ '\n' : if null r then "verified: " ++ ppStmt s else r)
+  $ interpretError us m p) ws
 
 interpretError :: UserTypes -> Model -> (Stmt, Vars) -> String
 interpretError us m (s, vs) =
