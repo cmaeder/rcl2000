@@ -12,15 +12,12 @@ import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addS, addU, checkU, addP, addR, initRH)
 
-import System.Directory (doesFileExist, doesDirectoryExist)
+import System.Directory (doesFileExist)
 
 readMyFile :: FilePath -> IO String
-readMyFile f = if null f then return "" else
-  handle (\ (e :: IOException) -> do
+readMyFile f = handle (\ (e :: IOException) -> do
   print e
   return "") $ do
-  bd <- doesDirectoryExist f
-  if bd then return "" else do
     b <- doesFileExist f
     if b then readFile f else do
       putStrLn $ "missing file: " ++ f

@@ -16,5 +16,5 @@ main = do
   mapM_ (\ f -> cli binary $ ["-n", "-f", show f] ++ rclFiles) forms
   mapM_ (\ o -> cli binary $ o : rclFiles) ["-h", "-c", "-r", "-e"]
   mapM_ (\ o -> cli binary $ o : "-t" : rclFiles) ["-c", "-r"]
-  cli binary $ ["-o", "test"] ++ rclFiles
-  cli binary $ ["-t", "-o", "testt"] ++ rclFiles
+  cli binary $ "-otest" : rclFiles
+  cli binary $ ["-t", "-o"] ++ rclFiles
