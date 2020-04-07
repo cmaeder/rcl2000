@@ -108,7 +108,7 @@ checking and also be aware of the file [use/RBAC.use](use/RBAC.use)
 that is always the beginning of any created `.use` file. The default
 output directory for `.use` files created by the `-o` option is
 [use](use). The option `-o.` puts these files into the current
-directory "[.](.)".
+directory ["."](.).
 
 Within the [USE-Tool][2] concrete object diagrams could now be created and
 the generated OCL invariants for a single `RBAC` object could be
