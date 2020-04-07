@@ -78,8 +78,9 @@ and users, respectively. However, these sets are not built in but user
 defined and must therefore be supplied separately. The types of such
 names are currently read from the file
 [examples/types.txt](examples/types.txt) if the `-t` option is
-supplied via the command line. The command line interface for the
-binary is defined in [Cli](src/Rcl/Cli.hs).
+supplied via the command line. An alternative file path could be
+appended to the `-t` option. The command line interface for the binary
+is defined in [Cli](src/Rcl/Cli.hs).
 
 The module [Print](src/Rcl/Print.hs) allows to output parsed statements
 to ascii, latex or unicode text with or without redundant parentheses.
@@ -95,8 +96,8 @@ statements and is a prerequisite for the translation
 (not described in the [paper][1]).
 
 ```
-stack run -- -t -o Rcl.use Stmts.rcl
-use Rcl.use
+stack run -- -t -o. Stmts.rcl
+use Stmts.use
 ```
 
 The above call, where "`stack run --`" could be the created binary
@@ -104,8 +105,10 @@ The above call, where "`stack run --`" could be the created binary
 the input file `Stmts.rcl` (look into the [examples](examples)
 directory for `.rcl` files). Note the `-t` option for proper type
 checking and also be aware of the file [use/RBAC.use](use/RBAC.use)
-that is always the beginning of any created `.use` file.
-(The file extension `.use` can be omitted as `-o` option argument.)
+that is always the beginning of any created `.use` file. The default
+output directory for `.use` files created by the `-o` option is
+[use](use). The option `-o.` puts these files into the current
+directory[.](.).
 
 Within the [USE-Tool][2] concrete object diagrams could now be created and
 the generated OCL invariants for a single `RBAC` object could be
@@ -120,8 +123,8 @@ configuration.
 find . -name rcl2000-exe
 # find the binary and put it into your PATH
 # or use "stack run --" or "stack exec rcl2000-exe --" instead of "rcl2000-exe"
-rcl2000-exe -o Rcl Stmts.rcl
-use Rcl.use Rcl.soil
+rcl2000-exe -o. Stmts.rcl
+use Stmts.use Stmts.soil
 ```
 
 The above call relies on the files
