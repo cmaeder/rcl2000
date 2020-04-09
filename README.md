@@ -123,7 +123,7 @@ The parser is more liberal than described in the [paper][1]:
 - some parentheses may be omitted.
 - set names can start with any unicode letter. Further characters may
   be any alphanum or the underscore. Other characters may be easily
-  allowed if they not used elsewhere.
+  allowed if they are not used elsewhere.
 - The minus sign `-` can be used directly to remove an element from a
   set: "`AO(S)`" is the same as "`S-{OE(S)}`" or "`S - OE S`" as also
   the curly braces are optional. The second argument of minus `-` must
@@ -133,7 +133,7 @@ The parser is more liberal than described in the [paper][1]:
 The type checker is as liberal as described in the [paper][1]. Many
 elements are regarded as singleton sets to ensure proper typing. The
 `roles` function is even more overloaded than in the [paper][1]. Apart
-from user `U`, permission `P` and sessions `S` also roles `R` can be
+from users `U`, permissions `P` and sessions `S` also roles `R` can be
 arguments of the `roles` function:
 
 - roles : R -> 2^R, roles(r) = { j | j < r }
@@ -155,6 +155,17 @@ in the [paper][1].
 - user(r : R) = { u | exist s >= r . (u, s) in UA }
 - operation(r : R, obj : OBJ) = { op | exist j <= r . (op, obj, j) in PA }
 
+The transitive closure of a role hierarchy is computed from an input
+file and the (minimal) transitive reduction is written out as `.soil`
+file for the [USE-Tool][2].
+
+Activated roles of sessions are properly checked against the
+*authorized* roles of a sessions's user by also considering a role
+hierarchy.
+
+Concrete conflicting sets, like `CR`, `CP`, or `CU` can also be read
+from a file, although all subsets must be named explicitely.
+
 ## Usage
 
 ```
@@ -167,7 +178,7 @@ use Stmts.use Stmts.soil
 
 The above call relies on the files [rh, ua, pa, s and sets](examples)
 from the [examples](examples) directory. The default file extension is
-`.txt`, but could changed using the `-x` option.
+`.txt`, but could be changed using the `-x` option.
 
 [rh](examples/rh.txt) contains roles, usually one role on a
 separate line. Several roles on one line define a senior role and all
