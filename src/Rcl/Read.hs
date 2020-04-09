@@ -4,7 +4,7 @@ module Rcl.Read (readModel, readTypes, addSURs, readMyFile) where
 import Control.Exception (handle, IOException)
 import Control.Monad (foldM, when, unless)
 import Data.Char (isLetter, isAlphaNum)
-import Data.List (find, stripPrefix)
+import Data.List (find, partition, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -172,9 +172,14 @@ readSets m s = case s of
     else case mts of
       Just ts@(t : rs) | all (== t) rs -> return r
         { userSets = Map.insert n (SetOf t, joinValues m t vs, vs) us }
-        | allPs ts -> return r
-        { userSets = let ps = map pStr $ joinPs m vs in
-          Map.insert n (SetOf $ ElemTy P, toInts m ps, ps) us }
+        | allPs ts -> do
+        let os = joinPs m vs
+            (cs, es) = partition (`Set.member` permissions m) os
+        unless (null es) . putStrLn $ "ignoring unknown permissions: "
+          ++ unwords (map pStr es)
+        return r
+          { userSets = let ps = map pStr cs in
+            Map.insert n (SetOf $ ElemTy P, toInts m ps, ps) us }
       _ -> do
         putStrLn $ "unknown or inhomogeneous elements: " ++ unwords vs
         ign
@@ -195,9 +200,7 @@ joinValues m t vs = case t of
 
 joinPs :: Model -> [String] -> [P]
 joinPs m l = case l of
-  oP : oBj : r -> (if Set.member (Operation oP) (operations m)
-    && Set.member (Object oBj) (objects m) then (strP oP oBj :) else id)
-    $ joinPs m r
+  oP : oBj : r -> strP oP oBj : joinPs m r
   _ -> []
 
 findSetType :: Model -> String -> Maybe SetType
