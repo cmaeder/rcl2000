@@ -160,7 +160,7 @@ file and the (minimal) transitive reduction is written out as `.soil`
 file for the [USE-Tool][2].
 
 Activated roles of sessions are properly checked against the
-*authorized* roles of a sessions's user by also considering a role
+*authorized* roles of a session's user by also considering a role
 hierarchy.
 
 Concrete conflicting sets, like `CR`, `CP`, or `CU` can also be read
