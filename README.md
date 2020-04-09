@@ -163,7 +163,7 @@ Activated roles of sessions are properly checked against the
 *authorized* roles of a session's user by also considering a role
 hierarchy.
 
-Concrete conflicting sets, like `CR`, `CP`, or `CU` can also be read
+Concrete conflicting sets, like `CR`, `CP`, or `CU` can be read
 from a file, although all subsets must be named explicitely.
 
 ## Usage
