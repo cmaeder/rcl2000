@@ -6,19 +6,19 @@ op4 obj4 r4
 op5 obj5
 op6 obj6
 
-read_ obj1 HR
-read_ obj2 HR
+read obj1 HR
+read obj2 HR
 
-write_ obj1 HW
-write_ obj2 HW
+write obj1 HW
+write obj2 HW
 
 add ParentGrant Own_O1 Own_O2
-delete_ ParentGrant Own_O1 Own_O2
-destroy_ O1 Own_O1
-destroy_ O2 Own_O2
+delete ParentGrant Own_O1 Own_O2
+destroy O1 Own_O1
+destroy O2 Own_O2
 add Parent ParentGrant_O1 ParentGrant_O2
-delete_ Parent ParentGrant_O1 ParentGrant_O2
+delete Parent ParentGrant_O1 ParentGrant_O2
 add Read Parent_O1 Parent_O2
-delete_ Read Parent_O1 Parent_O2
+delete Read Parent_O1 Parent_O2
 can_read O1 Read_O1
 can_read O2 Read_O2

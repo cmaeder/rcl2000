@@ -66,4 +66,6 @@ code :: SetType -> String -> String
 code = maybe tr codeB . baseSet
 
 codeB :: Base -> String -> String
-codeB b s = map toLower (show b) ++ '_' : enc s
+codeB b s = case words s of
+  [a, o] -> "p_" ++ enc a ++ "_o_" ++ enc o
+  _ -> map toLower (show b) ++ '_' : enc s

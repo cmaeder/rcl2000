@@ -10,8 +10,8 @@ cp1 op1 obj1 op5 obj5
 cp2 op3 obj3 op6 obj6
 CP cp1 cp2
 
-rp read_ obj1 read_ obj2
-wp write_ obj1 write_ obj2
+rp read obj1 read obj2
+wp write obj1 write obj2
 
 RR HR LR
 WR HW LW
@@ -43,8 +43,8 @@ PARENTGRANT ParentGrant_O1 ParentGrant_O2
 PARENT Parent_O1 Parent_O2
 READ Read_O1 Read_O2
 
-OWNAPM add ParentGrant delete_ ParentGrant
-OWNRPM destroy_ O1 destroy_ O2
-PGPM add Parent delete_ Parent
-PPM add Read delete_ Read
+OWNAPM add ParentGrant delete ParentGrant
+OWNRPM destroy O1 destroy O2
+PGPM add Parent delete Parent
+PPM add Read delete Read
 RPM can_read O1 can_read O2
