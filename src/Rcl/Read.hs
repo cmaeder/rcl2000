@@ -2,7 +2,8 @@
 module Rcl.Read (readModel, readTypes, addSURs, readMyFile) where
 
 import Control.Exception (handle, IOException)
-import Control.Monad (foldM, when)
+import Control.Monad (foldM, when, unless)
+import Data.Char (isLetter, isAlphaNum)
 import Data.List (find, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -23,13 +24,32 @@ readMyFile f = handle (\ (e :: IOException) -> do
       putStrLn $ "missing file: " ++ f
       return ""
 
-readTypes :: FilePath -> IO UserTypes
-readTypes f = do
-  ts <- readMyFile f
-  foldM readType Map.empty $ lines ts
+readWordsFile :: FilePath -> IO [[String]]
+readWordsFile f = do
+  s <- readMyFile f
+  let l = map words $ lines s
+  checkWords f . zip l $ [(1 :: Int) ..]
+  return l
 
-readType :: UserTypes -> String -> IO UserTypes
-readType u s = case words s of
+isRcl :: String -> Bool
+isRcl s = case s of
+  f : r -> isLetter f && all (\ c -> isAlphaNum c || c == '_') r
+  _ -> False
+
+checkWords :: FilePath -> [([String], Int)] -> IO ()
+checkWords f = mapM_ $ \ (ws, i) -> do
+    let e = filter (not . isRcl) ws
+    unless (null e) . putStrLn $ "WARN: " ++ f ++ ':' : show i
+      ++ ": no legal RCL name" ++ case e of
+        [w] -> ": " ++ w
+        _ -> "s: " ++ unwords e
+
+readTypes :: FilePath -> IO UserTypes
+readTypes f =
+  readWordsFile f >>= foldM readType Map.empty
+
+readType :: UserTypes -> [String] -> IO UserTypes
+readType u s = case s of
   r : l -> case strT r of
     Just t -> if null l then do
       putStrLn $ "missing names for: " ++ r
@@ -49,37 +69,31 @@ strT s = case stripPrefix "SetOf" s of
 readModel :: [FilePath] -> IO Model
 readModel l = case l of
   [rhf, uaf, paf, sf, uf] -> do
-    let rf = readMyFile
-    rhs <- rf rhf
-    m1 <- foldM readRH emptyModel $ lines rhs
-    uas <- rf uaf
-    m2 <- foldM readUA (initRH m1) $ lines uas
-    pas <- rf paf
-    m3 <- foldM readPA m2 $ lines pas
-    ses <- rf sf
-    m4 <- foldM readS m3 $ lines ses
-    ts <- rf uf
-    m5 <- foldM readSets m4 $ lines ts
+    m1 <- readWordsFile rhf >>= foldM readRH emptyModel
+    m2 <- readWordsFile uaf >>= foldM readUA (initRH m1)
+    m3 <- readWordsFile paf >>= foldM readPA m2
+    m4 <- readWordsFile sf >>= foldM readS m3
+    m5 <- readWordsFile uf >>= foldM readSets m4
     if properStructure m5 then return m5 else do
       putStrLn "internal model error after readModel"
       putStrLn "please report this and include your input files"
       return m5
   _ -> error "readModel"
 
-readUA :: Model -> String -> IO Model
-readUA m s = case words s of
+readUA :: Model -> [String] -> IO Model
+readUA m s = case s of
   u : rs -> do
-    when (checkU u m) . putStrLn $ "user already known: " ++ s
+    when (checkU u m) . putStrLn $ "user already known: " ++ u
     return $ foldr (addUA u) (addU u m) rs
   _ -> return m
 
-readPA :: Model -> String -> IO Model
-readPA m s = case words s of
+readPA :: Model -> [String] -> IO Model
+readPA m s = case s of
   oP : oBj : rs -> do
     let ps = permissions m
         p = strP oP oBj
         p_ = pStr_ p
-    if p `Set.member` ps then putStrLn $ "permission already known: " ++ s
+    if p `Set.member` ps then putStrLn $ "permission already known: " ++ pStr p
       else when (p_ `elem` map pStr_ (Set.toList ps))
       . putStrLn $ "WARN: overlapping permission representation: " ++ p_
     return $ foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
@@ -88,17 +102,17 @@ readPA m s = case words s of
     return m
   _ -> return m
 
-readRH :: Model -> String -> IO Model
-readRH m s = case words s of
+readRH :: Model -> [String] -> IO Model
+readRH m s = case s of
   r : rs -> addRH r rs m
   _ -> return m
 
-readS :: Model -> String -> IO Model
-readS m s = case words s of
+readS :: Model -> [String] -> IO Model
+readS m s = case s of
   i : u : rs -> case addSURs i u rs m of
     Left e -> do
       putStrLn e
-      putStrLn $ "ignoring session: " ++ s
+      putStrLn $ "ignoring session: " ++ i
       return m
     Right n -> return n
   _ -> return m
@@ -144,14 +158,14 @@ addRH r js m = let
       putStrLn $ "ignoring hierarchy of: " ++ unwords (r : js)
       return m1
 
-readSets :: Model -> String -> IO Model
-readSets m s = case words s of
+readSets :: Model -> [String] -> IO Model
+readSets m s = case s of
   n : vs@(_ : _) -> let
     mts = mapM (findSetType m) vs
     us = userSets m
     r = addS n m
-    ign = putStrLn $ "ignoring user set: " ++ s
-    in if Map.member n us then do
+    ign = putStrLn $ "ignoring user set: " ++ n
+    in if Map.member n us || n `elem` map show primTypes then do
       putStrLn $ "known user set: " ++ n
       ign
       return m
