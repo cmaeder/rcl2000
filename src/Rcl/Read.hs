@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Rcl.Read (readModel, readTypes, addSURs, readMyFile) where
+module Rcl.Read (readModel, readTypes, readMyFile) where
 
 import Control.Exception (handle, IOException)
 import Control.Monad (foldM, when, unless)
@@ -11,7 +11,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addS, addU, checkU, addP, addR, initRH)
+import Rcl.Model (addS, addU, checkU, addP, addR, addSURs, initRH)
 
 import System.Directory (doesFileExist)
 
@@ -116,21 +116,6 @@ readS m s = case s of
       return m
     Right n -> return n
   _ -> return m
-
-addSURs :: String -> String -> [String] -> Model -> Either String Model
-addSURs s u rs m
-  | checkSid s m = Left $ "session identifier already known: " ++ s
-  | not $ checkU u m = Left $ "user unknown: " ++ u
-  | otherwise = let
-      v = Session (Name u) . Set.fromList $ map Role rs
-      is = illegalActiveRoles m v
-      in if Set.null is then Right $ addS s (foldr addR m rs)
-        { sessions = Map.insert s v $ sessions m }
-         else Left $ "unassigned roles for user of session: "
-           ++ unwords (s : u : map role (Set.toList is))
-
-checkSid :: String -> Model -> Bool
-checkSid s m = s `Map.member` sessions m
 
 -- user and role
 addUA :: String -> String -> Model -> Model

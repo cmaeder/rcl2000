@@ -1,5 +1,5 @@
-module Rcl.Model (initModel, addS, addU, checkU, addP, addR, initRH, initSess)
-where
+module Rcl.Model (initModel, addS, addU, checkU, addP, addR, addSURs, initRH,
+  initSess) where
 
 import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
@@ -48,9 +48,6 @@ addStr s m = let i = next m in m
 addU :: String -> Model -> Model
 addU u m = addS u m { users = Set.insert (Name u) $ users m }
 
-checkU :: String -> Model -> Bool
-checkU u m = Name u `Set.member` users m
-
 addR :: String -> Model -> Model
 addR r m = addS r m { roles = Set.insert (Role r) $ roles m }
 
@@ -65,6 +62,21 @@ addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
 addP :: String -> String -> Model -> Model
 addP oP oBj m = let p = strP oP oBj in addS (pStr p) . addObj oBj $ addOp oP m
   { permissions = Set.insert p $ permissions m }
+
+checkU :: String -> Model -> Bool
+checkU u m = Name u `Set.member` users m
+
+addSURs :: String -> String -> [String] -> Model -> Either String Model
+addSURs s u rs m = let sm = sessions m in
+  if s `Map.member` sm then Left $ "session identifier already known: " ++ s
+  else if checkU u m then let
+    v = Session (Name u) . Set.fromList $ map Role rs
+    is = illegalActiveRoles m v
+    in if Set.null is then Right $ addS s (foldr addR m rs)
+      { sessions = Map.insert s v sm }
+      else Left $ "unassigned roles for user of session: "
+        ++ unwords (s : u : map role (Set.toList is))
+   else Left $ "user unknown: " ++ u
 
 initModel :: Model -> Model
 initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases

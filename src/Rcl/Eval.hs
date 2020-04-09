@@ -11,9 +11,8 @@ import Rcl.Ast
 import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
-import Rcl.Model (initSess)
+import Rcl.Model (addSURs, initSess)
 import Rcl.Parse (set, parser)
-import Rcl.Read (addSURs)
 import Rcl.Print (ppSet, lineStmt)
 import Rcl.Type (typeOfSet, typeErrors)
 
