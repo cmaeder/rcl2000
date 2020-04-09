@@ -5,6 +5,7 @@ import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.Monoid (All (..))
 import qualified Data.Set as Set
 import Data.Set (isSubsetOf)
 
@@ -28,6 +29,7 @@ properStructure m = let
   uas = ua m
   pas = pa m
   h = rh m
+  i = inv m
   uSets = userSets m
   vs = Map.elems uSets
   im = intMap m
@@ -46,6 +48,15 @@ properStructure m = let
   && Map.keysSet h `isSubsetOf` rs
   && all (`isSubsetOf` rs) (Map.elems h)
   && nonCyclicRH h
+  && Map.keysSet i `isSubsetOf` rs
+  && all (`isSubsetOf` rs) (Map.elems i)
+  && nonCyclicRH i
+  && getAll (Map.foldMapWithKey (\ s js ->
+       All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) i)
+       $ Set.toList js) h)
+  && getAll (Map.foldMapWithKey (\ s js ->
+       All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) h)
+       $ Set.toList js) i)
   && all checkValue vs
   && all (\ (t, v, _) -> checkInts m (baseType t) $ getInts v) vs
   && strs == getAllStrings m
