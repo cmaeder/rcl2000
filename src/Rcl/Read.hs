@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Rcl.Read (readModel, readTypes, readMyFile) where
 
 import Control.Exception (handle, IOException)
@@ -16,8 +15,8 @@ import Rcl.Model (addS, addU, checkU, addP, addR, addSURs, initRH)
 import System.Directory (doesFileExist)
 
 readMyFile :: FilePath -> IO String
-readMyFile f = handle (\ (e :: IOException) -> do
-  print e
+readMyFile f = handle (\ e -> do
+  print (e :: IOException)
   return "") $ do
     b <- doesFileExist f
     if b then readFile f else do
