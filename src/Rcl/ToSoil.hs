@@ -9,10 +9,10 @@ import Rcl.Data
 import Rcl.ToOcl (aggName, tr, enc)
 
 transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
-transReduce m = let c = transClosure m in Map.map ( \ s -> let
+transReduce m = Map.map ( \ s -> let
     d = Map.fromList . map (\ a -> (a, a)) $ Set.toList s
     in Set.filter ( \ j -> Map.null . Map.filter (Set.member j)
-      . Map.intersection c $ Map.delete j d) s) c
+      . Map.intersection m $ Map.delete j d) s) m
 
 toSoil :: Model -> String
 toSoil m = unlines $ let
