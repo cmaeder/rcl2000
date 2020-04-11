@@ -70,6 +70,7 @@ operations
   sroles_(ss : Set(S)): Set(R) = rroles(sroles(ss))
   user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
+  users_(rs : Set(R)): Set(U) = users(rroles_(rs))
   sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
   permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
   permissions_(rs : Set(R)): Set(P) = permissions(rroles(rs))

@@ -135,6 +135,7 @@ eval us m e = foldSet FoldSet
       p = sUnOp (typeOfSet us s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
+        User True -> Right . Ints . apply m p $ apply m "s" is
         Permissions True -> Right . Ints . apply m p $ apply m "j" is
         Roles True | p `elem` ["Ur", "Sr"] ->
             Right . Ints . apply m "j" $ apply m p is

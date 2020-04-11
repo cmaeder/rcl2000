@@ -99,7 +99,7 @@ pUnOps = map (pString lUnOp) stars
   ++ map (pString stUnOp) unOps
 
 stars :: [UnOp]
-stars = [Roles True, Permissions True]
+stars = [User True, Roles True, Permissions True]
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'

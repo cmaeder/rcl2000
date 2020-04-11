@@ -99,7 +99,7 @@ initOpsMap m = m { opsMap = foldr
     . Set.toList $ roles m }
 
 fcts :: [(Base, UnOp)]
-fcts = map toR [U, P, S, R] ++ [(S, User), (R, User)
+fcts = map toR [U, P, S, R] ++ [(S, User False), (R, User True)
   , (R, Roles False), (U, Sessions), (R, Permissions True), (P, Objects)]
 
 toR :: Base -> (Base, UnOp)
@@ -116,11 +116,11 @@ function bo m = let
   us = Set.toList $ users m
   ps = Set.toList $ permissions m
   in case bo of
-  (S, User) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
+  (S, User _) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
     (toInt m s, IntSet.singleton (toInt m u))) ss
-  (_, User) -> IntMap.fromList $ map (\ r ->
+  (_, User _) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . name)
-        . Set.toList $ usersOfR m r)) rs
+        . Set.toList . usersOfRs m $ Set.singleton r)) rs
   (U, Roles _) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m . role)
         . Set.toList $ rolesOfU m u)) us
@@ -145,4 +145,4 @@ function bo m = let
 
 initSess :: Model -> Model
 initSess = insUserSet S
-  . flip (foldr initFctMap) [(S, Roles False), (S, User), (U, Sessions)]
+  . flip (foldr initFctMap) [(S, Roles False), (S, User False), (U, Sessions)]

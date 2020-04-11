@@ -95,8 +95,8 @@ tyAppl :: UnOp -> SetType -> Maybe SetType
 tyAppl o t = case o of
   OE -> elemType t
   AO | isSet t -> Just t
-  User -> case t of
-    ElemTy S -> Just $ ElemTy U -- S -> U
+  User b -> case t of
+    ElemTy S -> if b then Nothing else Just $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
     _ -> Nothing
   Roles _ | any (`isElemOrSet` t) [R, U, P, S]

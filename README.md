@@ -152,7 +152,8 @@ It should be noted that also the `user` and `operations` functions
 must consider the role hierarchy as this is not mentioned (or wrong)
 in the [paper][1].
 
-- user(r : R) = { u | exist s >= r . (u, s) in UA }
+- user(r : R) = { u | (u, r) in UA }
+- user*(r : R) = user(roles\*(r)) = { u | exist s >= r . (u, s) in UA }
 - operation(r : R, obj : OBJ) = { op | exist j <= r . (op, obj, j) in PA }
 
 The transitive closure of a role hierarchy is computed from an input

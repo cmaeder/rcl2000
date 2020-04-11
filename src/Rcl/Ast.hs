@@ -30,7 +30,7 @@ data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
 data BinOp = Union | Inter | Ops | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
-data UnOp = AO | OE | User | Roles Bool | Sessions
+data UnOp = AO | OE | User Bool | Roles Bool | Sessions
   | Permissions Bool | Objects deriving (Eq, Show)
 -- AO: all other, OE: one element, object ~> objects, Bool for * suffix
 
@@ -107,7 +107,7 @@ stOps :: String
 stOps = "operations"
 
 unOps :: [UnOp]
-unOps = [AO, OE, User, Roles True, Roles False, Sessions
+unOps = [AO, OE, User True, User False, Roles True, Roles False, Sessions
   , Permissions True, Permissions False, Objects]
 
 stUnOp :: UnOp -> String
@@ -190,7 +190,7 @@ stSet = foldSetType ("SetOf" ++) show
 useOp :: Maybe Base -> UnOp -> String
 useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   in case o of
-  User -> if t == Just S then u else "users"
+  User b -> if t == Just S then u else if b then "users_" else "users"
   Roles _ -> case t of
       Just r -> map toLower (show r) ++ u
       _ -> u

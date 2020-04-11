@@ -123,7 +123,7 @@ getStrings m b = case b of
 sUnOp :: Maybe SetType -> UnOp -> String
 sUnOp t o = let u = take 1 $ show o
   in case o of
-  User -> if t == Just (ElemTy S) then "u" else u
+  User _ -> if t == Just (ElemTy S) then "u" else u
   Objects -> "B"
   Roles b -> case t >>= \ s -> if isElem s then Just s else elemType s of
     Just (ElemTy r) -> if r == R then if b then "s" else "j" else show r ++ "r"

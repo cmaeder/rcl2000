@@ -22,10 +22,10 @@ OE(OE(CR)) ∈ roles(OE(U)) ⇒ AO(OE(CR)) ∩ roles(OE(U)) = ∅
 |roles*(OE(U)) ∩ OE(CR)| ≤ 1
   ∧ |permissions*(OE(R)) ∩ OE(CP)| ≤ 1 ⇒ OE(R) ∪ OE(CR) ≠ ∅ // 4. Var 1.
 |roles*(OE(U)) ∩ OE(CR)| ≤ 1
-  ∧ |user(OE(CR)) ∩ OE(CU)| ≤ 1 // 5. SSOD-CU
+  ∧ |user*(OE(CR)) ∩ OE(CU)| ≤ 1 // 5. SSOD-CU
 |roles*(OE(U)) ∩ OE(CR)| ≤ 1
   ∧ |permissions*(OE(R)) ∩ OE(CP)| ≤ 1 ⇒ OE(R) ∪ OE(CR) ≠ ∅
-  ∧ |user(OE(CR)) ∩ OE(CU)| ≤ 1 // 6. 4. /\ 5.
+  ∧ |user*(OE(CR)) ∩ OE(CU)| ≤ 1 // 6. 4. /\ 5.
 
 // Table II p 224
 |roles*(sessions(OE(U))) ∩ OE(CR)| ≤ 1 // 1. User-based DSOD
