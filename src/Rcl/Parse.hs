@@ -76,8 +76,10 @@ applSet :: Parser Set
 applSet = unOpSet <|> opsSet <|> primSet
 
 opsSet :: Parser Set
-opsSet = BinOp Ops <$> (pString (const stOps) Ops
-  *> pch '(' *> set <* pch ',') <*> set <* pch ')'
+opsSet = do
+  o <- pString (const stOps) Ops
+  BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
+    <|> return (PrimSet stOps)
 
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet
@@ -86,11 +88,18 @@ setName :: Parser String
 setName = (:) <$> letter <*> many (alphaNum <|> char '_')
 
 unOpSet :: Parser Set
-unOpSet = UnOp <$> choice pUnOps <*> applSet
+unOpSet = do
+  u <- choice pUnOps
+  let p = UnOp u <$> applSet
+  if u `elem` stars then p else
+    p <|> return (PrimSet $ stUnOp u)
 
 pUnOps :: [Parser UnOp]
-pUnOps = map (pString lUnOp) [Roles True, Permissions True]
+pUnOps = map (pString lUnOp) stars
   ++ map (pString stUnOp) unOps
+
+stars :: [UnOp]
+stars = [Roles True, Permissions True]
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'
