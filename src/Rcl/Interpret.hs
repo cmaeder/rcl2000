@@ -109,10 +109,11 @@ eval us m e = foldSet FoldSet
     (Left _, _) -> v1
     (_, Left _) -> v2
     (Right r1, Right r2) -> case o of
-      Ops -> case (r1, r2) of
+      Operations b -> case (r1, r2) of
         (Ints rs, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- IntSet.toList rs, ob <- IntSet.toList os]
+            | r <- IntSet.toList $ if b then apply m "j" rs else rs
+            , ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " first argument: " ++ t1
         (_, VSet _) -> Left $ "unexpected set of set for "

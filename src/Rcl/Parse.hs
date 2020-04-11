@@ -77,9 +77,10 @@ applSet = unOpSet <|> opsSet <|> primSet
 
 opsSet :: Parser Set
 opsSet = do
-  o <- pString (const stOps) Ops
-  BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
-    <|> return (PrimSet stOps)
+  o <- choice $ map (flip pString $ Operations True) [stUnOp, lUnOp]
+    ++ [pString stUnOp $ Operations False]
+  let p = BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
+  if o == Operations False then p <|> return (PrimSet stOps) else p
 
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet
@@ -91,8 +92,7 @@ unOpSet :: Parser Set
 unOpSet = do
   u <- choice pUnOps
   let p = UnOp u <$> applSet
-  if u `elem` stars then p else
-    p <|> return (PrimSet $ stUnOp u)
+  if u `elem` stars then p else p <|> return (PrimSet $ stUnOp u)
 
 pUnOps :: [Parser UnOp]
 pUnOps = map (pString lUnOp) stars

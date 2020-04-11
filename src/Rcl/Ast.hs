@@ -27,7 +27,7 @@ data FoldSet a = FoldSet
 
 data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
 
-data BinOp = Union | Inter | Ops | Minus deriving (Eq, Show)
+data BinOp = Union | Inter | Operations Bool | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
 data UnOp = AO | OE | User Bool | Roles Bool | Sessions
@@ -110,7 +110,7 @@ unOps :: [UnOp]
 unOps = [AO, OE, User True, User False, Roles True, Roles False, Sessions
   , Permissions True, Permissions False, Objects]
 
-stUnOp :: UnOp -> String
+stUnOp :: Show a => a -> String
 stUnOp o = let
   s = show o -- rely on Show instance
   l = length s
@@ -119,7 +119,7 @@ stUnOp o = let
   in if l == 2 then s else -- not AO or OE
   if " True" `isSuffixOf` s then w ++ "*" else w
 
-lUnOp :: UnOp -> String
+lUnOp :: Show a => a -> String
 lUnOp o = case stUnOp o of
   s@(_ : _) | last s == '*' -> init s ++ "^{*}"
   s -> s
@@ -185,13 +185,3 @@ keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
 -- | OCL compliant class name
 stSet :: SetType -> String
 stSet = foldSetType ("SetOf" ++) show
-
--- | USE compliant and disambiguated names
-useOp :: Maybe Base -> UnOp -> String
-useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
-  in case o of
-  User b -> if t == Just S then u else if b then "users_" else "users"
-  Roles _ -> case t of
-      Just r -> map toLower (show r) ++ u
-      _ -> u
-  _ -> u

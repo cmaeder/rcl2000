@@ -154,7 +154,8 @@ in the [paper][1].
 
 - user(r : R) = { u | (u, r) in UA }
 - user*(r : R) = user(roles\*(r)) = { u | exist s >= r . (u, s) in UA }
-- operation(r : R, obj : OBJ) = { op | exist j <= r . (op, obj, j) in PA }
+- operations*(r : R, obj : OBJ) = operations(roles(r), obj)
+  = { op | exist j <= r . (op, obj, j) in PA }
 
 The transitive closure of a role hierarchy is computed from an input
 file and the (minimal) transitive reduction is written out as `.soil`

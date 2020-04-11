@@ -122,7 +122,7 @@ setToOcl us = foldSet FoldSet
       a1 = singleSet us s1 d1
       a2 = singleSet us s2 d2
       in case o of
-      Ops -> cat [p, parens $ hcat [a1, text ",", a2]]
+      Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> cat [hcat [d1, arr, p], parens d2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d ->
@@ -154,7 +154,19 @@ pBinOp o = text $ case o of
   Union -> "union"
   Inter -> "intersection"
   Minus -> "excluding"
-  Ops -> "ops"
+  Operations b -> "ops" ++ if b then "_" else ""
 
 pUnOp :: Maybe SetType -> UnOp -> Doc
 pUnOp t = text . useOp (fmap (foldSetType id id) t)
+
+-- | USE compliant and disambiguated names
+useOp :: Maybe Base -> UnOp -> String
+useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
+  in case o of
+  User b -> case t of
+    Just S -> u
+    _ -> "users" ++ if b then "_" else ""
+  Roles _ -> case t of
+      Just r -> map toLower (show r) ++ u
+      _ -> u
+  _ -> u

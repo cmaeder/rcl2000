@@ -76,6 +76,7 @@ operations
   permissions_(rs : Set(R)): Set(P) = permissions(rroles(rs))
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
+  ops_(rs : Set(R), os : Set(OBJ)): Set(OP) = ops(rroles(rs), os)
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
 constraints
   inv singleton: Builtin.allInstances->size = 1

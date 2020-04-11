@@ -56,7 +56,7 @@ tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
     m2 <- tySet us s2
     case (m1, m2) of
       (Just t1, Just t2) -> case o of
-        Ops -> do
+        Operations _ -> do
           unless (isElemOrSet R t1 && isElemOrSet OBJ t2)
             $ md "expected role and object arguments"
           pure $ mkSetType OP -- R x OBJ -> 2^OP

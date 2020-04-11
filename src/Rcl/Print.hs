@@ -78,7 +78,7 @@ pTerm m t = case t of
 pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp f o in case o of
-    Ops -> cat [p, parens $ hcat [d1, text ",", d2]]
+    Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
     Minus -> cat [pParenSet o s1 d1, hcat [p, braces d2]]
     _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
   , foldUn = \ _ o d -> let b = prParen m
@@ -107,7 +107,9 @@ pBinOp m o = text $ case o of
   Union -> sUnion m
   Inter -> sInter m
   Minus -> "-"
-  Ops -> stOps
+  _ -> case m of
+    LaTeX -> lUnOp o
+    _ -> stUnOp o
 
 pBar :: Doc
 pBar = text "|"
