@@ -109,7 +109,7 @@ eval us m e = foldSet FoldSet
     (Left _, _) -> v1
     (_, Left _) -> v2
     (Right r1, Right r2) -> case o of
-      Operations b -> case (r1, r2) of
+      Operations b -> let stOps = stUnOp o in case (r1, r2) of
         (Ints rs, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
             | r <- IntSet.toList $ if b then apply m "j" rs else rs

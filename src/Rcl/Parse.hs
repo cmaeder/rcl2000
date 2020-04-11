@@ -77,10 +77,9 @@ applSet = unOpSet <|> opsSet <|> primSet
 
 opsSet :: Parser Set
 opsSet = do
-  o <- choice $ map (flip pString $ Operations True) [stUnOp, lUnOp]
-    ++ [pString stUnOp $ Operations False]
+  o <- pStar Operations
   let p = BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
-  if o == Operations False then p <|> return (PrimSet stOps) else p
+  if o == Operations False then p <|> return (PrimSet $ stUnOp o) else p
 
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet
@@ -92,14 +91,22 @@ unOpSet :: Parser Set
 unOpSet = do
   u <- choice pUnOps
   let p = UnOp u <$> applSet
-  if u `elem` stars then p else p <|> return (PrimSet $ stUnOp u)
+  if u `elem` map ($ True) stars then p else p <|> return (PrimSet $ stUnOp u)
 
 pUnOps :: [Parser UnOp]
-pUnOps = map (pString lUnOp) stars
+pUnOps = map pStar stars
   ++ map (pString stUnOp) unOps
 
-stars :: [UnOp]
-stars = [User True, Roles True, Permissions True]
+pStar :: (Show a) => (Bool -> a) -> Parser a
+pStar p = try (string . stUnOp $ p False) *>
+  (p True <$ (string "*" <|> try (string "^{*}"))
+    <|> p False <$ notFollowedBy alphaNum) <* skip
+
+unOps :: [UnOp]
+unOps = [AO, OE, Sessions, Objects]
+
+stars :: [Bool -> UnOp]
+stars = [User, Roles, Permissions]
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'

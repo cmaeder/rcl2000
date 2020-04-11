@@ -103,13 +103,6 @@ sInter m = case m of
   Uni -> "\x2229"
   Ascii -> "&"
 
-stOps :: String
-stOps = "operations"
-
-unOps :: [UnOp]
-unOps = [AO, OE, User True, User False, Roles True, Roles False, Sessions
-  , Permissions True, Permissions False, Objects]
-
 stUnOp :: Show a => a -> String
 stUnOp o = let
   s = show o -- rely on Show instance
