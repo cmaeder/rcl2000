@@ -30,7 +30,11 @@ bar = pch '|'
 
 -- allow leading zero
 nat :: Parser Term
-nat = Num . read <$> many1 digit <* skip
+nat = do
+  ds <- (try (string "0" <* notFollowedBy digit) <|>
+    skipMany (char '0') *> many1 digit) <* skip
+  if length ds > 9 then unexpected "digits: number may become too big" else
+    return . Num $ read ds
 
 cmpSet :: Parser Stmt
 cmpSet = do

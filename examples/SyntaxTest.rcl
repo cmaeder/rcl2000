@@ -1,13 +1,7 @@
 |U|=1
-// (U=U∧U=U)⇒(U=U∧U=U)
 U=U∧U=U⇒U=U∧U=U
 U=U⇒U=U∧U=U⇒U=U
 U=U∧U=U∧U=U
-// (U=U∧U=U)∧U=U
-// U=U∧(U=U∧U=U)
-// U=U⇒U=U⇒U=U
-// (U=U⇒U=U)⇒U=U
-// U=U⇒(U=U⇒U=U)
 U+U+U={}
 U&U&U={}
 U+(U+U)={}
@@ -16,3 +10,4 @@ U&(U&U)={}
 (U&U)&U={}
 U&U+U&U={}
 (U+U)&(U+U)={}
+|U| < 000999999999

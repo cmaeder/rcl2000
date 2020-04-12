@@ -45,9 +45,7 @@ tyTerm us t = case t of
     m <- tySet us s
     pure $ if b then Just NatTy else fmap SetTy m
   EmptySet -> pure $ Just EmptySetTy
-  Num n -> do
-    when (n < 0) . report $ "illegal number: " ++ show n
-    pure $ Just NatTy
+  Num _ -> pure $ Just NatTy
 
 tySet :: UserTypes -> Set -> State String (Maybe SetType)
 tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of

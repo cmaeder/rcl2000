@@ -73,7 +73,7 @@ pTerm m t = case t of
   Term b s -> let d = pSet m s in
     if b then hcat [pBar, d, pBar] else d
   EmptySet -> text . sEmpty $ format m
-  Num i -> int $ abs i -- avoid negative output
+  Num i -> int i
 
 pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet

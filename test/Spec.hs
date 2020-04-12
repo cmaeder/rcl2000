@@ -1,8 +1,11 @@
 import Rcl.Ast
 import Rcl.Cli
 
+import System.Directory (listDirectory)
+import System.FilePath ((</>))
+
 rclFiles :: [String]
-rclFiles = map ("examples/" ++) ["AhnDiss.rcl"
+rclFiles = map ("examples" </>) ["AhnDiss.rcl"
   , "SyntaxTest.rcl"
   , "TypeErrors.rcl"
   , "AhnSandhuPaper2000.rcl"]
@@ -18,3 +21,6 @@ main = do
   mapM_ (\ o -> cli binary $ o : "-t" : rclFiles) ["-c", "-r"]
   cli binary $ "-otest" : rclFiles
   cli binary $ ["-t", "-o"] ++ rclFiles
+  let d = "test" </> "expectedParseErrors"
+  ts <- listDirectory d
+  cli binary $ map (d </>) ts
