@@ -83,6 +83,7 @@ readUA :: Model -> [String] -> IO Model
 readUA m s = case s of
   u : rs -> do
     when (checkU u m) . putStrLn $ "user already known: " ++ u
+    when (null rs) . putStrLn $ "no roles assigned to user: " ++ u
     return $ foldr (addUA u) (addU u m) rs
   _ -> return m
 
@@ -91,10 +92,12 @@ readPA m s = case s of
   oP : oBj : rs -> do
     let ps = permissions m
         p = strP oP oBj
+        sp = pStr p
         p_ = pStr_ p
-    if p `Set.member` ps then putStrLn $ "permission already known: " ++ pStr p
+    if p `Set.member` ps then putStrLn $ "permission already known: " ++ sp
       else when (p_ `elem` map pStr_ (Set.toList ps))
       . putStrLn $ "WARN: overlapping permission representation: " ++ p_
+    when (null rs) . putStrLn $ "no roles assigned to permission: " ++ sp
     return $ foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
   [p] -> do
     putStrLn $ "provide two words op and obj for (ignored) permission: " ++ p
@@ -113,7 +116,9 @@ readS m s = case s of
       putStrLn e
       putStrLn $ "ignoring session: " ++ i
       return m
-    Right n -> return n
+    Right n -> do
+      when (null rs) . putStrLn $ "no roles activated in session: " ++ i
+      return n
   _ -> return m
 
 -- user and role

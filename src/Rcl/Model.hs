@@ -90,7 +90,7 @@ initBases :: Model -> Model
 initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
-initOpsMap m = m { opsMap = foldr
+initOpsMap m = m { opsMap = Set.foldr
     (\ (Permission (Operation oP) (Object oBj), Role r) n ->
     let p = (toInt m r, toInt m oBj)
         is = Map.findWithDefault IntSet.empty p n
