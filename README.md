@@ -136,12 +136,13 @@ elements are regarded as singleton sets to ensure proper typing. The
 from users `U`, permissions `P` and sessions `S` also roles `R` can be
 arguments of the `roles` function:
 
-- roles : R -> 2^R, roles(r) = { j | j < r }
-- roles* : R -> 2^R, roles*(r) = { s | r < s }
+- roles : R -> 2^R, roles(r) = { j | j <= r }
+- roles* : R -> 2^R, roles*(r) = { s | r <= s }
 
-So `roles` can be used to compute all proper junior roles and `roles*`
-for the proper senior roles. With these two functions the `*` variants
-of other functions are strictly no longer necessary but supported:
+So `roles` can be used to compute all junior roles and `roles*` for
+the senior roles including the argument role. With these two functions
+the `*` variants of other functions are strictly no longer necessary
+but supported:
 
 - roles*(u : U) = roles(roles(u))
 - roles*(s : S) = roles(roles(s))
@@ -154,6 +155,7 @@ in the [paper][1].
 
 - user(r : R) = { u | (u, r) in UA }
 - user*(r : R) = user(roles\*(r)) = { u | exist s >= r . (u, s) in UA }
+- operations(r : R, obj : OBJ) = { op | (op, obj, r) in PA }
 - operations*(r : R, obj : OBJ) = operations(roles(r), obj)
   = { op | exist j <= r . (op, obj, j) in PA }
 
