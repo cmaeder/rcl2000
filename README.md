@@ -132,7 +132,7 @@ The parser is more liberal than described in the [paper][1]:
 
 The type checker is as liberal as described in the [paper][1]. Many
 elements are regarded as singleton sets to ensure proper typing. The
-following extra functions have been added:
+following reflexive transitive closure functions have been added:
 
 - juniors* : R -> 2^R, juniors\*(r) = { j | j <= r }
 - seniors* : R -> 2^R, seniors\*(r) = { s | r <= s }
