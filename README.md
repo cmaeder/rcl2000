@@ -145,7 +145,7 @@ though still supported:
 - roles*(u : U) = juniors\*(roles(u))
 - roles*(s : S) = juniors\*(roles(s))
 - roles*(p : P) = seniors\*(roles(p))
-- permissions*(r : R) = permission(roles(r))
+- permissions*(r : R) = permission(juniors\*(r))
 
 It should be noted that also the `user` and `operations` functions
 must consider the role hierarchy as this is not mentioned (or wrong)
