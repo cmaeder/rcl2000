@@ -6,7 +6,7 @@ import Rcl.Ast
 import Text.ParserCombinators.Parsec
 
 parser :: Parser [Stmt]
-parser = skip *> many1 stmt <* eof
+parser = skip *> many stmt <* eof
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
