@@ -82,8 +82,15 @@ initModel :: Model -> Model
 initModel = flip (foldr initFctMap) fcts . initOpsMap . initBases
 
 initRH :: Model -> Model
-initRH m = let n = transClosure $ rh m in
-  m { rh = n, inv = invert n }
+initRH m = let
+  n = transClosure $ rh m
+  r = transReduce n in m { rh = n, inv = invert n, rhim = r, invim = invert r }
+
+transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
+transReduce m = Map.map ( \ s -> let
+    d = Map.fromList . map (\ a -> (a, a)) $ Set.toList s
+    in Set.filter ( \ j -> Map.null . Map.filter (Set.member j)
+      . Map.intersection m $ Map.delete j d) s) m
 
 -- | insert initial base sets
 initBases :: Model -> Model

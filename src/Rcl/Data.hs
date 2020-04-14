@@ -33,8 +33,10 @@ data Model = Model
   , userSets :: Map String (SetType, Value, [String])
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
-  , rh :: Map R (Set.Set R) -- direct junior roles
+  , rh :: Map R (Set.Set R) -- all junior roles
   , inv :: Map R (Set.Set R) -- inverse senior roles
+  , rhim :: Map R (Set.Set R) -- immediate junior roles
+  , invim :: Map R (Set.Set R) -- inverse immediate senior roles
   , strMap :: Map String Int
   , intMap :: IntMap String
   , fctMap :: Map String (IntMap IntSet)
@@ -55,6 +57,8 @@ emptyModel = Model
   , pa = Set.empty
   , rh = Map.empty
   , inv = Map.empty
+  , rhim = Map.empty
+  , invim = Map.empty
   , strMap = Map.empty
   , intMap = IntMap.empty
   , fctMap = Map.empty

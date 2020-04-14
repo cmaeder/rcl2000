@@ -8,12 +8,6 @@ import Rcl.Ast (Base (..), SetType (..), baseType, foldSetType)
 import Rcl.Data
 import Rcl.ToOcl (aggName, tr, enc)
 
-transReduce :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
-transReduce m = Map.map ( \ s -> let
-    d = Map.fromList . map (\ a -> (a, a)) $ Set.toList s
-    in Set.filter ( \ j -> Map.null . Map.filter (Set.member j)
-      . Map.intersection m $ Map.delete j d) s) m
-
 toSoil :: Model -> String
 toSoil m = unlines $ let
   ps = permissions m
@@ -33,7 +27,7 @@ toSoil m = unlines $ let
   ++ insert "UA" (codeB U . name) role (Set.toList $ ua m)
   ++ insert "PA" (codeB P . pStr) role (Set.toList $ pa m)
   ++ insert "RH" (codeB R . role) role (concatMap (\ (r, l)
-    -> map (\ e -> (r, e)) $ Set.toList l) . Map.toList . transReduce $ rh m)
+    -> map (\ e -> (r, e)) $ Set.toList l) . Map.toList $ rhim m)
   ++ insert "SessionRoles" (codeB S) role
     (concatMap (\ (i, s) -> map (\ e -> (i, e))
     . Set.toList $ activeRoles s) sl)
