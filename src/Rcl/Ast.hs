@@ -1,7 +1,6 @@
 module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
-import Data.List (isSuffixOf)
 import Data.Map (Map)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
@@ -31,8 +30,10 @@ data BinOp = Union | Inter | Operations Bool | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
 data UnOp = AO | OE | User Bool | Roles Bool | Sessions
-  | Permissions Bool | Objects deriving (Eq, Show)
+  | Permissions Bool | Objects | Iors Ior Bool deriving (Eq, Show)
 -- AO: all other, OE: one element, object ~> objects, Bool for * suffix
+
+data Ior = Jun | Sen deriving (Eq, Show)
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 data SetType = ElemTy Base | SetOf SetType deriving (Eq, Show)
@@ -106,11 +107,14 @@ sInter m = case m of
 stUnOp :: Show a => a -> String
 stUnOp o = let
   s = show o -- rely on Show instance
+  ws = words s
   l = length s
   v = map toLower s
   w = takeWhile isLetter v
+  x = if w == "iors" then (if "Jun" `elem` ws then "jun" else "sen") ++ w
+    else w
   in if l == 2 then s else -- not AO or OE
-  if " True" `isSuffixOf` s then w ++ "*" else w
+  if "True" `elem` ws then x ++ "*" else x
 
 lUnOp :: Show a => a -> String
 lUnOp o = case stUnOp o of

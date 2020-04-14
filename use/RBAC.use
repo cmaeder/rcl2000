@@ -60,23 +60,25 @@ operations
   R() : Set(R) = R.allInstances
   S() : Set(S) = S.allInstances
   U() : Set(U) = U.allInstances
-  rroles(rs : Set(R)): Set(R) = rs->union(rs->collect(juniors()))->asSet
-  rroles_(rs : Set(R)): Set(R) = rs->union(rs->collect(seniors()))->asSet
+  juns(rs : Set(R)): Set(R) = rs->collect(junior)->asSet
+  sens(rs : Set(R)): Set(R) = rs->collect(senior)->asSet
+  juns_(rs : Set(R)): Set(R) = rs->union(rs->collect(juniors()))->asSet
+  sens_(rs : Set(R)): Set(R) = rs->union(rs->collect(seniors()))->asSet
   uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
   proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
   sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
-  uroles_(us : Set(U)): Set(R) = rroles(uroles(us))
-  proles_(ps : Set(P)): Set(R) = rroles_(proles(ps))
-  sroles_(ss : Set(S)): Set(R) = rroles(sroles(ss))
+  uroles_(us : Set(U)): Set(R) = juns_(uroles(us))
+  proles_(ps : Set(P)): Set(R) = sens_(proles(ps))
+  sroles_(ss : Set(S)): Set(R) = juns_(sroles(ss))
   user(s : S): U = s.user
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
-  users_(rs : Set(R)): Set(U) = users(rroles_(rs))
+  users_(rs : Set(R)): Set(U) = users(sens_(rs))
   sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
   permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
-  permissions_(rs : Set(R)): Set(P) = permissions(rroles(rs))
+  permissions_(rs : Set(R)): Set(P) = permissions(juns_(rs))
   ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
     permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
-  ops_(rs : Set(R), os : Set(OBJ)): Set(OP) = ops(rroles(rs), os)
+  ops_(rs : Set(R), os : Set(OBJ)): Set(OP) = ops(juns_(rs), os)
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
 constraints
   inv singleton: Builtin.allInstances->size = 1

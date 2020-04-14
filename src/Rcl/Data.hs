@@ -9,7 +9,7 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 
-import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..))
+import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..), Ior (..))
 import Rcl.Type (isElem, elemType)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
@@ -129,9 +129,13 @@ sUnOp t o = let u = take 1 $ show o
   in case o of
   User _ -> if t == Just (ElemTy S) then "u" else u
   Objects -> "B"
-  Roles b -> case t >>= \ s -> if isElem s then Just s else elemType s of
-    Just (ElemTy r) -> if r == R then if b then "s" else "j" else show r ++ "r"
+  Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
+    Just (ElemTy r) -> show r ++ "r"
     _ -> u
+  Iors i b -> case i of
+      Jun -> "j"
+      Sen -> "s"
+    ++ if b then "" else "i" -- immediate
   _ -> u
 
 stValue :: Model -> Value -> String

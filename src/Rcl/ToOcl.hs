@@ -169,4 +169,5 @@ useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   Roles _ -> case t of
       Just r -> map toLower (show r) ++ u
       _ -> u
+  Iors i b -> map toLower (show i) ++ if b then "_" else ""
   _ -> u

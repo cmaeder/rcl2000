@@ -110,7 +110,7 @@ unOps :: [UnOp]
 unOps = [AO, OE, Sessions, Objects]
 
 stars :: [Bool -> UnOp]
-stars = [User, Roles, Permissions]
+stars = [User, Roles, Permissions, Iors Jun, Iors Sen]
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'

@@ -132,21 +132,19 @@ The parser is more liberal than described in the [paper][1]:
 
 The type checker is as liberal as described in the [paper][1]. Many
 elements are regarded as singleton sets to ensure proper typing. The
-`roles` function is even more overloaded than in the [paper][1]. Apart
-from users `U`, permissions `P` and sessions `S` also roles `R` can be
-arguments of the `roles` function:
+following extra functions have been added:
 
-- roles : R -> 2^R, roles(r) = { j | j <= r }
-- roles* : R -> 2^R, roles*(r) = { s | r <= s }
+- juniors* : R -> 2^R, juniors\*(r) = { j | j <= r }
+- seniors* : R -> 2^R, seniors\*(r) = { s | r <= s }
 
-So `roles` can be used to compute all junior roles and `roles*` for
+So `juniors*` can be used to compute all junior roles and `seniors*` for
 the senior roles including the argument role. With these two functions
-the `*` variants of other functions are strictly no longer necessary
-but supported:
+the `*` variants of other functions are strictly no longer necessary,
+though still supported:
 
-- roles*(u : U) = roles(roles(u))
-- roles*(s : S) = roles(roles(s))
-- roles*(p : P) = roles\*(roles(p))
+- roles*(u : U) = juniors\*(roles(u))
+- roles*(s : S) = juniors\*(roles(s))
+- roles*(p : P) = seniors\*(roles(p))
 - permissions*(r : R) = permission(roles(r))
 
 It should be noted that also the `user` and `operations` functions
@@ -154,14 +152,16 @@ must consider the role hierarchy as this is not mentioned (or wrong)
 in the [paper][1].
 
 - user(r : R) = { u | (u, r) in UA }
-- user*(r : R) = user(roles\*(r)) = { u | exist s >= r . (u, s) in UA }
+- user*(r : R) = user(seniors\*(r)) = { u | exist s >= r . (u, s) in UA }
 - operations(r : R, obj : OBJ) = { op | (op, obj, r) in PA }
-- operations*(r : R, obj : OBJ) = operations(roles(r), obj)
+- operations*(r : R, obj : OBJ) = operations(juniors\*(r), obj)
   = { op | exist j <= r . (op, obj, j) in PA }
 
 The transitive closure of a role hierarchy is computed from an input
-file and the (minimal) transitive reduction is written out as `.soil`
-file for the [USE-Tool][2].
+file and the minimal transitive reduction is written out as `.soil`
+file for the [USE-Tool][2]. The (irreflexive) transitive reduction is
+also available via the functions `juniors` and `seniors` without `\*`
+that only return *immediate* sub- or super roles.
 
 Activated roles of sessions are properly checked against the
 *authorized* roles of a session's user by also considering a role

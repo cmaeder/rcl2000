@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), SetType (..), Base (..), primTypes)
+import Rcl.Ast (UnOp (..), Ior (..), SetType (..), Base (..), primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -106,6 +106,7 @@ initOpsMap m = m { opsMap = Set.foldr
 fcts :: [(Base, UnOp)]
 fcts = map toR [U, P, S, R] ++ [(S, User False), (R, User True)
   , (R, Roles False), (U, Sessions), (R, Permissions True), (P, Objects)]
+  ++ [(R, Iors i b) | b <- [False, True], i <- [Jun, Sen]]
 
 toR :: Base -> (Base, UnOp)
 toR b = (b, Roles True)
@@ -135,9 +136,16 @@ function bo m = let
   (S, Roles _) -> IntMap.fromList $ map (\ (s, Session _ as) ->
         (toInt m s, IntSet.fromList . map (toInt m . role)
         $ Set.toList as)) ss
-  (R, Roles b) -> IntMap.fromList $ map (\ r ->
+  (R, Iors i b) -> IntMap.fromList . map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . role)
-        . Set.toList $ getRoles ((if b then inv else rh) m) r)) rs
+        . Set.toList $ case i of
+            Jun -> if b then getRoles (rh m) r
+              else Map.findWithDefault Set.empty r $ rhim m
+            Sen -> if b then getRoles (inv m) r
+              else Map.findWithDefault Set.empty r $ invim m))
+        . Map.keys $ case i of
+             Jun -> rh m
+             Sen -> inv m
   (_, Sessions) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m)
         . Map.keys $ sessionsOfU m u)) us

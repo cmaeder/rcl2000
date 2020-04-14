@@ -4,8 +4,10 @@ user s1
 sessions u1
 roles u1
 roles u2
-roles* r1
-roles r9
+seniors* r1
+juniors* r9
+seniors r1
+juniors r9
 a s1 op1 obj2
 a s1 op1 obj1
 a s2 op1 obj1

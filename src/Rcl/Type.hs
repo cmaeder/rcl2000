@@ -97,11 +97,12 @@ tyAppl o t = case o of
     ElemTy S -> if b then Nothing else Just $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
     _ -> Nothing
-  Roles _ | any (`isElemOrSet` t) [R, U, P, S]
+  Roles _ | any (`isElemOrSet` t) [U, P, S]
     -> mkSetType R -- U + P + S -> 2^R
   Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
   Permissions _ | isElemOrSet R t -> mkSetType P -- R -> 2^P
   Objects | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
+  Iors _ _ | isElemOrSet R t -> mkSetType R  -- extra functions R -> 2^R
   _ -> Nothing
 
 isElemOrSet :: Base -> SetType -> Bool

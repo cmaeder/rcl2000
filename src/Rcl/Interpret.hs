@@ -138,9 +138,8 @@ eval us m e = foldSet FoldSet
       Right (Ints is) -> case o of
         User True -> Right . Ints . apply m p $ apply m "s" is
         Permissions True -> Right . Ints . apply m p $ apply m "j" is
-        Roles True | p `elem` ["Ur", "Sr"] ->
-            Right . Ints . apply m "j" $ apply m p is
-          | p == "Pr" -> Right . Ints . apply m "s" $ apply m p is
+        Roles True -> Right . Ints . apply m (if p == "Pr" then "s" else "j")
+          $ apply m p is
         AO -> if IntSet.null is then Left $ "empty set for AO: " ++ t
           else Right . Ints $ IntSet.deleteMax is
         OE -> if IntSet.null is then Left $ "empty set for OE: " ++ t
