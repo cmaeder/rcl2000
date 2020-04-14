@@ -160,7 +160,7 @@ in the [paper][1].
 The transitive closure of a role hierarchy is computed from an input
 file and the minimal transitive reduction is written out as `.soil`
 file for the [USE-Tool][2]. The (irreflexive) transitive reduction is
-also available via the functions `juniors` and `seniors` without `\*`
+also available via the functions `juniors` and `seniors` without `*`
 that only return *immediate* sub- or super roles.
 
 Activated roles of sessions are properly checked against the
