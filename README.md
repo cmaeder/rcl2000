@@ -6,10 +6,8 @@ Compilation is done using `stack` from
 [http://haskellstack.org](http://haskellstack.org). My current stack
 version is `2.1.3`.
 
-```
-stack build --pedantic
-stack run examples/AhnSandhuPaper2000.rcl
-```
+    stack build --pedantic
+    stack run examples/AhnSandhuPaper2000.rcl
 
 Via the file [stack.yaml](stack.yaml) the compilation uses the latest
 Glasgow haskell compiler version. Currently this is `ghc-8.8.3` as
@@ -95,35 +93,38 @@ statements and is a prerequisite for the translation
 [ToOcl](src/Rcl/ToOcl.hs) to OCL invariants for the [USE-Tool][2]
 (not described in the [paper][1]).
 
-```
-stack run -- -t -o. Stmts.rcl
-use Stmts.use
-```
+    stack run -- -t -o. Stmts.rcl
+    use Stmts.use
 
 The above call, where "`stack run --`" could be the created binary
-`rcl200-exe`, would produce the file `Stmts.use` from the statements in
-the input file `Stmts.rcl` (look into the [examples](examples)
-directory for `.rcl` files). Note the `-t` option for proper type
-checking and also be aware of the file [use/RBAC.use](use/RBAC.use)
-that is always the beginning of any created `.use` file. The default
-output directory for `.use` files created by the `-o` option is
-[use](use). The option `-o.` puts these files into the current
-directory ["."](.).
+`rcl200-exe`, would produce the file `Stmts.use` from the statements
+in the input file `Stmts.rcl` (look into the [examples](examples)
+directory for `.rcl` files). The input file `Stmts.rcl` may not exist,
+but the output file `Stmts.use` will be created and would overwrite an
+existing file. Without input statements no invariants would be
+generated, though. Note the `-t` option for proper type checking and
+also be aware of the file [use/RBAC.use](use/RBAC.use) that is always
+the beginning of any created `.use` file. The default output directory
+for `.use` files created by the `-o` option is [use](use). The option
+`-o.` puts these files into the current directory ["."](.).
 
 Within the [USE-Tool][2] concrete object diagrams could now be created and
 the generated OCL invariants for a single `RBAC` object could be
 validated or refuted.
 
 Yet, the implementation does not stop here. It allows to read in a full
-configuration (see below)
+configuration as described below under the [Usage heading](#usage).
 
-## Extensions and Limitations
+## Extensions
 
 The parser is more liberal than described in the [paper][1]:
+
 - some parentheses may be omitted.
+
 - set names can start with any unicode letter. Further characters may
   be any alphanum or the underscore. Other characters may be easily
   allowed if they are not used elsewhere.
+
 - The minus sign `-` can be used directly to remove an element from a
   set: "`AO(S)`" is the same as "`S-{OE(S)}`" or "`S - OE S`" as also
   the curly braces are optional. The second argument of minus `-` must
@@ -134,51 +135,130 @@ The type checker is as liberal as described in the [paper][1]. Many
 elements are regarded as singleton sets to ensure proper typing. The
 following reflexive transitive closure functions have been added:
 
-- juniors* : R -> 2^R, juniors\*(r) = { j | j <= r }
-- seniors* : R -> 2^R, seniors\*(r) = { s | r <= s }
+        juniors* : R -> 2^R, juniors*(r) = { j | j <= r }
+        seniors* : R -> 2^R, seniors*(r) = { s | r <= s }
 
 So `juniors*` can be used to compute all junior roles and `seniors*` for
 the senior roles including the argument role. With these two functions
 the `*` variants of other functions are strictly no longer necessary,
 though still supported:
 
-- roles*(u : U) = juniors\*(roles(u))
-- roles*(s : S) = juniors\*(roles(s))
-- roles*(p : P) = seniors\*(roles(p))
-- permissions*(r : R) = permission(juniors\*(r))
+        roles*(u : U) = juniors*(roles(u))
+        roles*(s : S) = juniors*(roles(s))
+        roles*(p : P) = seniors*(roles(p))
+        permissions*(r : R) = permission(juniors*(r))
 
 It should be noted that also the `user` and `operations` functions
 must consider the role hierarchy as this is not mentioned (or wrong)
 in the [paper][1].
 
-- user(r : R) = { u | (u, r) in UA }
-- user*(r : R) = user(seniors\*(r)) = { u | exist s >= r . (u, s) in UA }
-- operations(r : R, obj : OBJ) = { op | (op, obj, r) in PA }
-- operations*(r : R, obj : OBJ) = operations(juniors\*(r), obj)
-  = { op | exist j <= r . (op, obj, j) in PA }
+        user(r : R) = { u | (u, r) in UA }
+        user*(r : R) = user(seniors*(r)) = { u | exist s >= r . (u, s) in UA }
+        operations(r : R, obj : OBJ) = { op | (op, obj, r) in PA }
+        operations*(r : R, obj : OBJ) = operations(juniors*(r), obj)
+            = { op | exist j <= r . (op, obj, j) in PA }
 
-The transitive closure of a role hierarchy is computed from an input
-file and the minimal transitive reduction is written out as `.soil`
-file for the [USE-Tool][2]. The (irreflexive) transitive reduction is
-also available via the functions `juniors` and `seniors` without `*`
-that only return *immediate* sub- or super roles.
+The `user*` function also considers users that may have a role's
+permissions due to their assignment to senior roles.
 
-Activated roles of sessions are properly checked against the
-*authorized* roles of a session's user by also considering a role
-hierarchy.
+A permission is a pair consisting of an operation and an object. The
+`objects` function is a mere selector or projection that extracts the
+unique object from a permission and just returns it as a singleton
+set. The `operations` function is different in that it takes as input
+a role and an object and returns all operations from permissions of
+the role that operate on the given object. The `operations*` function
+additionally considers the permissions due to junior roles of the
+input role. No `*` is allowed for the simple `objects` function.
 
-Concrete conflicting sets, like `CR`, `CP`, or `CU` can be read
-from a file, although all subsets must be named explicitely.
+A session has a unique name, belongs to a unique user and comprises a
+set of so called *activated* roles. The overloaded function `user`
+(where `*` would be illegal) returns the unique user of the session
+given as input. (In case of need this single user is converted into a
+singleton user set.) The inverse function `sessions` (where `*` is
+also illegal) returns a proper set of sessions namely all sessions
+belonging to the user given as input. This set may be empty, a
+singleton set or a larger set, as a single user may *open* several
+sessions.
 
-## Usage
+        sessions(u) = { s | user(s) = u }
 
-```
-find . -name rcl2000-exe
-# find the binary and put it into your PATH
-# or use "stack run --" or "stack exec rcl2000-exe --" instead of "rcl2000-exe"
-rcl2000-exe -o. Stmts.rcl
-use Stmts.use Stmts.soil
-```
+The `roles` function applied to a session returns the *explicitely
+activated* roles of this session. These *activated* roles must be a
+subset of the roles *authorized* by the session's user. Simply
+requiring `roles(s)` to be a subset of `roles(user(s))` for a session
+`s` is not good enough in the presence of role hierarchies. Any role
+from `roles*(user(s))` may be activated in session `s` and any role
+from `roles*(s)` will be activated either explicitely or implicitely.
+
+In addition to the `juniors*` and `seniors*` functions also `juniors`
+and `seniors` functions without `*` are provided. These functions
+denote the *immediate* junior or senior roles of an input role. It is
+the irreflexive transitive reduction of the role hierarchy. The
+immediate subrole relation is denoted using `<<` and is a subrelation
+of `<=`.
+
+        juniors : R -> 2^R, juniors(r) = { j | j << r }
+        seniors : R -> 2^R, seniors(r) = { s | r << s }
+
+With these functions also *limited* role hierarchies could be
+specified using RCL. The statement "`|juniors(OE(R))| <= 1`" would
+restrict any role in the role hierarchy to have at most a single
+immediate junior role. In practise this may be rarely useful, though.
+
+The conflict sets `CR`, `CP`, or `CU` described in the [paper][1] are
+set of sets of `R`, `P`, or `U` respectively. These sets can be used
+to describe separation of duty (SoD) constraints in RCL.
+
+        |roles*(OE(U)) ∩ OE(CR)| ≤ 1
+
+The authorized roles of any user `OE(U)` may at most contain a single
+role from any conflict set `OE(CR)`. In the case of two conflicting
+roles `r1` and `r2` and a singleton set of a conflict set
+(`CR={{r1,r2}}`), no user `u=OE(U)` from `U` could be assigned (or
+authorized) to both roles without violating the
+constraint. `OE(CR)={r1,r2}` would be a subset of `roles*(u)` thus the
+intersection would contain two elements rather than at most one.
+
+For a role hierarchy the function `roles*` must be used in the above
+statement. However, it does not make sense to put a junior and senior
+role into one conflict set, because this would imply that only the
+junior role could be authorized. If the senior role is authorized then
+the junior role is authorized implicitely yielding the unintended
+conflict. In fact only *junior-most* roles should be put into conflict
+sets! Singleton (or even empty) conflict sets as elements of `CR` also
+do not make sense as for these sets the intersection will always be at
+most one element.
+
+The [paper][1] distinguishes *static* (SSoD) and *dynamic* (DSoD)
+separation of duty. SSoD addresses *assigned* (or with a role
+hierarchy *authorized*) roles whereas DSoD addresses the *activated*
+roles of sessions as in the following statement.
+
+        |roles*(sessions(OE(U))) ∩ OE(CR)| ≤ 1
+
+It should be noted that the set of conflict sets `CR` can not be used
+if static and dynamic SoD constraints should be enforced
+*simultaneously*, because a static constraint already rules out the
+mere activation of conflicting roles in sessions. For both, SSoD and
+DSoD, two different sets of sets need to and *can be* defined,
+i.e. `SCR` and `DCR`. `CR` (as well as `CP` or `CU`) are not builtin
+but *user defined*.
+
+Usually several permissions are assigned to a single role. In order to
+avoid conflicts more fine-grained a set of conflicting permission sets
+like `CP` may be more appropriate. `CU` can be used to restrict badly
+collaborating users. The interactions with roles in the presence of
+role hierarchies may be difficult to grasp, though, and is therefore
+left to the literature or as an exercise.
+
+## Usage {#usage}
+
+    find . -name rcl2000-exe
+    # find the binary and put it into your PATH
+    # or use "stack run --" or "stack exec rcl2000-exe --" instead of "rcl2000-exe"
+    rcl2000-exe -o. Stmts.rcl
+    use Stmts.use Stmts.soil
+
 
 The above call relies on the files [rh, ua, pa, s and sets](examples)
 from the [examples](examples) directory. The default file extension is
