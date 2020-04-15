@@ -251,7 +251,7 @@ collaborating users. The interactions with roles in the presence of
 role hierarchies may be difficult to grasp, though, and is therefore
 left to the literature or as an exercise.
 
-## Usage {#usage}
+## Usage
 
     find . -name rcl2000-exe
     # find the binary and put it into your PATH
