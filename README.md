@@ -143,9 +143,13 @@ the senior roles including the argument role. With these two functions
 the `*` variants of other functions are strictly no longer necessary,
 though still supported:
 
+        roles(u : U) = { r | (u, r) in UA }
+        roles(s : S) = defined activated roles of session s
+        roles(p : P) = { r | (p, r) in PA }
         roles*(u : U) = juniors*(roles(u))
         roles*(s : S) = juniors*(roles(s))
         roles*(p : P) = seniors*(roles(p))
+        permissions(r : R) = { p | (p, r) in PA)
         permissions*(r : R) = permission(juniors*(r))
 
 It should be noted that also the `user` and `operations` functions
@@ -180,6 +184,7 @@ belonging to the user given as input. This set may be empty, a
 singleton set or a larger set, as a single user may *open* several
 sessions.
 
+        user(s) = defined unique user of session s
         sessions(u) = { s | user(s) = u }
 
 The `roles` function applied to a session returns the *explicitely
@@ -204,6 +209,10 @@ With these functions also *limited* role hierarchies could be
 specified using RCL. The statement "`|juniors(OE(R))| <= 1`" would
 restrict any role in the role hierarchy to have at most a single
 immediate junior role. In practise this may be rarely useful, though.
+A statement "`|juniors(OE(R))| = 0`" or "`|juniors*(OE(R))| = 1`" or
+equivalently for `seniors` would even prohibit a role hierarchy! This
+demonstrates the expresive power of RCL with these additional
+`juniors` and `seniors` functions.
 
 The conflict sets `CR`, `CP`, or `CU` described in the [paper][1] are
 set of sets of `R`, `P`, or `U` respectively. These sets can be used
@@ -242,14 +251,30 @@ if static and dynamic SoD constraints should be enforced
 mere activation of conflicting roles in sessions. For both, SSoD and
 DSoD, two different sets of sets need to and *can be* defined,
 i.e. `SCR` and `DCR`. `CR` (as well as `CP` or `CU`) are not builtin
-but *user defined*.
+but *user defined*. `SCR` and `DCR` can be defined in the
+[types](examles/types.txt) file in type checking (`-t`) mode or in the
+[sets](examles/sets.txt) file.
 
 Usually several permissions are assigned to a single role. In order to
 avoid conflicts more fine-grained a set of conflicting permission sets
-like `CP` may be more appropriate. `CU` can be used to restrict badly
-collaborating users. The interactions with roles in the presence of
-role hierarchies may be difficult to grasp, though, and is therefore
-left to the literature or as an exercise.
+like `CP` may be more appropriate.
+
+        |permissions(roles*(OE(U))) ∩ OE(CP)| ≤ 1
+
+Here the use of `permissions*` is not required as `roles*` already
+transitively closes the role sets. The same statment can be expressed
+equivalently.
+
+        |permissions*(roles(OE(U))) ∩ OE(CP)| ≤ 1
+
+Using `*` for both functions would also not change the semantics. To
+switch the static constraint into a dynamic one, again roles from
+`sessions` need to be taken.
+
+The set `CU` can be used to restrict badly collaborating users. The
+interactions with conflicting roles and the presence of role
+hierarchies may be difficult to grasp, though, and is therefore left
+to the literature or as an exercise.
 
 ## Usage
 
