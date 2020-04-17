@@ -208,7 +208,11 @@ of `<=`.
 With these functions also *limited* role hierarchies could be
 specified using RCL. The statement "`|juniors(OE(R))| <= 1`" would
 restrict any role in the role hierarchy to have at most a single
-immediate junior role. In practise this may be rarely useful, though.
+immediate junior role. Such a hierarchy would be a forest of trees
+with roots at the bottom. A reversed limited hierarchy with roots at
+the top would result when using `seniors` for single immediate
+seniors. In practise this may be rarely useful, though.
+
 A statement "`|juniors(OE(R))| = 0`" or "`|juniors*(OE(R))| = 1`" or
 equivalently for `seniors` would even prohibit a role hierarchy! This
 demonstrates the expresive power of RCL with these additional
@@ -233,10 +237,11 @@ statement. However, it does not make sense to put a junior and senior
 role into one conflict set, because this would imply that only the
 junior role could be authorized. If the senior role is authorized then
 the junior role is authorized implicitely yielding the unintended
-conflict. In fact only *junior-most* roles should be put into conflict
-sets! Singleton (or even empty) conflict sets as elements of `CR` also
-do not make sense as for these sets the intersection will always be at
-most one element.
+conflict. In fact only *incomparable* roles with respect to the
+hierarchy relation `<=` should be put into conflict sets! Singleton
+(or even empty) conflict sets as elements of `CR` also do not make
+sense as for these sets the intersection will always be at most one
+element.
 
 The [paper][1] distinguishes *static* (SSoD) and *dynamic* (DSoD)
 separation of duty. SSoD addresses *assigned* (or with a role
@@ -256,8 +261,8 @@ but *user defined*. `SCR` and `DCR` can be defined in the
 [sets](examles/sets.txt) file.
 
 Usually several permissions are assigned to a single role. In order to
-avoid conflicts more fine-grained a set of conflicting permission sets
-like `CP` may be more appropriate.
+avoid conflicts maybe more intuitively, a set of conflicting
+permission sets like `CP` may be used.
 
         |permissions(roles*(OE(U))) ∩ OE(CP)| ≤ 1
 
@@ -270,6 +275,16 @@ equivalently.
 Using `*` for both functions would also not change the semantics. To
 switch the static constraint into a dynamic one, again roles from
 `sessions` need to be taken.
+
+        |permissions(roles*(sessions(OE(U)))) ∩ OE(CP)| ≤ 1
+
+The difference between permissions and roles is not that striking as
+permission conflicts imply role conflicts. Again it is no good idea to
+assign conflicting permissions to roles comparable via `<=`. Assigning
+conflicting permissions to a single role or comparable roles can be
+avoided by the following constraint.
+
+         |permissions*(OE(R)) ∩ OE(CP)| ≤ 1
 
 The set `CU` can be used to restrict badly collaborating users. The
 interactions with conflicting roles and the presence of role
