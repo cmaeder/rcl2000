@@ -9,10 +9,13 @@ copyright:           "2020 Christian Maeder"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- examples/*.txt
+- examples/*.rcl
+- use/RBAC.use
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            Role-based Constraints Language
+category:            language, compilers-interpreters
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is

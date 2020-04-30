@@ -117,15 +117,8 @@ parseAndType us p tc s = case parse p "" s of
 printHelpText :: InputT IO ()
 printHelpText =
   outputStrLn $ unlines
-  ["enter set or statement or any of the following commands."
+  [ "enter set or statement or any of the following commands."
   , "commands can abbreviated or preceeded with a colon, i.e. ':q':"
   , "help, quit, or exit"
   , "access <sessionId> <operation> <object>"
   , "session add|del <sessionId> [<user> <roles>*]"]
-{-
-  , "role add|del <role> <juniorRole>*"
-  , "user add|del <user> <roles>*"
-  , "permission add <operation> <object> <roles>*"
-  , "permission del <operation>_<object>"
-  , "value add|del <name> <name>+" ]
--}
