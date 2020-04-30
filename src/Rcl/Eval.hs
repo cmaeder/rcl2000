@@ -80,8 +80,14 @@ loop l m = do
           loop l m
         (_, Right f) -> outputStr (interprets us m f)
           >> loop l m
-        (Left err1, Left err2) -> do
+        (Left (Left err1), Left (Left err2)) -> do
           outputStrLn err1
+          outputStrLn err2
+          loop l m
+        (Left (Right err1), _) -> do
+          outputStrLn err1
+          loop l m
+        (_, Left (Right err2)) -> do
           outputStrLn err2
           loop l m
 
@@ -102,11 +108,11 @@ typeSet us a = maybe ("wrongly typed set: " ++ ppSet a) (const "")
   $ typeOfSet us a
 
 parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> String)
-   -> String -> Either String a
+   -> String -> Either (Either String String) a
 parseAndType us p tc s = case parse p "" s of
   Right a -> let t = tc us a in
-    if null t then Right a else Left t
-  Left err -> Left $ show err
+    if null t then Right a else Left $ Right t
+  Left err -> Left . Left $ show err
 
 printHelpText :: InputT IO ()
 printHelpText =
