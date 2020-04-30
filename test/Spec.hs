@@ -1,7 +1,9 @@
+import Control.Monad (filterM)
+
 import Rcl.Ast
 import Rcl.Cli
 
-import System.Directory (listDirectory)
+import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 
 rclFiles :: [String]
@@ -22,5 +24,6 @@ main = do
   cli binary $ "-otest" : rclFiles
   cli binary $ ["-t", "-o"] ++ rclFiles
   let d = "test" </> "expectedParseErrors"
-  ts <- listDirectory d
-  cli binary $ map (d </>) ts
+  ts <- getDirectoryContents d
+  fs <- filterM doesFileExist $ map (d </>) ts
+  cli binary fs

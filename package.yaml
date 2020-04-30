@@ -28,7 +28,7 @@ dependencies:
 - pretty
 - mtl
 - containers
-- directory >= 1.2.5.0
+- directory
 - filepath
 - haskeline
 
