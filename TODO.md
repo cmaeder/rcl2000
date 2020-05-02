@@ -12,6 +12,9 @@
         , "permission del <operation>_<object>"
         , "value add|del <name> <name>+" ]
 
+- [ ] RCL Categories: After what changes do statements need to be
+  evaluated?
+
 ## RCL extensions
 
 - [ ] allow type annotations for disambiguation
@@ -24,7 +27,8 @@
 
 ## Access history
 
-- [ ] extend RCL by a UP = U x P relation reflecting the access history
+- [ ] extend RCL by a UP = U x P relation reflecting the access
+  history
 
 - [ ] give usage example (chinese wall, ordered access)
 
