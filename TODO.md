@@ -12,6 +12,8 @@
         , "permission del <operation>_<object>"
         , "value add|del <name> <name>+" ]
 
+- [ ] Check the 43 commands from INCITS 359-2012
+
 - [ ] RCL Categories: After what changes do statements need to be
   evaluated?
 
