@@ -5,6 +5,9 @@ import Data.Char (toLower)
 import Data.List (find)
 import qualified Data.Map as Map (empty)
 import Data.Maybe (fromMaybe)
+import Data.Version (showVersion)
+
+import Paths_rcl2000
 import Rcl.Ast (UserTypes, Stmt)
 import Rcl.Data (Model, getUserTypes)
 import Rcl.Eval (evalInput)
@@ -17,6 +20,7 @@ import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
+
 import System.Console.GetOpt
 import System.FilePath ((</>), replaceExtension, hasExtension, takeFileName,
   replaceDirectory)
@@ -27,6 +31,7 @@ cli prN args = case getOpt Permute options args of
       (os, n, []) -> let o = foldl (flip id) dOpts os in
         if help o then putStrLn $
           usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
+        else if vers o then putStrLn $ prN ++ " Version " ++ showVersion version
         else let
           rm = readModel $ map (optsFile o)
             [rhFile, uaFile, paFile, sessFile, setsFile]
@@ -47,6 +52,9 @@ options =
     [ Option "h" ["help"]
       (NoArg $ \ o -> o {help = True})
       "show help message"
+    , Option "v" ["version"]
+      (NoArg $ \ o -> o {vers = True})
+      "show version"
     , Option "f" ["format"]
       (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
       "print to stdout using format LaTeX, Ascii or Unicode (default)"
@@ -106,6 +114,7 @@ data Opts = Opts
   , toOcl :: Bool
   , prompt :: Bool
   , help :: Bool
+  , vers :: Bool
   , dir :: FilePath
   , ext :: String
   , typesFile :: FilePath
@@ -129,6 +138,7 @@ dOpts = Opts
   , toOcl = False
   , prompt = False
   , help = False
+  , vers = False
   , dir = "examples"
   , ext = "txt"
   , typesFile = "types"
