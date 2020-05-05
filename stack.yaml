@@ -41,9 +41,12 @@ packages:
 #
 extra-deps:
 - parsec1-1.0.0.7
+- haskeline-0.8.0.0
 
 # Override default flag values for local packages and extra-deps
-# flags: {}
+flags:
+  haskeline:
+    terminfo: false
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
