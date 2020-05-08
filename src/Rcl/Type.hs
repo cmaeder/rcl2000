@@ -43,7 +43,9 @@ tyTerm :: UserTypes -> Term -> State String (Maybe Type)
 tyTerm us t = case t of
   Term b s -> do
     m <- tySet us s
-    pure $ if b then Just NatTy else fmap SetTy m
+    pure $ case b of
+      Card -> Just NatTy
+      TheSet -> fmap SetTy m
   EmptySet -> pure $ Just EmptySetTy
   Num _ -> pure $ Just NatTy
 
@@ -94,7 +96,7 @@ tyAppl o t = case o of
   OE -> elemType t
   AO | isSet t -> Just t
   User b -> case t of
-    ElemTy S -> if b then Nothing else Just $ ElemTy U -- S -> U
+    ElemTy S -> if b == Star then Nothing else Just $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
     _ -> Nothing
   Roles _ | any (`isElemOrSet` t) [U, P, S]

@@ -9,7 +9,8 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 
-import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..), Ior (..))
+import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..), OptStar (..),
+  Ior (..))
 import Rcl.Type (isElem, elemType)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
@@ -135,7 +136,9 @@ sUnOp t o = let u = take 1 $ show o
   Iors i b -> case i of
       Jun -> "j"
       Sen -> "s"
-    ++ if b then "" else "i" -- immediate
+    ++ case b of
+      Star -> ""
+      TheOp -> "i" -- immediate
   _ -> u
 
 stValue :: Model -> Value -> String

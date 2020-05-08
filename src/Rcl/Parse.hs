@@ -23,7 +23,7 @@ cmpCard :: Parser Stmt
 cmpCard = flip CmpOp <$> pCardTerm <*> cmpOp <*> (pCardTerm <|> nat)
 
 pCardTerm :: Parser Term
-pCardTerm = Term True <$> (bar *> set <* bar)
+pCardTerm = Term Card <$> (bar *> set <* bar)
 
 bar :: Parser Char
 bar = pch '|'
@@ -45,7 +45,7 @@ cmpSet = do
     _ -> emptySet <|> pTerm
 
 pTerm :: Parser Term
-pTerm = Term False <$> set
+pTerm = Term TheSet <$> set
 
 emptySet :: Parser Term
 emptySet = EmptySet <$ alts sEmpty
@@ -83,7 +83,7 @@ opsSet :: Parser Set
 opsSet = do
   o <- pStar Operations
   let p = BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
-  if o == Operations False then p <|> return (PrimSet $ stUnOp o) else p
+  if o == Operations TheOp then p <|> return (PrimSet $ stUnOp o) else p
 
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet
@@ -95,21 +95,21 @@ unOpSet :: Parser Set
 unOpSet = do
   u <- choice pUnOps
   let p = UnOp u <$> applSet
-  if u `elem` map ($ True) stars then p else p <|> return (PrimSet $ stUnOp u)
+  if u `elem` map ($ Star) stars then p else p <|> return (PrimSet $ stUnOp u)
 
 pUnOps :: [Parser UnOp]
 pUnOps = map pStar stars
   ++ map (pString stUnOp) unOps
 
-pStar :: (Show a) => (Bool -> a) -> Parser a
-pStar p = try (string . stUnOp $ p False) *>
-  (p True <$ (string "*" <|> try (string "^{*}"))
-    <|> p False <$ notFollowedBy alphaNum) <* skip
+pStar :: (Show a) => (OptStar -> a) -> Parser a
+pStar p = try (string . stUnOp $ p TheOp) *>
+  (p Star <$ (string "*" <|> try (string "^{*}"))
+    <|> p TheOp <$ notFollowedBy alphaNum) <* skip
 
 unOps :: [UnOp]
 unOps = [AO, OE, Sessions, Objects]
 
-stars :: [Bool -> UnOp]
+stars :: [OptStar -> UnOp]
 stars = [User, Roles, Permissions, Iors Jun, Iors Sen]
 
 parenSet :: Parser Set

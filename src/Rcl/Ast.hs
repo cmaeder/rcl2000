@@ -13,8 +13,10 @@ data FoldStmt a b = FoldStmt
 data CmpOp = Elem | Eq | Le | Lt | Ge | Gt | Ne deriving (Eq, Show)
 data BoolOp = And | Impl deriving (Eq, Show)
 
-data Term = Term Bool Set | EmptySet | Num Int deriving (Eq, Show)
--- named token by Ahn without size, Bool for cardinality
+data Term = Term OptCard Set | EmptySet | Num Int deriving (Eq, Show)
+-- named token by Ahn without size, the cardinality of sets is optional
+
+data OptCard = Card | TheSet deriving (Eq, Show)
 
 data Set = PrimSet { stPrim :: String } | UnOp UnOp Set
   | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
@@ -26,12 +28,14 @@ data FoldSet a = FoldSet
 
 data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
 
-data BinOp = Union | Inter | Operations Bool | Minus deriving (Eq, Show)
+data BinOp = Union | Inter | Operations OptStar | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
-data UnOp = AO | OE | User Bool | Roles Bool | Sessions
-  | Permissions Bool | Objects | Iors Ior Bool deriving (Eq, Show)
--- AO: all other, OE: one element, object ~> objects, Bool for * suffix
+data OptStar = Star | TheOp deriving (Eq, Show)
+
+data UnOp = AO | OE | User OptStar | Roles OptStar | Sessions
+  | Permissions OptStar | Objects | Iors Ior OptStar deriving (Eq, Show)
+-- AO: all other, OE: one element, object ~> objects, optional * suffix
 
 data Ior = Jun | Sen deriving (Eq, Show)
 
@@ -114,7 +118,7 @@ stUnOp o = let
   x = if w == "iors" then (if "Jun" `elem` ws then "jun" else "sen") ++ w
     else w
   in if l == 2 then s else -- not AO or OE
-  if "True" `elem` ws then x ++ "*" else x
+  if "Star" `elem` ws then x ++ "*" else x
 
 lUnOp :: Show a => a -> String
 lUnOp o = case stUnOp o of

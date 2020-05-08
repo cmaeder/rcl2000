@@ -97,7 +97,9 @@ evalTerm :: UserTypes -> Model -> Env -> Term -> TermVal
 evalTerm us m e t = case t of
   Term card s -> case eval us m e s of
     Left f -> Error f
-    Right v -> if card then VNum $ vSize v else VTerm v
+    Right v -> case card of
+      Card -> VNum $ vSize v
+      TheSet -> VTerm v
   EmptySet -> VEmptySet
   Num n -> VNum n
 
@@ -112,7 +114,7 @@ eval us m e = foldSet FoldSet
       Operations b -> let stOps = stUnOp o in case (r1, r2) of
         (Ints rs, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- IntSet.toList $ if b then apply m "j" rs else rs
+            | r <- IntSet.toList $ if b == Star then apply m "j" rs else rs
             , ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " first argument: " ++ t1
@@ -136,9 +138,9 @@ eval us m e = foldSet FoldSet
       p = sUnOp (typeOfSet us s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
-        User True -> Right . Ints . apply m p $ apply m "s" is
-        Permissions True -> Right . Ints . apply m p $ apply m "j" is
-        Roles True -> Right . Ints . apply m (if p == "Pr" then "s" else "j")
+        User Star -> Right . Ints . apply m p $ apply m "s" is
+        Permissions Star -> Right . Ints . apply m p $ apply m "j" is
+        Roles Star -> Right . Ints . apply m (if p == "Pr" then "s" else "j")
           $ apply m p is
         AO -> if IntSet.null is then Left $ "empty set for AO: " ++ t
           else Right . Ints $ IntSet.deleteMax is

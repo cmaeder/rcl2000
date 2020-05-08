@@ -9,7 +9,8 @@ import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), Ior (..), SetType (..), Base (..), primTypes)
+import Rcl.Ast (UnOp (..), OptStar (..), Ior (..), SetType (..), Base (..),
+  primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -104,12 +105,12 @@ initOpsMap m = m { opsMap = Set.foldr
     in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
 
 fcts :: [(Base, UnOp)]
-fcts = map toR [U, P, S, R] ++ [(S, User False), (R, User True)
-  , (R, Roles False), (U, Sessions), (R, Permissions True), (P, Objects)]
-  ++ [(R, Iors i b) | b <- [False, True], i <- [Jun, Sen]]
+fcts = map toR [U, P, S, R] ++ [(S, User TheOp), (R, User Star)
+  , (R, Roles TheOp), (U, Sessions), (R, Permissions Star), (P, Objects)]
+  ++ [(R, Iors i b) | b <- [TheOp, Star], i <- [Jun, Sen]]
 
 toR :: Base -> (Base, UnOp)
-toR b = (b, Roles True)
+toR b = (b, Roles Star)
 
 initFctMap :: (Base, UnOp) -> Model -> Model
 initFctMap p@(b, o) m = m
@@ -139,9 +140,9 @@ function bo m = let
   (R, Iors i b) -> IntMap.fromList . map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . role)
         . Set.toList $ case i of
-            Jun -> if b then getRoles (rh m) r
+            Jun -> if b == Star then getRoles (rh m) r
               else Map.findWithDefault Set.empty r $ rhim m
-            Sen -> if b then getRoles (inv m) r
+            Sen -> if b == Star then getRoles (inv m) r
               else Map.findWithDefault Set.empty r $ invim m))
         . Map.keys $ case i of
              Jun -> rh m
@@ -158,4 +159,4 @@ function bo m = let
 
 initSess :: Model -> Model
 initSess = insUserSet S
-  . flip (foldr initFctMap) [(S, Roles False), (S, User False), (U, Sessions)]
+  . flip (foldr initFctMap) [(S, Roles TheOp), (S, User TheOp), (U, Sessions)]

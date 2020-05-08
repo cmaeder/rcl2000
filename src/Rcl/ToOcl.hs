@@ -105,14 +105,15 @@ parenStmt s = case s of
 
 termToOcl :: UserTypes -> Term -> Doc
 termToOcl us t = case t of
-  Term b s -> let d = setToOcl us s in
-    if b then hcat [d, arr, text "size"] else d
+  Term b s -> let d = setToOcl us s in case b of
+    Card -> hcat [d, arr, text "size"]
+    TheSet -> d
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
 singleTerm :: UserTypes -> Term -> Doc -> Doc
 singleTerm us t = case t of
-  Term False s -> singleSet us s
+  Term TheSet s -> singleSet us s
   _ -> id
 
 setToOcl :: UserTypes -> Set -> Doc
@@ -154,7 +155,7 @@ pBinOp o = text $ case o of
   Union -> "union"
   Inter -> "intersection"
   Minus -> "excluding"
-  Operations b -> "ops" ++ if b then "_" else ""
+  Operations b -> "ops" ++ optStar b
 
 pUnOp :: Maybe SetType -> UnOp -> Doc
 pUnOp t = text . useOp (fmap (foldSetType id id) t)
@@ -165,9 +166,14 @@ useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   in case o of
   User b -> case t of
     Just S -> u
-    _ -> "users" ++ if b then "_" else ""
+    _ -> "users" ++ optStar b
   Roles _ -> case t of
       Just r -> map toLower (show r) ++ u
       _ -> u
-  Iors i b -> map toLower (show i) ++ if b then "_" else ""
+  Iors i b -> map toLower (show i) ++ optStar b
   _ -> u
+
+optStar :: OptStar -> String
+optStar b = case b of
+  Star -> "_"
+  _ -> ""

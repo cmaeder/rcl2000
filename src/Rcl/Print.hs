@@ -70,8 +70,9 @@ pCmpOp m = text . sCmpOp m
 
 pTerm :: Form -> Term -> Doc
 pTerm m t = case t of
-  Term b s -> let d = pSet m s in
-    if b then hcat [pBar, d, pBar] else d
+  Term b s -> let d = pSet m s in case b of
+    Card -> hcat [pBar, d, pBar]
+    TheSet -> d
   EmptySet -> text . sEmpty $ format m
   Num i -> int i
 
