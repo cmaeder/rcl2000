@@ -1,9 +1,9 @@
 module Rcl.Interpret (eval, interprets) where
 
-import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
-import qualified Data.IntSet as IntSet
+import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
+import qualified Data.IntSet as IntSet
 import Data.List (find, partition)
 import qualified Data.Map as Map
 import Data.Maybe (isNothing, mapMaybe)
@@ -11,9 +11,9 @@ import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Print (prStmt, ppStmt, ppSet)
+import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Reduce (runReduce)
-import Rcl.Type (wellTyped, typeOfSet)
+import Rcl.Type (typeOfSet, wellTyped)
 
 type Env = IntMap Value
 

@@ -16,8 +16,9 @@ specified by the resolver version `lts-15.10`, see
 should also succeed with older ghc versions (down to `ghc-7.10.2` of
 `lts-3.22`). Apart from the `--pedantic` flag the haskell sources are
 kept clean using the tools
-[hlint](https://github.com/ndmitchell/hlint) and
-[scan](https://hackage.haskell.org/package/scan).
+[hlint](https://github.com/ndmitchell/hlint),
+[scan](https://hackage.haskell.org/package/scan), and
+[stylish-haskell](https://github.com/jaspervdj/stylish-haskell).
 
 ## Motivation
 

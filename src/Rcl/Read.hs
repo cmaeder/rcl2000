@@ -1,8 +1,8 @@
 module Rcl.Read (readModel, readTypes, readMyFile) where
 
-import Control.Exception (handle, IOException)
-import Control.Monad (foldM, when, unless)
-import Data.Char (isLetter, isAlphaNum)
+import Control.Exception (IOException, handle)
+import Control.Monad (foldM, unless, when)
+import Data.Char (isAlphaNum, isLetter)
 import Data.List (find, partition, stripPrefix)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addS, addU, checkU, addP, addR, addSURs, initRH)
+import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
 
 import System.Directory (doesFileExist)
 

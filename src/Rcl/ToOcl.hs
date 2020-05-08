@@ -1,7 +1,7 @@
 module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
-import Data.Char (ord, toLower, toUpper,
-  isDigit, isAsciiUpper, isAscii, isAlphaNum)
+import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
+                  toUpper)
 import Data.List (nub)
 import Data.Map (toList)
 import Data.Maybe (isNothing)
@@ -9,9 +9,9 @@ import Numeric (showHex)
 
 import Rcl.Ast
 import Rcl.Reduce (runReduce)
-import Rcl.Type (wellTyped, typeOfSet, isElem)
-import Text.PrettyPrint (Doc, render, text, (<+>), hcat, cat, sep,
-  parens, braces, int)
+import Rcl.Type (isElem, typeOfSet, wellTyped)
+import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
+                         (<+>))
 
 toUse :: UserTypes -> [String]
 toUse us = let l = toList us in

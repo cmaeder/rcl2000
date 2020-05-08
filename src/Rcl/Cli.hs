@@ -8,22 +8,22 @@ import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 
 import Paths_rcl2000
-import Rcl.Ast (UserTypes, Stmt)
+import Rcl.Ast (Stmt, UserTypes)
 import Rcl.Data (Model, getUserTypes)
 import Rcl.Eval (evalInput)
 import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
-import Rcl.Parse (parser, ParseError)
-import Rcl.Print (render, pStmts, Form (Form), Format (..))
-import Rcl.Read (readTypes, readModel, readMyFile)
+import Rcl.Parse (ParseError, parser)
+import Rcl.Print (Form (Form), Format (..), pStmts, render)
+import Rcl.Read (readModel, readMyFile, readTypes)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 
 import System.Console.GetOpt
-import System.FilePath ((</>), replaceExtension, hasExtension, takeFileName,
-  replaceDirectory)
+import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
+                        takeFileName, (</>))
 import Text.ParserCombinators.Parsec (parse)
 
 cli :: String -> [String] -> IO ()

@@ -4,8 +4,8 @@ import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
 import Rcl.Ast
-import Rcl.Print (prStmt, ppStmt, ppSet, ppType)
-import Rcl.Type (typeOfSet, elemType)
+import Rcl.Print (ppSet, ppStmt, ppType, prStmt)
+import Rcl.Type (elemType, typeOfSet)
 
 replaceAO :: Stmt -> Stmt
 replaceAO = foldStmt mapStmt $ mapTerm replAO

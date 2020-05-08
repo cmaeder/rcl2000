@@ -1,16 +1,16 @@
 module Rcl.Model (initModel, addS, addU, checkU, addP, addR, addSURs, initRH,
   initSess) where
 
-import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
-import qualified Data.IntSet as IntSet
+import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
-import qualified Data.Map as Map
+import qualified Data.IntSet as IntSet
 import Data.Map (Map)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), OptS (..), OptStar (..), Ior (..), SetType (..),
-  Base (..), primTypes)
+import Rcl.Ast (Base (..), Ior (..), OptS (..), OptStar (..), SetType (..),
+                UnOp (..), primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S

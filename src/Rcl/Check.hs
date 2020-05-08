@@ -1,15 +1,15 @@
 module Rcl.Check (properStructure, checkAccess) where
 
 import qualified Data.IntMap as IntMap
-import qualified Data.IntSet as IntSet
 import Data.IntSet (IntSet)
-import qualified Data.Map as Map
+import qualified Data.IntSet as IntSet
 import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Monoid (All (..))
-import qualified Data.Set as Set
 import Data.Set (isSubsetOf)
+import qualified Data.Set as Set
 
-import Rcl.Ast (SetType (..), Base, primTypes, baseType)
+import Rcl.Ast (Base, SetType (..), baseType, primTypes)
 import Rcl.Data
 
 properSessions :: Model -> Bool

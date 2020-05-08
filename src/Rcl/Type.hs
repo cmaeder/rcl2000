@@ -1,12 +1,12 @@
 module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
 
-import Control.Monad (when, unless)
-import Control.Monad.State (State, modify, evalState, execState)
+import Control.Monad (unless, when)
+import Control.Monad.State (State, evalState, execState, modify)
 import Data.List (find)
 import qualified Data.Map as Map (lookup)
 import Data.Maybe (isJust, isNothing, mapMaybe)
 import Rcl.Ast
-import Rcl.Print (ppStmt, ppSet)
+import Rcl.Print (ppSet, ppStmt)
 
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . mapMaybe (wellTyped us)

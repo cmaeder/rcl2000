@@ -1,17 +1,17 @@
 module Rcl.Data where
 
-import qualified Data.IntMap as IntMap
 import Data.IntMap (IntMap)
-import qualified Data.IntSet as IntSet
+import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
-import qualified Data.Map as Map
+import qualified Data.IntSet as IntSet
 import Data.Map (Map)
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Data.Set ((\\))
+import qualified Data.Set as Set
 
-import Rcl.Ast (UserTypes, SetType (..), Base (..), UnOp (..), OptStar (..),
-  Ior (..))
-import Rcl.Type (isElem, elemType)
+import Rcl.Ast (Base (..), Ior (..), OptStar (..), SetType (..), UnOp (..),
+                UserTypes)
+import Rcl.Type (elemType, isElem)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)

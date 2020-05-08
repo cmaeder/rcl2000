@@ -4,7 +4,7 @@ import Control.Monad (unless)
 import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
-import qualified Data.Map as Map (member, delete, insert, toList)
+import qualified Data.Map as Map (delete, insert, member, toList)
 import Data.Maybe (fromMaybe)
 
 import Rcl.Ast
@@ -12,9 +12,9 @@ import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Model (addSURs, initSess)
-import Rcl.Parse (set, parser)
-import Rcl.Print (ppSet, lineStmt)
-import Rcl.Type (typeOfSet, typeErrors)
+import Rcl.Parse (parser, set)
+import Rcl.Print (lineStmt, ppSet)
+import Rcl.Type (typeErrors, typeOfSet)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
