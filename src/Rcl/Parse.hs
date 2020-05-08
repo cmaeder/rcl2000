@@ -107,10 +107,10 @@ pStar p = try (string . stUnOp $ p TheOp) *>
     <|> p TheOp <$ notFollowedBy alphaNum) <* skip
 
 unOps :: [UnOp]
-unOps = [AO, OE, Sessions, Objects]
+unOps = [AO, OE, Sessions, Object Plural, Object Singular]
 
 stars :: [OptStar -> UnOp]
-stars = [User, Roles, Permissions, Iors Jun, Iors Sen]
+stars = [User Plural, User Singular, Roles, Permissions, Iors Jun, Iors Sen]
 
 parenSet :: Parser Set
 parenSet = pch '(' *> set <* pch ')'

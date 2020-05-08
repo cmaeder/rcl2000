@@ -16,7 +16,7 @@ import Rcl.Type (isElem, elemType)
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
 newtype OP = Operation { operation :: String } deriving (Eq, Ord, Show)
-newtype OBJ = Object { object :: String } deriving (Eq, Ord, Show)
+newtype OBJ = Resource { resource :: String } deriving (Eq, Ord, Show)
 data S = Session { user :: U, activeRoles :: Set.Set R }
   deriving (Eq, Ord, Show)
 data P = Permission { op :: OP, obj :: OBJ }
@@ -70,7 +70,7 @@ getUserTypes :: Model -> UserTypes
 getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
 
 pStrC :: Char -> P -> String
-pStrC c p = operation (op p) ++ c : object (obj p)
+pStrC c p = operation (op p) ++ c : resource (obj p)
 
 pStr :: P -> String
 pStr = pStrC ' '
@@ -79,7 +79,7 @@ pStr_ :: P -> String
 pStr_ = pStrC '_'
 
 strP :: String -> String -> P
-strP u v = Permission (Operation u) $ Object v
+strP u v = Permission (Operation u) $ Resource v
 
 usersOfRs :: Model -> Set.Set R -> Set.Set U
 usersOfRs m r = Set.foldr
@@ -119,7 +119,7 @@ getStrings :: Model -> Base -> Set.Set String
 getStrings m b = case b of
   U -> Set.map name $ users m
   R -> Set.map role $ roles m
-  OBJ -> Set.map object $ objects m
+  OBJ -> Set.map resource $ objects m
   OP -> Set.map operation $ operations m
   S -> Map.keysSet $ sessions m
   P -> Set.map pStr $ permissions m
@@ -128,8 +128,8 @@ getStrings m b = case b of
 sUnOp :: Maybe SetType -> UnOp -> String
 sUnOp t o = let u = take 1 $ show o
   in case o of
-  User _ -> if t == Just (ElemTy S) then "u" else u
-  Objects -> "B"
+  User _ _ -> if t == Just (ElemTy S) then "u" else u
+  Object _ -> "B"
   Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
     Just (ElemTy r) -> show r ++ "r"
     _ -> u
@@ -167,7 +167,7 @@ strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
   in t (Role, roles, R)
   . t (Name, users, U)
   . t (Operation, operations, OP)
-  . t (Object, objects, OBJ)
+  . t (Resource, objects, OBJ)
   . t (id, Map.keysSet . sessions, S)
   $ t (id, Set.map pStr . permissions, P) []
 

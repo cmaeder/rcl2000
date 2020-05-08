@@ -33,9 +33,11 @@ data BinOp = Union | Inter | Operations OptStar | Minus deriving (Eq, Show)
 
 data OptStar = Star | TheOp deriving (Eq, Show)
 
-data UnOp = AO | OE | User OptStar | Roles OptStar | Sessions
-  | Permissions OptStar | Objects | Iors Ior OptStar deriving (Eq, Show)
--- AO: all other, OE: one element, object ~> objects, optional * suffix
+data UnOp = AO | OE | User OptS OptStar | Roles OptStar | Sessions
+  | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
+-- AO: all other, OE: one element, optional s and/or * suffix
+
+data OptS = Plural | Singular deriving (Eq, Show)
 
 data Ior = Jun | Sen deriving (Eq, Show)
 
@@ -115,10 +117,11 @@ stUnOp o = let
   l = length s
   v = map toLower s
   w = takeWhile isLetter v
+  add e c = if e `elem` ws then (++ [c]) else id
   x = if w == "iors" then (if "Jun" `elem` ws then "jun" else "sen") ++ w
-    else w
+    else add "Plural" 's' w
   in if l == 2 then s else -- not AO or OE
-  if "Star" `elem` ws then x ++ "*" else x
+  add "Star" '*' x
 
 lUnOp :: Show a => a -> String
 lUnOp o = case stUnOp o of

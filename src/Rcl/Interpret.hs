@@ -138,7 +138,7 @@ eval us m e = foldSet FoldSet
       p = sUnOp (typeOfSet us s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
-        User Star -> Right . Ints . apply m p $ apply m "s" is
+        User _ Star -> Right . Ints . apply m p $ apply m "s" is
         Permissions Star -> Right . Ints . apply m p $ apply m "j" is
         Roles Star -> Right . Ints . apply m (if p == "Pr" then "s" else "j")
           $ apply m p is

@@ -95,7 +95,7 @@ tyAppl :: UnOp -> SetType -> Maybe SetType
 tyAppl o t = case o of
   OE -> elemType t
   AO | isSet t -> Just t
-  User b -> case t of
+  User _ b -> case t of
     ElemTy S -> if b == Star then Nothing else Just $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
     _ -> Nothing
@@ -103,7 +103,7 @@ tyAppl o t = case o of
     -> mkSetType R -- U + P + S -> 2^R
   Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
   Permissions _ | isElemOrSet R t -> mkSetType P -- R -> 2^P
-  Objects | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
+  Object _ | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
   Iors _ _ | isElemOrSet R t -> mkSetType R  -- extra functions R -> 2^R
   _ -> Nothing
 

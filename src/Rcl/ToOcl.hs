@@ -164,9 +164,10 @@ pUnOp t = text . useOp (fmap (foldSetType id id) t)
 useOp :: Maybe Base -> UnOp -> String
 useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   in case o of
-  User b -> case t of
-    Just S -> u
+  User _ b -> case t of
+    Just S -> "user"
     _ -> "users" ++ optStar b
+  Object _ -> "objects"
   Roles _ -> case t of
       Just r -> map toLower (show r) ++ u
       _ -> u

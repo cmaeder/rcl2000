@@ -9,8 +9,8 @@ import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 
-import Rcl.Ast (UnOp (..), OptStar (..), Ior (..), SetType (..), Base (..),
-  primTypes)
+import Rcl.Ast (UnOp (..), OptS (..), OptStar (..), Ior (..), SetType (..),
+  Base (..), primTypes)
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -57,7 +57,7 @@ addOp o m = addS o m
   { operations = Set.insert (Operation o) $ operations m }
 
 addObj :: String -> Model -> Model
-addObj o m = addS o m { objects = Set.insert (Object o) $ objects m }
+addObj o m = addS o m { objects = Set.insert (Resource o) $ objects m }
 
 -- op and obj
 addP :: String -> String -> Model -> Model
@@ -99,14 +99,14 @@ initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
 initOpsMap m = m { opsMap = Set.foldr
-    (\ (Permission (Operation oP) (Object oBj), Role r) n ->
+    (\ (Permission (Operation oP) (Resource oBj), Role r) n ->
     let p = (toInt m r, toInt m oBj)
         is = Map.findWithDefault IntSet.empty p n
     in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
 
 fcts :: [(Base, UnOp)]
-fcts = map toR [U, P, S, R] ++ [(S, User TheOp), (R, User Star)
-  , (R, Roles TheOp), (U, Sessions), (R, Permissions Star), (P, Objects)]
+fcts = map toR [U, P, S, R] ++ [(S, User Singular TheOp), (R, User Plural Star)
+  , (R, Roles TheOp), (U, Sessions), (R, Permissions Star), (P, Object Plural)]
   ++ [(R, Iors i b) | b <- [TheOp, Star], i <- [Jun, Sen]]
 
 toR :: Base -> (Base, UnOp)
@@ -123,9 +123,9 @@ function bo m = let
   us = Set.toList $ users m
   ps = Set.toList $ permissions m
   in case bo of
-  (S, User _) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
+  (S, User _ _) -> IntMap.fromList $ map (\ (s, Session (Name u) _) ->
     (toInt m s, IntSet.singleton (toInt m u))) ss
-  (_, User _) -> IntMap.fromList $ map (\ r ->
+  (_, User _ _) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . name)
         . Set.toList . usersOfRs m $ Set.singleton r)) rs
   (U, Roles _) -> IntMap.fromList $ map (\ u ->
@@ -153,10 +153,10 @@ function bo m = let
   (_, Permissions _) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . pStr)
         . Set.toList . permissionsOfRs m $ Set.singleton r)) rs
-  (_, Objects) -> IntMap.fromList $ map (\ p@(Permission _ (Object ob)) ->
+  (_, Object _) -> IntMap.fromList $ map (\ p@(Permission _ (Resource ob)) ->
         (toInt m $ pStr p, IntSet.singleton (toInt m ob))) ps
   _ -> error "function"
 
 initSess :: Model -> Model
-initSess = insUserSet S
-  . flip (foldr initFctMap) [(S, Roles TheOp), (S, User TheOp), (U, Sessions)]
+initSess = insUserSet S . flip (foldr initFctMap)
+  [(S, Roles TheOp), (S, User Singular TheOp), (U, Sessions)]

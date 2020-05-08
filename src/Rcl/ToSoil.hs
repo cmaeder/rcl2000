@@ -18,10 +18,10 @@ toSoil m = unlines $ let
   in new R role (roles m)
   ++ new U name (users m)
   ++ new OP operation (operations m)
-  ++ new OBJ object (objects m)
+  ++ new OBJ resource (objects m)
   ++ new P pStr ps
   ++ set "op" (codeB P . pStr) (codeB OP . operation . op) pl
-  ++ set "obj" (codeB P . pStr) (codeB OBJ . object . obj) pl
+  ++ set "obj" (codeB P . pStr) (codeB OBJ . resource . obj) pl
   ++ new S id (Map.keysSet ss)
   ++ set "user" (codeB S . fst) (codeB U . name . user . snd) sl
   ++ insert "UA" (codeB U . name) role (Set.toList $ ua m)

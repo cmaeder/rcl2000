@@ -29,7 +29,7 @@ evalInput l m = let ls = map lineStmt l in do
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
-  foldr (\ o -> Map.insert (object o) $ ElemTy OBJ)
+  foldr (\ o -> Map.insert (resource o) $ ElemTy OBJ)
   (foldr (\ p -> Map.insert (fst p) $ ElemTy S)
   (foldr (\ p -> Map.insert (pStr_ p) $ ElemTy P)
   (foldr (\ u -> Map.insert (name u) $ ElemTy U)
