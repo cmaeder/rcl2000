@@ -13,6 +13,7 @@ import Rcl.Data
 import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
 
 import System.Directory (doesFileExist, makeAbsolute)
+import System.IO (IOMode (..), hGetContents, hSetEncoding, openFile, utf8)
 
 readMyFile :: FilePath -> IO String
 readMyFile f = handle (\ e -> do
@@ -21,7 +22,9 @@ readMyFile f = handle (\ e -> do
     b <- doesFileExist f
     if b then do
         putStrLn $ "trying to read: " ++ f
-        s <- readFile f
+        h <- openFile f ReadMode
+        hSetEncoding h utf8
+        s <- hGetContents h
         a <- makeAbsolute f
         putStrLn $ "successfully read: " ++ a
         unless (any isAlphaNum s) . putStrLn

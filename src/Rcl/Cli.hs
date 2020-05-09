@@ -24,10 +24,12 @@ import Rcl.Type (typeErrors)
 import System.Console.GetOpt
 import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
                         takeFileName, (</>))
+import System.IO (hSetEncoding, stdout, utf8)
 import Text.ParserCombinators.Parsec (parse)
 
+-- | top level call with program name and arguments
 cli :: String -> [String] -> IO ()
-cli prN args = case getOpt Permute options args of
+cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
       (os, n, []) -> let o = foldl (flip id) dOpts os in
         if help o then putStrLn $
           usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
