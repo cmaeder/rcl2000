@@ -15,7 +15,11 @@ toSoil m = unlines $ let
   ss = sessions m
   sl = Map.toList ss
   us = userSets m
-  in new R role (roles m)
+  rs = roles m
+  hs = rhim m
+  ks = Set.union (Map.keysSet hs) . Map.keysSet $ invim m
+  in new R role (Set.difference rs ks)
+  ++ map (mkNew "HR" . codeB R . role) (Set.toList ks)
   ++ new U name (users m)
   ++ new OP operation (operations m)
   ++ new OBJ resource (objects m)

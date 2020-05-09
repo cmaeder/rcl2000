@@ -14,16 +14,21 @@ end
 
 class R
 operations
-  getRoles() : Set(R) = juniors()->including(self)
-  juniors() : Set(R) = junior->closure(junior)->asSet
-  seniors() : Set(R) = senior->closure(senior)->asSet
+  getRoles() : Set(R) = Set{self}
+end
+
+class HR < R
+operations
+  getRoles() : Set(HR) = juniors()->including(self)
+  juniors() : Set(HR) = junior->closure(junior)->asSet
+  seniors() : Set(HR) = senior->closure(senior)->asSet
 constraints
   inv nonCyclicRoleHierarchy: juniors()->excludes(self)
 end
 
 association RH between
-  R[*] role senior
-  R[*] role junior
+  HR[*] role senior
+  HR[*] role junior
 end
 
 class S
@@ -60,10 +65,14 @@ operations
   R() : Set(R) = R.allInstances
   S() : Set(S) = S.allInstances
   U() : Set(U) = U.allInstances
-  juns(rs : Set(R)): Set(R) = rs->collect(junior)->asSet
-  sens(rs : Set(R)): Set(R) = rs->collect(senior)->asSet
-  juns_(rs : Set(R)): Set(R) = rs->union(rs->collect(juniors()))->asSet
-  sens_(rs : Set(R)): Set(R) = rs->union(rs->collect(seniors()))->asSet
+  juns(rs : Set(R)): Set(R) = rs->select(oclIsKindOf(HR))
+    ->collect(oclAsType(HR).junior)->asSet
+  sens(rs : Set(R)): Set(R) = rs->select(oclIsKindOf(HR))
+    ->collect(oclAsType(HR).senior)->asSet
+  juns_(rs : Set(R)): Set(R) = rs->union(rs->select(oclIsKindOf(HR))
+    ->collect(oclAsType(HR).juniors()))->asSet
+  sens_(rs : Set(R)): Set(R) = rs->union(rs->select(oclIsKindOf(HR))
+    ->collect(oclAsType(HR).seniors()))->asSet
   uroles(us : Set(U)): Set(R) = us->collect(r)->asSet
   proles(ps : Set(P)): Set(R) = ps->collect(r)->asSet
   sroles(ss : Set(S)): Set(R) = ss->collect(activeRoles)->asSet
