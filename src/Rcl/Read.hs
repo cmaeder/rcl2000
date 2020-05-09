@@ -12,16 +12,24 @@ import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
 
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, makeAbsolute)
 
 readMyFile :: FilePath -> IO String
 readMyFile f = handle (\ e -> do
   print (e :: IOException)
   return "") $ do
     b <- doesFileExist f
-    if b then readFile f else do
-      putStrLn $ "missing file: " ++ f
-      return ""
+    if b then do
+        putStrLn $ "trying to read: " ++ f
+        s <- readFile f
+        a <- makeAbsolute f
+        putStrLn $ "successfully read: " ++ a
+        unless (any isAlphaNum s) . putStrLn
+          $ "WARN: no text in: " ++ f
+        return s
+      else do
+        putStrLn $ "missing file: " ++ f
+        return ""
 
 readWordsFile :: FilePath -> IO [[String]]
 readWordsFile f = do

@@ -7,7 +7,7 @@ import qualified Data.Map as Map (empty)
 import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 
-import Paths_rcl2000
+import Paths_rcl2000 (getDataFileName, version)
 import Rcl.Ast (Stmt, UserTypes)
 import Rcl.Data (Model, getUserTypes)
 import Rcl.Eval (evalInput)
@@ -188,7 +188,12 @@ reportParse mus o file eith = case eith of
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do
-      str <- readMyFile (useFile o)
+      let uf = useFile o
+      str0 <- readMyFile uf
+      str <- if null str0 then do
+          f <- getDataFileName uf
+          readMyFile f
+        else return str0
       writeFile use $ str ++ ocl us ast
       case mus of
         Left m -> writeFile (replaceExtension use "soil") $ toSoil m

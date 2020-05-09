@@ -11,6 +11,8 @@ extra-source-files:
 - ChangeLog.md
 - examples/*.txt
 - examples/*.rcl
+
+data-files:
 - use/RBAC.use
 
 # Metadata used when publishing your package
