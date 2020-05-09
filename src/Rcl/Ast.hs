@@ -188,4 +188,4 @@ keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
 
 -- | OCL compliant class name
 stSet :: SetType -> String
-stSet = foldSetType ("SetOf" ++) show
+stSet = foldSetType (++ "s") show

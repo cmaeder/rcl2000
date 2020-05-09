@@ -2,8 +2,8 @@ module Rcl.Read (readModel, readTypes, readMyFile) where
 
 import Control.Exception (IOException, handle)
 import Control.Monad (foldM, unless, when)
-import Data.Char (isAlphaNum, isLetter)
-import Data.List (find, partition, stripPrefix)
+import Data.Char (isAlphaNum, isLetter, isUpper)
+import Data.List (find, partition)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -61,9 +61,10 @@ readType u s = case s of
   [] -> return u
 
 strT :: String -> Maybe SetType
-strT s = case stripPrefix "SetOf" s of
-  Just r -> SetOf <$> strT r
-  Nothing -> ElemTy <$> find ((== s) . show) primTypes
+strT s = let (b, n) = span isUpper s in case find ((== b) . show) primTypes of
+    Just t | all (== 's') n ->
+      Just $ foldr (const SetOf) (ElemTy t) n
+    _ -> Nothing
 
 readModel :: [FilePath] -> IO Model
 readModel l = case l of

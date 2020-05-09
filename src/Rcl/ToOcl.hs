@@ -10,6 +10,7 @@ import Numeric (showHex)
 import Rcl.Ast
 import Rcl.Reduce (runReduce)
 import Rcl.Type (isElem, typeOfSet, wellTyped)
+
 import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
                          (<+>))
 
@@ -54,13 +55,13 @@ toSetClass t = case t of
     , "  c() : " ++ useType t ++ " = " ++ roleName s
       ++ if isElem s then "" else "->collectNested(c())->asSet"
     , end
-    , "aggregation A" ++ c ++ " between"
+    , "aggregation Ag" ++ c ++ " between"
     , "  " ++ c ++ "[*]"
     , "  " ++ stSet s ++ "[*]"
     , end ]
 
 aggName :: SetType -> String
-aggName = ('A' :) . stSet
+aggName = ("Ag" ++) . stSet
 
 roleName :: SetType -> String
 roleName t = case stSet t of
