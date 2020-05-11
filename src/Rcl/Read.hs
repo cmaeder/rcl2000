@@ -15,18 +15,19 @@ import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
 import System.Directory (doesFileExist, makeAbsolute)
 import System.IO (IOMode (..), hGetContents, hSetEncoding, openFile, utf8)
 
-readMyFile :: FilePath -> IO String
-readMyFile f = handle (\ e -> do
+readMyFile :: Int -> FilePath -> IO String
+readMyFile v f = handle (\ e -> do
   print (e :: IOException)
   return "") $ do
     b <- doesFileExist f
     if b then do
-        putStrLn $ "trying to read: " ++ f
+        when (v > 0) . putStrLn $ "reading: " ++ f
         h <- openFile f ReadMode
         hSetEncoding h utf8
         s <- hGetContents h
-        a <- makeAbsolute f
-        putStrLn $ "successfully read: " ++ a
+        when (v > 1) $ do
+          a <- makeAbsolute f
+          putStrLn $ "successfully read: " ++ a
         unless (any isAlphaNum s) . putStrLn
           $ "WARN: no text in: " ++ f
         return s
@@ -34,9 +35,9 @@ readMyFile f = handle (\ e -> do
         putStrLn $ "missing file: " ++ f
         return ""
 
-readWordsFile :: FilePath -> IO [[String]]
-readWordsFile f = do
-  s <- readMyFile f
+readWordsFile :: Int -> FilePath -> IO [[String]]
+readWordsFile v f = do
+  s <- readMyFile v f
   let l = map words $ lines s
   checkWords f . zip l $ [(1 :: Int) ..]
   return l
@@ -54,9 +55,9 @@ checkWords f = mapM_ $ \ (ws, i) -> do
         [w] -> ": " ++ w
         _ -> "s: " ++ unwords e
 
-readTypes :: FilePath -> IO UserTypes
-readTypes f =
-  readWordsFile f >>= foldM readType Map.empty
+readTypes :: Int -> FilePath -> IO UserTypes
+readTypes v f =
+  readWordsFile v f >>= foldM readType Map.empty
 
 readType :: UserTypes -> [String] -> IO UserTypes
 readType u s = case s of
@@ -77,14 +78,14 @@ strT s = let (b, n) = span isUpper s in case find ((== b) . show) primTypes of
       Just $ foldr (const SetOf) (ElemTy t) n
     _ -> Nothing
 
-readModel :: [FilePath] -> IO Model
-readModel l = case l of
+readModel :: Int -> [FilePath] -> IO Model
+readModel v l = case l of
   [rhf, uaf, paf, sf, uf] -> do
-    m1 <- readWordsFile rhf >>= foldM readRH emptyModel
-    m2 <- readWordsFile uaf >>= foldM readUA (initRH m1)
-    m3 <- readWordsFile paf >>= foldM readPA m2
-    m4 <- readWordsFile sf >>= foldM readS m3
-    m5 <- readWordsFile uf >>= foldM readSets m4
+    m1 <- readWordsFile v rhf >>= foldM readRH emptyModel
+    m2 <- readWordsFile v uaf >>= foldM readUA (initRH m1)
+    m3 <- readWordsFile v paf >>= foldM readPA m2
+    m4 <- readWordsFile v sf >>= foldM readS m3
+    m5 <- readWordsFile v uf >>= foldM readSets m4
     if properStructure m5 then return m5 else do
       putStrLn "internal model error after readModel"
       putStrLn "please report this and include your input files"
