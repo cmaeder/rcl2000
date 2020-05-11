@@ -4,26 +4,21 @@ import Rcl.Ast
 import Rcl.Cli
 
 import System.Directory (doesFileExist, getDirectoryContents)
-import System.FilePath ((</>))
-
-rclFiles :: [String]
-rclFiles = map ("examples" </>) ["AhnDiss.rcl"
-  , "SyntaxTest.rcl"
-  , "TypeErrors.rcl"
-  , "AhnSandhuPaper2000.rcl"]
-
-binary :: String
-binary = "rcl2000"
+import System.FilePath (takeExtension, (</>))
 
 main :: IO ()
 main = do
-  mapM_ (\ f -> cli binary $ ["-f", show f] ++ rclFiles) forms
-  mapM_ (\ f -> cli binary $ ["-n", "-f", show f] ++ rclFiles) forms
-  mapM_ (\ o -> cli binary $ o : rclFiles) ["-h", "-c", "-r", "-e"]
-  mapM_ (\ o -> cli binary $ o : "-t" : rclFiles) ["-c", "-r"]
-  cli binary $ "-otest" : rclFiles
-  cli binary $ ["-t", "-o"] ++ rclFiles
-  let d = "test" </> "expectedParseErrors"
+  let e = "examples"
+      d = "test" </> "expectedParseErrors"
+      b = "rcl2000"
+  es <- getDirectoryContents e
+  let rs = map (e </>) $ filter ((== ".rcl") . takeExtension) es
+  mapM_ (\ f -> cli b $ ["-f", show f] ++ rs) forms
+  mapM_ (\ f -> cli b $ ["-n", "-f", show f] ++ rs) forms
+  mapM_ (\ o -> cli b $ o : rs) ["-h", "-c", "-r", "-e"]
+  mapM_ (\ o -> cli b $ o : "-t" : rs) ["-c", "-r"]
+  cli b $ "-otest" : rs
+  cli b $ ["-t", "-o"] ++ rs
   ts <- getDirectoryContents d
   fs <- filterM doesFileExist $ map (d </>) ts
-  cli binary fs
+  cli b fs

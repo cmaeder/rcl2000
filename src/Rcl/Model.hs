@@ -137,16 +137,13 @@ function bo m = let
   (S, Roles _) -> IntMap.fromList $ map (\ (s, Session _ as) ->
         (toInt m s, IntSet.fromList . map (toInt m . role)
         $ Set.toList as)) ss
-  (R, Iors i b) -> IntMap.fromList . map (\ r ->
+  (R, Iors i b) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . role)
         . Set.toList $ case i of
             Jun -> if b == Star then getRoles (rh m) r
               else Map.findWithDefault Set.empty r $ rhim m
             Sen -> if b == Star then getRoles (inv m) r
-              else Map.findWithDefault Set.empty r $ invim m))
-        . Map.keys $ case i of
-             Jun -> rh m
-             Sen -> inv m
+              else Map.findWithDefault Set.empty r $ invim m)) rs
   (_, Sessions) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m)
         . Map.keys $ sessionsOfU m u)) us
