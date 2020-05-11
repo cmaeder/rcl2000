@@ -1,7 +1,7 @@
 module Rcl.Cli (cli) where
 
 import Control.Monad (when)
-import Data.Char (toLower)
+import Data.Char (isDigit, toLower)
 import Data.List (find)
 import qualified Data.Map as Map (empty)
 import Data.Maybe (fromMaybe)
@@ -22,6 +22,7 @@ import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 
 import System.Console.GetOpt
+import System.Directory (makeAbsolute)
 import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
                         takeFileName, (</>))
 import System.IO (hSetEncoding, stdout, utf8)
@@ -54,9 +55,15 @@ options =
     [ Option "h" ["help"]
       (NoArg $ \ o -> o {help = True})
       "show help message"
-    , Option "v" ["version"]
+    , Option "V" ["version"]
       (NoArg $ \ o -> o {vers = True})
       "show version"
+    , Option "v" ["verbose"]
+      (OptArg (\ mt o -> let o1 = o {verbose = 2} in
+        maybe o1 (\ t -> o1 {verbose = case t of
+                              _ | all isDigit t -> read t -- ignore others
+                              _ -> verbose dOpts }) mt) "0|1|2")
+      $ "verbose output, -v0 quiet, default: " ++ show (verbose dOpts)
     , Option "f" ["format"]
       (ReqArg (\ f o -> o {format = f, pprint = True}) "<format>")
       "print to stdout using format LaTeX, Ascii or Unicode (default)"
@@ -107,6 +114,7 @@ options =
 
 data Opts = Opts
   { parens :: Bool
+  , verbose :: Int
   , format :: String
   , pprint :: Bool
   , check :: Bool
@@ -131,6 +139,7 @@ data Opts = Opts
 dOpts :: Opts
 dOpts = Opts
   { parens = True
+  , verbose = 1
   , format = "Uni"
   , pprint = False
   , check = False
@@ -196,10 +205,11 @@ reportParse mus o file eith = case eith of
           f <- getDataFileName uf
           readMyFile f
         else return str0
-      writeFile use $ str ++ ocl us ast
+      writeMyFile o use $ str ++ ocl us ast
       case mus of
-        Left m -> writeFile (replaceExtension use "soil") $ toSoil m
-        _ -> putStrLn "no .soil file written for option -t"
+        Left m -> writeMyFile o (replaceExtension use "soil") $ toSoil m
+        _ -> when (verbose o > 0) $ putStrLn
+          "no .soil file written for option -t"
     case mus of
       Left m -> do
         let n = initModel m
@@ -207,3 +217,11 @@ reportParse mus o file eith = case eith of
         when i $ evalInput ast n
       Right _ -> when (e || i) $ putStrLn
         "options -e or -i are incompatible with -t"
+
+writeMyFile :: Opts -> FilePath -> String -> IO ()
+writeMyFile o f s = do
+  when (verbose o > 0) . putStrLn $ "writing: " ++ f
+  writeFile f s -- use files are ASCII
+  when (verbose o > 1) $ do
+    a <- makeAbsolute f
+    putStrLn $ "successfully written: " ++ a
