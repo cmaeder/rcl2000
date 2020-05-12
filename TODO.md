@@ -25,7 +25,7 @@
 
 - [ ] better set notation for user sets (with optional type)
 
-        CR:{{R}} = {{r1, r2}, {r3, r4}}
+        CR:Rss = {{r1, r2}, {r3, r4}}
 
 ## Access history
 
