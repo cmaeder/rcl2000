@@ -1,4 +1,5 @@
-module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem) where
+module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem, mBaseType)
+  where
 
 import Control.Monad (unless, when)
 import Control.Monad.State (State, evalState, execState, modify)
@@ -10,6 +11,9 @@ import Rcl.Print (ppSet, ppStmt)
 
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . mapMaybe (wellTyped us)
+
+mBaseType :: UserTypes -> Set -> Maybe Base
+mBaseType us = fmap baseType . typeOfSet us
 
 typeOfSet :: UserTypes -> Set -> Maybe SetType
 typeOfSet us s = evalState (tySet us s) []
@@ -57,8 +61,8 @@ tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
     case (m1, m2) of
       (Just t1, Just t2) -> case o of
         Operations _ -> do
-          unless (isElemOrSet R t1 && isElemOrSet OBJ t2)
-            $ md "expected role and object arguments"
+          unless (any (`isElemOrSet` t1) [R, U] && isElemOrSet OBJ t2)
+            $ md "expected role/user and object arguments"
           pure $ mkSetType OP -- R x OBJ -> 2^OP
         Minus -> do
           unless (elemType t1 == Just t2)
@@ -102,7 +106,7 @@ tyAppl o t = case o of
   Roles _ | any (`isElemOrSet` t) [U, P, S]
     -> mkSetType R -- U + P + S -> 2^R
   Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
-  Permissions _ | isElemOrSet R t -> mkSetType P -- R -> 2^P
+  Permissions _ | any (`isElemOrSet` t) [R, U, S] -> mkSetType P -- R -> 2^P
   Object _ | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
   Iors _ _ | isElemOrSet R t -> mkSetType R  -- extra functions R -> 2^R
   _ -> Nothing

@@ -105,7 +105,7 @@ initOpsMap m = m { opsMap = Set.foldr
     in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
 
 fcts :: [(Base, UnOp)]
-fcts = map toR [U, P, S, R] ++ [(S, User Singular TheOp), (R, User Plural Star)
+fcts = map toR [U, P, S] ++ [(S, User Singular TheOp), (R, User Plural Star)
   , (R, Roles TheOp), (U, Sessions), (R, Permissions Star), (P, Object Plural)]
   ++ [(R, Iors i b) | b <- [TheOp, Star], i <- [Jun, Sen]]
 

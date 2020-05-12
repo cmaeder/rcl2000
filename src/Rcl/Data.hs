@@ -126,12 +126,17 @@ getStrings m b = case b of
 
 -- | short strings for fctMap
 sUnOp :: Maybe SetType -> UnOp -> String
-sUnOp t o = let u = take 1 $ show o
+sUnOp t o = let
+  u = take 1 $ show o
+  mt = t >>= \ s -> if isElem s then Just s else elemType s
   in case o of
   User _ _ -> if t == Just (ElemTy S) then "u" else u
   Object _ -> "B"
-  Roles _ -> case t >>= \ s -> if isElem s then Just s else elemType s of
+  Roles _ -> case mt of
     Just (ElemTy r) -> show r ++ "r"
+    _ -> u
+  Permissions _ -> case mt of
+    Just (ElemTy r) -> show r ++ "p"
     _ -> u
   Iors i b -> case i of
       Jun -> "j"

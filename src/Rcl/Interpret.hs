@@ -13,7 +13,7 @@ import Rcl.Ast
 import Rcl.Data
 import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Reduce (runReduce)
-import Rcl.Type (typeOfSet, wellTyped)
+import Rcl.Type (mBaseType, typeOfSet, wellTyped)
 
 type Env = IntMap Value
 
@@ -112,9 +112,12 @@ eval us m e = foldSet FoldSet
     (_, Left _) -> v2
     (Right r1, Right r2) -> case o of
       Operations b -> let stOps = stUnOp o in case (r1, r2) of
-        (Ints rs, Ints os) -> Right . Ints $ IntSet.unions
+        (Ints is, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- IntSet.toList $ if b == Star then apply m "j" rs else rs
+            | r <- let rs = case mBaseType us s1 of
+                         Just U -> apply m "Ur" is
+                         _ -> is
+                   in IntSet.toList $ if b == Star then apply m "j" rs else rs
             , ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " first argument: " ++ t1
@@ -139,7 +142,15 @@ eval us m e = foldSet FoldSet
       t = ppSet s in case v of
       Right (Ints is) -> case o of
         User _ Star -> Right . Ints . apply m p $ apply m "s" is
-        Permissions Star -> Right . Ints . apply m p $ apply m "j" is
+        Permissions Star
+          | p == "Rp" -> Right . Ints . apply m p $ apply m "j" is
+          | p == "Up" -> Right . Ints . apply m "Rp" . apply m "j"
+              $ apply m "Ur" is
+          | p == "Sp" -> Right . Ints . apply m "Rp" . apply m "j"
+              $ apply m "Sr" is
+        Permissions _
+          | p == "Up" -> Right . Ints . apply m "Rp" $ apply m "Ur" is
+          | p == "Sp" -> Right . Ints . apply m "Rp" $ apply m "Sr" is
         Roles Star -> Right . Ints . apply m (if p == "Pr" then "s" else "j")
           $ apply m p is
         AO -> if IntSet.null is then Left $ "empty set for AO: " ++ t

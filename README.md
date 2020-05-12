@@ -153,6 +153,14 @@ though still supported:
         permissions(r : R) = { p | (p, r) in PA)
         permissions*(r : R) = permission(juniors*(r))
 
+The `permissions` function is additionally overloaded and accepts user
+and session arguments:
+
+        permissions(u : U) = permissions(roles(u))
+        permissions(s : S) = permissions(roles(s))
+        permissions*(u : U) = permissions*(roles(u))
+        permissions*(s : S) = permissions*(roles(s))
+
 It should be noted that also the `user` and `operations` functions
 must consider the role hierarchy as this is not mentioned (or wrong)
 in the [paper][1].
@@ -164,7 +172,11 @@ in the [paper][1].
             = { op | exist j <= r . (op, obj, j) in PA }
 
 The `user*` function also considers users that may have a role's
-permissions due to their assignment to senior roles.
+permissions due to their assignment to senior roles. The first
+argument of `operations` may also be a user:
+
+        operations(u : U, obj : OBJ) = operations(roles(u), obj)
+        operations*(u : U, obj : OBJ) = operations*(roles(u), obj)
 
 A permission is a pair consisting of an operation and an object. The
 `objects` function is a mere selector or projection that extracts the

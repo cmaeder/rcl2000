@@ -9,7 +9,7 @@ import Numeric (showHex)
 
 import Rcl.Ast
 import Rcl.Reduce (runReduce)
-import Rcl.Type (isElem, typeOfSet, wellTyped)
+import Rcl.Type (isElem, mBaseType, typeOfSet, wellTyped)
 
 import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
                          (<+>))
@@ -120,15 +120,15 @@ singleTerm us t = case t of
 setToOcl :: UserTypes -> Set -> Doc
 setToOcl us = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
-      p = pBinOp o
+      p = text $ useBinOp (mBaseType us s1) o
       a1 = singleSet us s1 d1
       a2 = singleSet us s2 d2
       in case o of
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> cat [hcat [d1, arr, p], parens d2]
       _ -> cat [hcat [a1, arr, p], parens a2]
-  , foldUn = \ (UnOp _ s) o d ->
-        cat [pUnOp (typeOfSet us s) o, parens $ singleSet us s d]
+  , foldUn = \ (UnOp _ s) o d -> let p = useOp (mBaseType us s) o in
+        cat [text p, parens $ if p == "user" then d else singleSet us s d]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> tr t ++ "()"
       Var (MkVar i t _) -> t ++ show i
@@ -151,15 +151,14 @@ pCmpOp o = text $ case o of
   Ne -> "<>"
   _ -> sCmpOp Ascii o
 
-pBinOp :: BinOp -> Doc
-pBinOp o = text $ case o of
+useBinOp :: Maybe Base -> BinOp -> String
+useBinOp t o = case o of
   Union -> "union"
   Inter -> "intersection"
   Minus -> "excluding"
-  Operations b -> "ops" ++ optStar b
-
-pUnOp :: Maybe SetType -> UnOp -> Doc
-pUnOp t = text . useOp (fmap (foldSetType id id) t)
+  Operations b -> let s = "ops" ++ optStar b in case t of
+    Just r -> map toLower (show r) ++ s
+    _ -> s
 
 -- | USE compliant and disambiguated names
 useOp :: Maybe Base -> UnOp -> String
@@ -172,7 +171,10 @@ useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   Roles _ -> case t of
       Just r -> map toLower (show r) ++ u
       _ -> u
-  Iors i b -> map toLower (show i) ++ optStar b
+  Permissions _ -> case t of
+      Just r -> map toLower (show r) ++ u
+      _ -> u
+  Iors i b -> map toLower (show i) ++ 's' : optStar b
   _ -> u
 
 optStar :: OptStar -> String

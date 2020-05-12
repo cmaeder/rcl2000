@@ -83,11 +83,17 @@ operations
   users(rs : Set(R)): Set(U) = rs->collect(u)->asSet
   users_(rs : Set(R)): Set(U) = users(sens_(rs))
   sessions(us : Set(U)): Set(S) = S()->select(s | us->includes(s.user))
-  permissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
-  permissions_(rs : Set(R)): Set(P) = permissions(juns_(rs))
-  ops(rs : Set(R), os : Set(OBJ)): Set(OP) =
-    permissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
-  ops_(rs : Set(R), os : Set(OBJ)): Set(OP) = ops(juns_(rs), os)
+  rpermissions(rs : Set(R)): Set(P) = rs->collect(p)->asSet
+  rpermissions_(rs : Set(R)): Set(P) = rpermissions(juns_(rs))
+  upermissions(us : Set(U)): Set(P) = rpermissions(uroles(us))
+  upermissions_(us : Set(U)): Set(P) = rpermissions_(uroles(us))
+  spermissions(ss : Set(S)): Set(P) = rpermissions(sroles(ss))
+  spermissions_(ss : Set(S)): Set(P) = rpermissions_(sroles(ss))
+  rops(rs : Set(R), os : Set(OBJ)): Set(OP) =
+    rpermissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
+  rops_(rs : Set(R), os : Set(OBJ)): Set(OP) = rops(juns_(rs), os)
+  uops(us : Set(U), os : Set(OBJ)): Set(OP) = rops(uroles(us), os)
+  uops_(us : Set(U), os : Set(OBJ)): Set(OP) = rops_(uroles(us), os)
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
 constraints
   inv singleton: Builtin.allInstances->size = 1
