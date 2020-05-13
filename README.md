@@ -343,7 +343,7 @@ the *activated* roles of a session (`SessionRoles`). For any SoD a
 named set of roles can be associated with a number between 2 and the
 cardinality of the set. If this number of roles from the given set are
 taken simultaneously the SoD constraint is violated. Given a number
-(`n >= 2`) and a set of roles (`cr`) with at least `n` elements, then
+(`n>=2`) and a set of roles (`cr`) with at least `n` elements, then
 at most `n-1` roles of this set may be assigned/authorized (SSD) or
 activated (DSD). Using RCL we can express this by:
 
@@ -357,6 +357,11 @@ sessions. In order to prevent the latter the RCL constraint would need
 to be:
 
         |roles*(sessions(OE(U))) ∩ cr| < n  // DSD
+
+For different numbers `n` different set of set of roles could be
+defined, like the above conflicting roles set `CR` for
+`n=2`. Summerizing, RCL is also able or even better suited to express
+typical static or dynamic SoD constraints.
 
 ## Usage
 
