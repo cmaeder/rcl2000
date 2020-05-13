@@ -343,7 +343,7 @@ the *activated* roles of a session (`SessionRoles`). For any SoD a
 named set of roles can be associated with a number between 2 and the
 cardinality of the set. If this number of roles from the given set are
 taken simultaneously the SoD constraint is violated. Given a number
-(`n >= 2`) and a set of roles (`cr`) with at most `n` elements, then
+(`n >= 2`) and a set of roles (`cr`) with at least `n` elements, then
 at most `n-1` roles of this set may be assigned/authorized (SSD) or
 activated (DSD). Using RCL we can express this by:
 
