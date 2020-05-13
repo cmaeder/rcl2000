@@ -1,1 +1,1 @@
-OE(roles(OE(S))) in roles*(user(OE(S))) // are active roles authorized?
+OE(roles(OE(S))) ∈ roles*(user(OE(S))) // are active roles authorized?

@@ -207,6 +207,10 @@ requiring `roles(s)` to be a subset of `roles(user(s))` for a session
 `s` is not good enough in the presence of role hierarchies. Any role
 from `roles*(user(s))` may be activated in session `s` and any role
 from `roles*(s)` will be activated either explicitely or implicitely.
+A currently unused RCL statement to express the required subset
+relation between activated and authorized roles is the following:
+
+        OE(roles(OE(S))) ∈ roles*(user(OE(S)))
 
 In addition to the `juniors*` and `seniors*` functions also `juniors`
 and `seniors` functions without `*` are provided. These functions
@@ -304,6 +308,56 @@ interactions with conflicting roles and the presence of role
 hierarchies may be difficult to grasp, though, and is therefore left
 to the literature or as an exercise.
 
+## Comparison with the [RBAC ANSI INCITS 359][3]
+
+RBAC ANSI has a couple of review functions for queries that correspond
+to the above RCL functions as follows.
+
+    RC-11 AssignedUsers(r, result) <=> result = users(r)
+    RC-09 AssignedRoles(u, result) <=> result = roles(u)
+    RC-34 RolePermissions(r, result) <=> result = permissions*(r)
+    RC-43 UserPermissions(u, result) <=> result = permissions*(u)
+    RC-36 SessionRoles(s, result) <=> result = roles*(s)
+    RC-35 SessionPermissions(s, result) <=> result = permissions*(s)
+    RC-33 RoleOperationsOnObject(r, obj, result) <=> result = operations*(r, obj)
+    RC-42 UserOperationsOnObject(u, obj, result) <=> result = operations*(u, obj)
+    RC-12 AuthorizedUsers(r, result) <=> result = users*(r)
+    RC-13 AuthorizedRoles(u, result) <=> result = roles*(u)
+
+`SessionRoles` and `SessionPermissions` must consider a possible role
+hierarchy. (This seems to be wrong in [ANSI INCITS 359][3].) The names
+for `...Permissions` and `...OperationsOnObject` are used with and
+without a role hierarchy whereas `...Users` and `...Roles` are
+prefixed using `Assigned...` without and using `Authorized...` with a
+role hierarchy.
+
+The ANSI review functions complement administrative commands and
+supporting system functions for creating and managing RBAC
+elements. Currently, RBAC elements for RCL are initially read from
+files as described [below](#usage).
+
+[RBAC ANSI][3] also describes static and dynamic separation of duty
+relations. A static SoD (SSD) addresses *authorized* roles of a user
+(`AssignedRoles/AuthorizedRoles`) wheres a dynamic SoD (DSD) addresses
+the *activated* roles of a session (`SessionRoles`). For any SoD a
+named set of roles can be associated with a number between 2 and the
+cardinality of the set. If this number of roles from the given set are
+taken simultaneously the SoD constraint is violated. Given a number
+(`n >= 2`) and a set of roles (`cr`) with at most `n` elements, then
+at most `n-1` roles of this set may be assigned/authorized (SSD) or
+activated (DSD). Using RCL we can express this by:
+
+        |roles*(OE(U)) ∩ cr| < n  // SSD
+        |roles*(OE(S)) ∩ cr| < n  // DSD
+
+Note that we use `roles*` also for sessions. (Therefore `SessionRoles`
+must consider a role hierarchy, too.) Furthermore, the second DSD does
+not prevent a user to take `n` (or more) roles via *several*
+sessions. In order to prevent the latter the RCL constraint would need
+to be:
+
+        |roles*(sessions(OE(U))) ∩ cr| < n  // DSD
+
 ## Usage
 
     find . -name rcl2000-exe
@@ -368,3 +422,4 @@ The `-h` option displays a usage message.
 
 [1]: https://dl.acm.org/doi/10.1145/382912.382913
 [2]: https://sourceforge.net/projects/useocl
+[3]: http://profsandhu.com/journals/tissec/ANSI+INCITS+359-2004.pdf
