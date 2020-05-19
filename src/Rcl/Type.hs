@@ -66,41 +66,57 @@ tyTerm us t = case t of
   EmptySet -> pure EmptySetTy
   Num _ -> pure NatTy
 
-tySet :: UserTypes -> Set -> State String (Set.Set SetType)
-tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
-  BinOp o s1 s2 -> do
-    m1 <- tySet us s1
-    m2 <- tySet us s2
-    case o of
+tySet :: UserTypes -> Set -> State String Set
+tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
+  { foldBin = \ _ o s1 s2 -> do
+      a1 <- s1
+      a2 <- s2
+      let m1 = getType a1
+          m2 = getType a2
+          s = BinOp o a1 a2
+      case o of
         Operations _ -> do
           let r1 = Set.filter (\ t1 -> any (`isElemOrSet` t1) [R, U]) m1
               l1 = Set.size r1
               r2 = Set.filter (isElemOrSet OBJ) m2
               l2 = Set.size r2
-          when (l1 == 0) $ md "expected role or user as first argument"
-          when (l2 == 0) $ md "expected object as second argument"
-          when (l1 > 1) $ md "ambiguous first argument"
-          when (l2 > 1) $ md "ambiguous first argument"
-          pure $ mkSetType OP -- R x OBJ -> 2^OP
+          when (l1 == 0) $ md "expected role or user as first argument" s
+          when (l2 == 0) $ md "expected object as second argument" s
+          when (l1 > 1) $ md "ambiguous first argument" s
+          when (l2 > 1) $ md "ambiguous second argument" s
+          pure $ mkTypedSet (mkSetType OP) s -- R x OBJ -> 2^OP
         _ -> do
           let ts = compatSetTys m1 m2
-          when (Set.null ts) $ md "wrongly typed set operation"
-          pure ts
-  UnOp o s1 -> do
-    t1 <- tySet us s1
-    if Set.null t1 then pure t1 -- was reported earlier
-      else do
+          when (Set.null ts) $ md "wrongly typed set operation" s
+          pure $ mkTypedSet ts s
+  , foldUn = \ _ o s1 -> do
+      a1 <- s1
+      let t1 = getType a1
+          s = UnOp o a1
+      if Set.null t1 then pure $ mkTypedSet t1 s -- was reported earlier
+        else do
         let rs = tyAppl o t1
             ts = Set.unions rs
             l = Set.size ts
-        when (l == 0) $ md "wrongly typed application"
-        when (l > 0 && l < length rs) $ md "ambiguous application"
-        pure ts
-  Var (MkVar _ _ t) -> pure t
-  PrimSet p -> do
-    let ts = Map.findWithDefault Set.empty p us
-    when (Set.null ts) $ md "unknown base set"
-    pure ts
+        when (l == 0) $ md "wrongly typed application" s
+        when (l > 0 && l < length rs) $ md "ambiguous application" s
+        pure $ mkTypedSet ts s
+  , foldPrim = \ s -> case s of
+      PrimSet p -> do
+        let ts = Map.findWithDefault Set.empty p us
+        when (Set.null ts) $ md "unknown base set" s
+        pure $ mkTypedSet ts s
+      Var (MkVar _ _ ts) -> pure s
+}
+
+mkTypedSet :: Set.Set SetType -> Set -> Set
+mkTypedSet = UnOp . Typed
+
+getType :: Set -> Set.Set SetType
+getType s = case s of
+  UnOp (Typed ts) _ -> ts
+  Var (MkVar _ _ ts) -> ts
+  _ -> Set.empty
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
 compatSetTys s1 s2 =

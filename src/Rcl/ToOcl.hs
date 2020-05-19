@@ -149,7 +149,7 @@ setToOclAux us = foldSet FoldSet
   , foldUn = \ (UnOp _ s) o d -> let p = useOp (mBaseType us s) o in
         cat [text p, parens $ if p == "user" then d else singleSet us s d]
   , foldPrim = \ s -> text $ case s of
-      PrimSet _ t -> let ts = findWithDefault Set.empty t us in
+      PrimSet t -> let ts = findWithDefault Set.empty t us in
         case Set.minView ts of
           Just (e, r) -> tr (if Set.null r then Nothing else Just e) t ++ "()"
           _ -> error "setToOcl: prim set unknown"
