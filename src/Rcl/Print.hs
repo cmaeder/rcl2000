@@ -1,4 +1,4 @@
-module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar, ppType,
+module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar,
   Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
@@ -31,9 +31,6 @@ ppVar = render . pVar form
 
 form :: Form
 form = Form Uni True
-
-ppType :: Maybe SetType -> String
-ppType = maybe "Unknown" stSet
 
 pStmts :: Form -> [Stmt] -> Doc
 pStmts m = vcat . map (lStmt m)
@@ -83,8 +80,9 @@ pSet m = let f = format m in foldSet FoldSet
     Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
     Minus -> cat [pParenSet o s1 d1, hcat [p, braces d2]]
     _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
-  , foldUn = \ _ o d -> let b = prParen m
-      in (if b || f == LaTeX then cat else sep)
+  , foldUn = \ _ o d -> case o of
+      Typed _ -> d
+      _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)
           [pUnOp m o, if b then parens d else d]
   , foldPrim = pPrimSet }
 

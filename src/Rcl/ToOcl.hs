@@ -2,9 +2,9 @@ module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
 import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
                   toUpper)
-import Data.List (nub)
-import Data.Map (toList)
+import Data.Map (findWithDefault, toList)
 import Data.Maybe (isNothing)
+import qualified Data.Set as Set
 import Numeric (showHex)
 
 import Rcl.Ast
@@ -16,21 +16,26 @@ import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
 
 toUse :: UserTypes -> [String]
 toUse us = let l = toList us in
-  concatMap toSetClass (nub $ concatMap (toSubs . snd) l)
-  ++ map toClass l ++ ["class RBAC < Builtin", "operations"]
-  ++ map toOp l ++ [end, "constraints", "context RBAC"]
+  concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
+  ++ concatMap toClass l ++ ["class RBAC < Builtin", "operations"]
+  ++ concatMap toOp l ++ [end, "constraints", "context RBAC"]
 
-toSubs :: SetType -> [SetType]
-toSubs t = case t of
-  ElemTy _ -> []
-  SetOf s -> t : toSubs s
+toSubs :: Set.Set SetType -> Set.Set SetType
+toSubs = Set.unions . map toSubsAux . Set.toList
+
+toSubsAux :: SetType -> Set.Set SetType
+toSubsAux t = case t of
+  ElemTy _ -> Set.empty
+  SetOf s -> Set.insert t $ toSubsAux s
 
 -- | translate user _c_onflict set names
-tr :: String -> String
-tr s = if s `elem` map show primTypes
-  || all (\ c -> isDigit c || isAsciiUpper c) s
-  && s `notElem` words "RRAC RH UA PA HR SU"
-  then s else "c_" ++ enc s
+tr :: Maybe SetType -> String -> String
+tr mt s = case mt of
+  Nothing -> if s `elem` map show primTypes
+    || all (\ c -> isDigit c || isAsciiUpper c) s
+    && s `notElem` words "RRAC RH UA PA HR SU"
+    then s else "c_" ++ enc s
+  Just t -> 'c' : stSet t ++ '_' : enc s
 
 -- | code out non-valid characters
 enc :: String -> String
@@ -39,12 +44,24 @@ enc = concatMap $ \ c -> case c of
   _ | isAscii c && isAlphaNum c -> [c]
     | otherwise -> '_' : map toUpper (showHex (ord c) "_")
 
-toClass :: (String, SetType) -> String
-toClass (s, t) = "class " ++ tr s ++ " < " ++ stSet t ++ " end"
+toClass :: (String, Set.Set SetType) -> [String]
+toClass (s, ts) = case Set.minView ts of
+  Just (t, r) | Set.null r -> [toClassAux True s t]
+  _ -> map (toClassAux False s) $ Set.toList ts
 
-toOp :: (String, SetType) -> String
-toOp (s, t) = "  " ++ tr s ++ "() : " ++ useType t ++ " = "
-  ++ tr s ++ ".allInstances->any(true).c()"
+toClassAux :: Bool -> String -> SetType -> String
+toClassAux b s t = "class " ++ tr (if b then Nothing else Just t) s
+  ++ " < " ++ stSet t ++ " end"
+
+toOp :: (String, Set.Set SetType) -> [String]
+toOp (s, ts) = case Set.minView ts of
+  Just (t, r) | Set.null r -> [toOpAux True s t]
+  _ -> map (toOpAux False s) $ Set.toList ts
+
+toOpAux :: Bool -> String -> SetType -> String
+toOpAux b s t = let r = tr (if b then Nothing else Just t) s in
+  "  " ++ r ++ "() : " ++ useType t ++ " = " ++ r
+  ++ ".allInstances->any(true).c()"
 
 toSetClass :: SetType -> [String]
 toSetClass t = case t of
@@ -118,28 +135,34 @@ singleTerm us t = case t of
   _ -> id
 
 setToOcl :: UserTypes -> Set -> Doc
-setToOcl us = foldSet FoldSet
+setToOcl = setToOclAux
+
+setToOclAux :: UserTypes -> Set -> Doc
+setToOclAux us = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
       p = text $ useBinOp (mBaseType us s1) o
       a1 = singleSet us s1 d1
       a2 = singleSet us s2 d2
       in case o of
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
-      Minus -> cat [hcat [d1, arr, p], parens d2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> let p = useOp (mBaseType us s) o in
         cat [text p, parens $ if p == "user" then d else singleSet us s d]
   , foldPrim = \ s -> text $ case s of
-      PrimSet t -> tr t ++ "()"
+      PrimSet _ t -> let ts = findWithDefault Set.empty t us in
+        case Set.minView ts of
+          Just (e, r) -> tr (if Set.null r then Nothing else Just e) t ++ "()"
+          _ -> error "setToOcl: prim set unknown"
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
 singleSet :: UserTypes -> Set -> Doc -> Doc
-singleSet us = maybe id singleSetType . typeOfSet us
+singleSet us = singleSetType . typeOfSet us
 
-singleSetType :: SetType -> Doc -> Doc
-singleSetType t d =
-  if isElem t then hcat [text "Set", braces d] else d
+singleSetType :: Set.Set SetType -> Doc -> Doc
+singleSetType t d = case Set.minView t of
+  Just (m, s) | Set.null s && isElem m -> hcat [text "Set", braces d]
+  _ -> d
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
@@ -151,28 +174,28 @@ pCmpOp o = text $ case o of
   Ne -> "<>"
   _ -> sCmpOp Ascii o
 
-useBinOp :: Maybe Base -> BinOp -> String
+useBinOp :: Set.Set Base -> BinOp -> String
 useBinOp t o = case o of
   Union -> "union"
   Inter -> "intersection"
-  Minus -> "excluding"
-  Operations b -> let s = "ops" ++ optStar b in case t of
-    Just r -> map toLower (show r) ++ s
+  Minus -> "excludingAll"
+  Operations b -> let s = "ops" ++ optStar b in case Set.minView t of
+    Just (r, _) -> map toLower (show r) ++ s
     _ -> s
 
 -- | USE compliant and disambiguated names
-useOp :: Maybe Base -> UnOp -> String
+useOp :: Set.Set Base -> UnOp -> String
 useOp t o = let u = map (\ c -> if c == '*' then '_' else c) $ stUnOp o
   in case o of
-  User _ b -> case t of
-    Just S -> "user"
+  User _ b -> case Set.minView t of
+    Just (S, r) | Set.null r -> "user"
     _ -> "users" ++ optStar b
   Object _ -> "objects"
-  Roles _ -> case t of
-      Just r -> map toLower (show r) ++ u
+  Roles _ -> case Set.minView t of
+      Just (r, _) -> map toLower (show r) ++ u
       _ -> u
-  Permissions _ -> case t of
-      Just r -> map toLower (show r) ++ u
+  Permissions _ -> case Set.minView t of
+      Just (r, _) -> map toLower (show r) ++ u
       _ -> u
   Iors i b -> map toLower (show i) ++ 's' : optStar b
   _ -> u

@@ -1,21 +1,26 @@
-module Rcl.Type (typeErrors, wellTyped, typeOfSet, elemType, isElem, mBaseType)
-  where
+module Rcl.Type (addPrimTypes, elemType, isElem, mBaseType, typeErrors,
+                 typeOfSet, wellTyped) where
 
-import Control.Monad (unless, when)
+import Control.Monad (when)
 import Control.Monad.State (State, evalState, execState, modify)
-import Data.List (find)
-import qualified Data.Map as Map (lookup)
-import Data.Maybe (isJust, isNothing, mapMaybe)
+import qualified Data.Map as Map
+import Data.Maybe (mapMaybe)
+import qualified Data.Set as Set
+
 import Rcl.Ast
 import Rcl.Print (ppSet, ppStmt)
+
+addPrimTypes :: UserTypes -> UserTypes
+addPrimTypes = flip
+  (foldr $ \ b -> Map.insertWith Set.union (show b) $ mkSetType b) primTypes
 
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . mapMaybe (wellTyped us)
 
-mBaseType :: UserTypes -> Set -> Maybe Base
-mBaseType us = fmap baseType . typeOfSet us
+mBaseType :: UserTypes -> Set -> Set.Set Base
+mBaseType us = Set.map baseType . typeOfSet us
 
-typeOfSet :: UserTypes -> Set -> Maybe SetType
+typeOfSet :: UserTypes -> Set -> Set.Set SetType
 typeOfSet us s = evalState (tySet us s) []
 
 wellTyped :: UserTypes -> Stmt -> Maybe String
@@ -30,86 +35,105 @@ ty :: UserTypes -> Stmt -> State String ()
 ty us s = case s of
   BoolOp _ s1 s2 -> ty us s1 >> ty us s2
   CmpOp o e1 e2 -> do
-    m1 <- tyTerm us e1
-    m2 <- tyTerm us e2
-    let md = report $ "wrongly typed relation: " ++ ppStmt s
-    case (m1, m2) of
-      (Just t1, Just t2) -> case (t1, t2) of
-        (SetTy s1, SetTy s2) ->
-          unless (elemType s2 == Just s1 && o == Elem
-            || o `elem` [Eq, Ne] && isJust (compatSetTys s1 s2)) md
-        (SetTy _, EmptySetTy) -> pure ()
+    t1 <- tyTerm us e1
+    t2 <- tyTerm us e2
+    let md t = report $ t ++ ": " ++ ppStmt s
+        ds es = do
+          let l = Set.size es
+          when (l == 0) $ md "wrongly typed"
+          when (l > 1) $ md "ambiguous statement"
+    case (t1, t2) of
+        (SetTy s1, SetTy s2) -> do
+            let ts = if o `elem` [Eq, Ne] then compatSetTys s1 s2 else
+                  if o == Elem then Set.filter (\ t -> case t of
+                  SetOf e -> Set.member e s1
+                  _ -> False) s2 else Set.empty
+            ds ts
+        (SetTy s1, EmptySetTy) -> ds s1
         (NatTy, NatTy) | o /= Elem -> pure ()
-        _ -> md
-      _ -> pure () -- error reported earlier
+        _ -> md "wrong comparison"
+    pure () -- error reported earlier
 
-tyTerm :: UserTypes -> Term -> State String (Maybe Type)
+tyTerm :: UserTypes -> Term -> State String Type
 tyTerm us t = case t of
   Term b s -> do
     m <- tySet us s
-    pure $ case b of
-      Card -> Just NatTy
-      TheSet -> fmap SetTy m
-  EmptySet -> pure $ Just EmptySetTy
-  Num _ -> pure $ Just NatTy
+    case b of
+      Card -> do
+        when (Set.size m > 1) . report $ "ambiguous set: " ++ ppSet s
+        pure NatTy
+      TheSet -> pure $ SetTy m
+  EmptySet -> pure EmptySetTy
+  Num _ -> pure NatTy
 
-tySet :: UserTypes -> Set -> State String (Maybe SetType)
+tySet :: UserTypes -> Set -> State String (Set.Set SetType)
 tySet us s = let md t = report $ t ++ ": " ++ ppSet s in case s of
   BinOp o s1 s2 -> do
     m1 <- tySet us s1
     m2 <- tySet us s2
-    case (m1, m2) of
-      (Just t1, Just t2) -> case o of
+    case o of
         Operations _ -> do
-          unless (any (`isElemOrSet` t1) [R, U] && isElemOrSet OBJ t2)
-            $ md "expected role/user and object arguments"
+          let r1 = Set.filter (\ t1 -> any (`isElemOrSet` t1) [R, U]) m1
+              l1 = Set.size r1
+              r2 = Set.filter (isElemOrSet OBJ) m2
+              l2 = Set.size r2
+          when (l1 == 0) $ md "expected role or user as first argument"
+          when (l2 == 0) $ md "expected object as second argument"
+          when (l1 > 1) $ md "ambiguous first argument"
+          when (l2 > 1) $ md "ambiguous first argument"
           pure $ mkSetType OP -- R x OBJ -> 2^OP
-        Minus -> do
-          unless (elemType t1 == Just t2)
-            $ md "wrongly typed set minus element"
-          pure $ Just t1
         _ -> do
-          let t = compatSetTys t1 t2
-          when (isNothing t) $ md "wrongly typed set operation"
-          pure t
-      _ -> pure Nothing
+          let ts = compatSetTys m1 m2
+          when (Set.null ts) $ md "wrongly typed set operation"
+          pure ts
   UnOp o s1 -> do
     t1 <- tySet us s1
-    case t1 of
-      Nothing -> pure t1 -- was reported earlier
-      Just st -> do
-        let t = tyAppl o st
-        when (isNothing t) $ md "wrongly typed application"
-        pure t
+    if Set.null t1 then pure t1 -- was reported earlier
+      else do
+        let rs = tyAppl o t1
+            ts = Set.unions rs
+            l = Set.size ts
+        when (l == 0) $ md "wrongly typed application"
+        when (l > 0 && l < length rs) $ md "ambiguous application"
+        pure ts
   Var (MkVar _ _ t) -> pure t
-  PrimSet p -> case find ((== p) . show) primTypes of
-    Just b -> pure $ mkSetType b
-    Nothing -> case Map.lookup p us of
-      Just t -> pure $ Just t
-      Nothing -> do
-        md "unknown base set"
-        pure Nothing
+  PrimSet p -> do
+    let ts = Map.findWithDefault Set.empty p us
+    when (Set.null ts) $ md "unknown base set"
+    pure ts
 
-compatSetTys :: SetType -> SetType -> Maybe SetType
-compatSetTys t1 t2 = case (mElemOrSet t1, mElemOrSet t2) of
-    (Just s1, Just s2) | s1 == s2 -> mkSetType s1 -- treat elements as sets
-    _ -> Nothing
+compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
+compatSetTys s1 s2 =
+  Set.unions [compatSetTysAux t1 t2 | t1 <- Set.toList s1, t2 <- Set.toList s2]
 
-tyAppl :: UnOp -> SetType -> Maybe SetType
-tyAppl o t = case o of
-  OE -> elemType t
-  AO | isSet t -> Just t
+compatSetTysAux :: SetType -> SetType -> Set.Set SetType
+compatSetTysAux t1 t2 = case (t1, t2) of
+  (SetOf s1, _) | s1 == t2 -> Set.singleton t1
+  (_, SetOf s2) | t1 == s2 -> Set.singleton t2
+  _ -> if t1 == t2 then Set.singleton t1 else Set.empty
+
+tyAppl :: UnOp -> Set.Set SetType -> [Set.Set SetType]
+tyAppl o = map (tyApplAux o) . Set.toList
+
+tyApplAux :: UnOp -> SetType -> Set.Set SetType
+tyApplAux o t = case o of
+  OE -> case t of
+    SetOf s -> Set.singleton s
+    ElemTy _ -> Set.empty
+  AO -> case t of
+    SetOf _ -> Set.singleton t
+    ElemTy _ -> Set.empty
   User _ b -> case t of
-    ElemTy S -> if b == Star then Nothing else Just $ ElemTy U -- S -> U
+    ElemTy S | b /= Star -> Set.singleton $ ElemTy U -- S -> U
     _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
-    _ -> Nothing
+    _ -> Set.empty
   Roles _ | any (`isElemOrSet` t) [U, P, S]
     -> mkSetType R -- U + P + S -> 2^R
   Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
   Permissions _ | any (`isElemOrSet` t) [R, U, S] -> mkSetType P -- R -> 2^P
   Object _ | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
   Iors _ _ | isElemOrSet R t -> mkSetType R  -- extra functions R -> 2^R
-  _ -> Nothing
+  _ -> Set.empty
 
 isElemOrSet :: Base -> SetType -> Bool
 isElemOrSet s = (== Just s) . mElemOrSet
@@ -120,16 +144,13 @@ mElemOrSet t = case t of
   SetOf (ElemTy i) -> Just i -- p 215 "general notation device"
   _ -> Nothing
 
-mkSetType :: Base -> Maybe SetType
-mkSetType = Just . SetOf . ElemTy
+mkSetType :: Base -> Set.Set SetType
+mkSetType = Set.singleton . SetOf . ElemTy
 
-isSet :: SetType -> Bool
-isSet = isJust . elemType
-
-elemType :: SetType -> Maybe SetType
-elemType t = case t of
-  SetOf s -> Just s
-  _ -> Nothing
+elemType :: Set.Set SetType -> Set.Set SetType
+elemType = Set.foldr (\ t -> case t of
+  SetOf s -> Set.insert s
+  _ -> id) Set.empty
 
 isElem :: SetType -> Bool
 isElem = foldSetType (const False) $ const True

@@ -3,8 +3,10 @@ module Rcl.Reduce (reduction, runReduce) where
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
+import qualified Data.Set as Set (Set, minView, null)
+
 import Rcl.Ast
-import Rcl.Print (ppSet, ppStmt, ppType, prStmt)
+import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Type (elemType, typeOfSet)
 
 replaceAO :: Stmt -> Stmt
@@ -50,11 +52,11 @@ reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
 reduce us i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    let mt = typeOfSet us r >>= elemType
-        p = case mt of
-          Just (ElemTy e) -> show e
+    let ts = elemType $ typeOfSet us r
+        p = case Set.minView ts of
+          Just (ElemTy e, _) -> show e
           _ -> ppSet r
-        v = MkVar i (take 2 $ map toLower p) mt
+        v = MkVar i (take 2 $ map toLower p) ts
     modify ((v, r) :)
     reduce us (i + 1) $ replaceOE r (Var v) s
 
@@ -64,10 +66,15 @@ runReduce us s = runState (reduce us 1 $ replaceAO s) []
 construct :: Stmt -> Vars -> Stmt
 construct = foldl (flip replaceVar)
 
+ppType :: Set.Set SetType -> String
+ppType s = case Set.minView s of
+  Just (m, r) -> if Set.null r then stSet m else "Ambiguous"
+  _ -> "Unknown"
+
 checkVar :: UserTypes -> (Var, Set) -> String
-checkVar us (i@(MkVar _ _ t), r) = let s = typeOfSet us r >>= elemType in
-  if s == t then "" else
-    "type missmatch in variable " ++ stVar i ++ ':' : ppType t
+checkVar us (i@(MkVar _ _ t), r) = let s = elemType $ typeOfSet us r in
+  if s == t then ""
+  else "type missmatch in variable " ++ stVar i ++ ':' : ppType t
     ++ " versus " ++ ppSet r ++ ':' : ppType s
 
 replaceVar :: (Var, Set) -> Stmt -> Stmt

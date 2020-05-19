@@ -2,6 +2,7 @@ module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
 import Data.Map (Map)
+import qualified Data.Set as Set (Set)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -18,7 +19,7 @@ data Term = Term OptCard Set | EmptySet | Num Int deriving (Eq, Show)
 
 data OptCard = Card | TheSet deriving (Eq, Show)
 
-data Set = PrimSet { stPrim :: String } | UnOp UnOp Set
+data Set = PrimSet String | UnOp UnOp Set
   | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
 
 data FoldSet a = FoldSet
@@ -26,14 +27,15 @@ data FoldSet a = FoldSet
   , foldUn :: Set -> UnOp -> a -> a
   , foldPrim :: Set -> a }
 
-data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
+data Var = MkVar Int String (Set.Set SetType) deriving (Eq, Show)
 
 data BinOp = Union | Inter | Operations OptStar | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
 data OptStar = Star | TheOp deriving (Eq, Show)
 
-data UnOp = AO | OE | User OptS OptStar | Roles OptStar | Sessions
+data UnOp = Typed (Set.Set SetType)
+  | AO | OE | User OptS OptStar | Roles OptStar | Sessions
   | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
 -- AO: all other, OE: one element, optional s and/or * suffix
 
@@ -42,10 +44,10 @@ data OptS = Plural | Singular deriving (Eq, Show)
 data Ior = Jun | Sen deriving (Eq, Show)
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
-data SetType = ElemTy Base | SetOf SetType deriving (Eq, Show)
-data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
+data SetType = ElemTy Base | SetOf SetType deriving (Eq, Ord, Show)
+data Type = SetTy (Set.Set SetType) | NatTy | EmptySetTy deriving (Eq, Show)
 data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
-type UserTypes = Map String SetType
+type UserTypes = Map String (Set.Set SetType)
 type Vars = [(Var, Set)]
 
 primTypes :: [Base]
