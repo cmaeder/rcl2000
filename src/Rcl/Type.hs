@@ -70,7 +70,7 @@ ty us s = case s of
               else do
                 ds ts
                 pure r
-        (Term TheSet (UnOp (Typed ts1) s1), EmptySet) | o `elem` [Eq, Ne] -> do
+        (Term TheSet (UnOp (Typed ts1) s1), EmptySet) | o `elem` [Eq, Ne] ->
           if Set.size ts1 == 1 then do
               r1 <- disambig (getUniqueType ts1) s1
               pure $ CmpOp o (Term TheSet r1) e2
@@ -90,7 +90,7 @@ tyTerm us t = case t of
     r <- tySet us s
     let m = getType r
     case b of
-      Card -> do
+      Card ->
         if Set.size m == 1 then do
             n <- disambig (getUniqueType m) r
             pure $ Term b n
