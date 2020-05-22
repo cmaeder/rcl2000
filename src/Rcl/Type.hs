@@ -49,10 +49,10 @@ ty us s = case s of
     case (t1, t2) of
         (Term TheSet (UnOp (Typed ts1) s1), Term TheSet (UnOp (Typed ts2) s2))
           -> do
-            let ts = if o `elem` [Eq, Ne] then compatSetTys ts1 ts2 else
-                  if o == Elem then Set.filter (\ t -> case t of
-                  SetOf e -> Set.member e ts1
-                  _ -> False) ts2 else Set.empty
+            let ts = case o of
+                  Elem -> Set.filter (ifSet (`Set.member` ts1) False) ts2
+                  _ | o `elem` [Eq, Ne] -> compatSetTys ts1 ts2
+                  _ -> Set.empty
             if Set.size ts == 1 then do
                 let t = getUniqueType ts
                     rs1 = Set.filter (if o == Elem then \ r1 -> SetOf r1 == t
@@ -247,9 +247,12 @@ mkSetType :: Base -> Set.Set SetType
 mkSetType = Set.singleton . SetOf . ElemTy
 
 elemType :: Set.Set SetType -> Set.Set SetType
-elemType = Set.foldr (\ t -> case t of
-  SetOf s -> Set.insert s
-  _ -> id) Set.empty
+elemType = Set.foldr (ifSet Set.insert id) Set.empty
+
+ifSet :: (SetType -> a) -> a -> SetType -> a
+ifSet f c s = case s of
+  SetOf e -> f e
+  _ -> c
 
 isElem :: SetType -> Bool
 isElem = foldSetType (const False) $ const True
