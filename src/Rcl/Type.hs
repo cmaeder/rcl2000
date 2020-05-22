@@ -21,7 +21,7 @@ mBaseType :: UserTypes -> Set -> Set.Set Base
 mBaseType us = Set.map baseType . typeOfSet us
 
 typeOfSet :: UserTypes -> Set -> Set.Set SetType
-typeOfSet us s = evalState (tySet us s) []
+typeOfSet us s = getType $ evalState (tySet us s) []
 
 wellTyped :: UserTypes -> Stmt -> Maybe String
 wellTyped us s = case execState (ty us s) [] of
@@ -57,7 +57,8 @@ ty us s = case s of
 tyTerm :: UserTypes -> Term -> State String Type
 tyTerm us t = case t of
   Term b s -> do
-    m <- tySet us s
+    r <- tySet us s
+    let m = getType r
     case b of
       Card -> do
         when (Set.size m > 1) . report $ "ambiguous set: " ++ ppSet s
@@ -106,7 +107,7 @@ tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
         let ts = Map.findWithDefault Set.empty p us
         when (Set.null ts) $ md "unknown base set" s
         pure $ mkTypedSet ts s
-      Var (MkVar _ _ ts) -> pure s
+      _ -> pure s
 }
 
 mkTypedSet :: Set.Set SetType -> Set -> Set
