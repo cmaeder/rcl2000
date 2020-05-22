@@ -55,7 +55,7 @@ ty us s = case s of
                   _ -> Set.empty
             if Set.size ts == 1 then do
                 let t = getUniqueType ts
-                    rs1 = Set.filter (if o == Elem then \ r1 -> SetOf r1 == t
+                    rs1 = Set.filter (if o == Elem then (== t) . SetOf
                       else eqOrElem t) ts1
                     rs2 = Set.filter
                       (if o == Elem then (== t) else eqOrElem t) ts2
