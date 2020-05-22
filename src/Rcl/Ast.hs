@@ -45,7 +45,6 @@ data Ior = Jun | Sen deriving (Eq, Show)
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 data SetType = ElemTy Base | SetOf SetType deriving (Eq, Ord, Show)
-data Type = SetTy (Set.Set SetType) | NatTy | EmptySetTy deriving (Eq, Show)
 data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
 type UserTypes = Map String (Set.Set SetType)
 type Vars = [(Var, Set)]

@@ -3,7 +3,7 @@ module Rcl.Reduce (reduction, runReduce) where
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
 import Data.Char (toLower)
-import qualified Data.Set as Set (Set, minView, null)
+import qualified Data.Set as Set (minView)
 
 import Rcl.Ast
 import Rcl.Print (ppSet, ppStmt, prStmt)
