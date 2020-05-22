@@ -66,11 +66,6 @@ runReduce us s = runState (reduce us 1 $ replaceAO s) []
 construct :: Stmt -> Vars -> Stmt
 construct = foldl (flip replaceVar)
 
-ppType :: Set.Set SetType -> String
-ppType s = case Set.minView s of
-  Just (m, r) -> if Set.null r then stSet m else "Ambiguous"
-  _ -> "Unknown"
-
 checkVar :: UserTypes -> (Var, Set) -> String
 checkVar us (i@(MkVar _ _ t), r) = let s = elemType $ typeOfSet us r in
   if s == t then ""

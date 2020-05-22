@@ -2,7 +2,7 @@ module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
 import Data.Map (Map)
-import qualified Data.Set as Set (Set)
+import qualified Data.Set as Set (Set, toList)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -191,3 +191,9 @@ keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
 -- | OCL compliant class name
 stSet :: SetType -> String
 stSet = foldSetType (++ "s") show
+
+ppType :: Set.Set SetType -> String
+ppType s = case Set.toList s of
+  [] -> "Unknown"
+  [t] -> stSet t
+  ts -> unwords $ map stSet ts

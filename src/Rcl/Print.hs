@@ -18,7 +18,7 @@ ppStmt :: Stmt -> String
 ppStmt = render . pStmt form
 
 lineStmt :: Stmt -> String
-lineStmt = renderStyle style { mode = OneLineMode} . pStmt form
+lineStmt = renderStyle style {mode = OneLineMode} . pStmt form
 
 ppTerm :: Term -> String
 ppTerm = render . pTerm form

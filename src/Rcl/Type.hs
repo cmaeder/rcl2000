@@ -67,6 +67,31 @@ tyTerm us t = case t of
   EmptySet -> pure EmptySetTy
   Num _ -> pure NatTy
 
+disambig :: SetType -> Set -> State String Set
+disambig t s = case s of
+  BinOp o (UnOp (Typed ts1) s1) (UnOp (Typed ts2) s2) -> case o of
+    Operations _ -> do
+      let Right t1 = getUniqueType s1 ts1
+          Right t2 = getUniqueType s2 ts2
+      m1 <- disambig t1 s1
+      m2 <- disambig t2 s2
+      pure . BinOp o (mkTypedSet ts1 m1) $ mkTypedSet ts2 m2
+    _ -> do
+      let r1 = Set.filter (eqOrElem t) ts1
+          r2 = Set.filter (eqOrElem t) ts2
+      pure s
+
+eqOrElem :: SetType -> SetType -> Bool
+eqOrElem t1 t2 = case t1 of
+  SetOf s -> s == t2
+  _ -> t1 == t2
+
+getUniqueType :: Set -> Set.Set SetType -> Either String SetType
+getUniqueType s ts = case Set.toList ts of
+  [t] -> Right t
+  [] -> Left $ "missing type for: " ++ ppSet s
+  _ -> Left $ "ambiguous type for '" ++ ppSet s ++ "': " ++ ppType ts
+
 tySet :: UserTypes -> Set -> State String Set
 tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
   { foldBin = \ _ o s1 s2 -> do
@@ -85,7 +110,9 @@ tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
           when (l2 == 0) $ md "expected object as second argument" s
           when (l1 > 1) $ md "ambiguous first argument" s
           when (l2 > 1) $ md "ambiguous second argument" s
-          pure $ mkTypedSet (mkSetType OP) s -- R x OBJ -> 2^OP
+          pure . mkTypedSet (mkSetType OP)
+            . BinOp o (mkTypedSet r1 $ getUntypedSet a1) . mkTypedSet r2
+            $ getUntypedSet a2 -- R x OBJ -> 2^OP
         _ -> do
           let ts = compatSetTys m1 m2
           when (Set.null ts) $ md "wrongly typed set operation" s
@@ -118,6 +145,11 @@ getType s = case s of
   UnOp (Typed ts) _ -> ts
   Var (MkVar _ _ ts) -> ts
   _ -> Set.empty
+
+getUntypedSet :: Set -> Set
+getUntypedSet s = case s of
+  UnOp (Typed _) e -> e
+  _ -> s
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
 compatSetTys s1 s2 =
