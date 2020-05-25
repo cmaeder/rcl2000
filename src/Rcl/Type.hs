@@ -1,7 +1,7 @@
 module Rcl.Type (addPrimTypes, elemType, isElem, mBaseType, typeErrors,
                  typeOfSet, wellTyped) where
 
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import Control.Monad.State (State, evalState, execState, modify)
 import qualified Data.Map as Map
 import Data.Maybe (mapMaybe)
@@ -11,8 +11,8 @@ import Rcl.Ast
 import Rcl.Print (ppSet, ppStmt)
 
 addPrimTypes :: UserTypes -> UserTypes
-addPrimTypes = flip
-  (foldr $ \ b -> Map.insertWith Set.union (show b) $ mkSetType b) primTypes
+addPrimTypes = flip (foldr $ \ b -> Map.insertWith Set.union (show b)
+  . Set.singleton $ toSet b) primTypes
 
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . mapMaybe (wellTyped us)
@@ -142,43 +142,48 @@ getUniqueType ts = case Set.toList ts of
   [t] -> t
   _ -> error "getUniqueType"
 
+filterType :: Bool -> (SetType -> Bool) -> Set -> State String Set
+filterType b f s = let
+  md m = report $ m ++ ": " ++ ppSet s
+  t = getType s
+  l = Set.toList t
+  r = filter f l
+  in case r of
+  [] -> do
+    unless (null l) $ md "wrongly typed set"
+    pure s
+  [a] -> case l of
+    _ : _ : _ -> disambig a $ getUntypedSet s
+    _ -> pure s
+  _ -> do
+    let rs = Set.fromList r
+    when b . md $ "ambiguous set (" ++ ppType rs ++ ")"
+    pure . mkTypedSet rs $ getUntypedSet s
+
 tySet :: UserTypes -> Set -> State String Set
-tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
-  { foldBin = \ _ o s1 s2 -> do
+tySet us = let
+  md t s = report $ t ++ ": " ++ ppSet s
+  in foldSet FoldSet
+   { foldBin = \ _ o s1 s2 -> do
       a1 <- s1
       a2 <- s2
-      let m1 = getType a1
-          m2 = getType a2
-          s = BinOp o a1 a2
       case o of
         Operations _ -> do
-          let r1 = Set.filter (\ t1 -> any (`isElemOrSet` t1) [R, U]) m1
-              l1 = Set.size r1
-              r2 = Set.filter (isElemOrSet OBJ) m2
-              l2 = Set.size r2
-          when (l1 == 0) $ md "expected role or user as first argument" s
-          when (l2 == 0) $ md "expected object as second argument" s
-          when (l1 > 1) $ md "ambiguous first argument" s
-          when (l2 > 1) $ md "ambiguous second argument" s
-          pure . mkTypedSet (mkSetType OP)
-            . BinOp o (mkTypedSet r1 $ getUntypedSet a1) . mkTypedSet r2
-            $ getUntypedSet a2 -- R x OBJ -> 2^OP
+          b1 <- filterType True (\ t1 -> any (`isElemOrSet` t1) [R, U]) a1
+          b2 <- filterType True (isElemOrSet OBJ) a2
+          pure . mkTypedSet (Set.singleton $ toSet OP)
+            $ BinOp o b1 b2 -- R + U x OBJ -> 2^OP
         _ -> do
-          let ts = compatSetTys m1 m2
+          let m1 = getType a1
+              m2 = getType a2
+              s = BinOp o a1 a2
+              ts = compatSetTys m1 m2
           when (Set.null ts) $ md "wrongly typed set operation" s
           pure $ mkTypedSet ts s
   , foldUn = \ _ o s1 -> do
       a1 <- s1
-      let t1 = getType a1
-          s = UnOp o a1
-      if Set.null t1 then pure $ mkTypedSet t1 s -- was reported earlier
-        else do
-        let rs = tyAppl o t1
-            ts = Set.unions rs
-            l = Set.size ts
-        when (l == 0) $ md "wrongly typed application" s
-        when (l > 0 && l < length rs) $ md "ambiguous application" s
-        pure $ mkTypedSet ts s
+      b1 <- filterType (isOp o) (opArg o) a1
+      pure $ opResult o b1
   , foldPrim = \ s -> case s of
       PrimSet p -> do
         let ts = Map.findWithDefault Set.empty p us
@@ -187,8 +192,15 @@ tySet us = let md t s = report $ t ++ ": " ++ ppSet s in foldSet FoldSet
       _ -> pure s
 }
 
+isOp :: UnOp -> Bool
+isOp o = case o of
+  OE -> False
+  AO -> False
+  Typed _ -> False
+  _ -> True
+
 mkTypedSet :: Set.Set SetType -> Set -> Set
-mkTypedSet = UnOp . Typed
+mkTypedSet ts = if Set.null ts then id else UnOp $ Typed ts
 
 getType :: Set -> Set.Set SetType
 getType s = case s of
@@ -198,7 +210,7 @@ getType s = case s of
 
 getUntypedSet :: Set -> Set
 getUntypedSet s = case s of
-  UnOp (Typed _) e -> e
+  UnOp (Typed _) e -> getUntypedSet e
   _ -> s
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
@@ -211,28 +223,32 @@ compatSetTysAux t1 t2 = case (t1, t2) of
   (_, SetOf s2) | t1 == s2 -> Set.singleton t2
   _ -> if t1 == t2 then Set.singleton t1 else Set.empty
 
-tyAppl :: UnOp -> Set.Set SetType -> [Set.Set SetType]
-tyAppl o = map (tyApplAux o) . Set.toList
+opArg :: UnOp -> SetType -> Bool
+opArg o t = case o of
+  User _ b -> b /= Star && t == ElemTy S || isElemOrSet R t
+  Roles _ -> any (`isElemOrSet` t) [U, P, S]
+  Sessions -> isElemOrSet U t
+  Permissions _ -> any (`isElemOrSet` t) [R, U, S]
+  Object _ -> isElemOrSet P t
+  Iors _ _ -> isElemOrSet R t
+  Typed ts -> Set.member t ts
+  _ -> not $ isElem t
 
-tyApplAux :: UnOp -> SetType -> Set.Set SetType
-tyApplAux o t = case o of
-  OE -> case t of
-    SetOf s -> Set.singleton s
-    ElemTy _ -> Set.empty
-  AO -> case t of
-    SetOf _ -> Set.singleton t
-    ElemTy _ -> Set.empty
-  User _ b -> case t of
-    ElemTy S | b /= Star -> Set.singleton $ ElemTy U -- S -> U
-    _ | isElemOrSet R t -> mkSetType U  -- R -> 2^U
-    _ -> Set.empty
-  Roles _ | any (`isElemOrSet` t) [U, P, S]
-    -> mkSetType R -- U + P + S -> 2^R
-  Sessions | isElemOrSet U t -> mkSetType S  -- U -> 2^S
-  Permissions _ | any (`isElemOrSet` t) [R, U, S] -> mkSetType P -- R -> 2^P
-  Object _ | isElemOrSet P t -> mkSetType OBJ  -- P -> 2^OBJ
-  Iors _ _ | isElemOrSet R t -> mkSetType R  -- extra functions R -> 2^R
-  _ -> Set.empty
+opResult :: UnOp -> Set -> Set
+opResult o s = let
+  ts = getType s
+  mkSetType = Set.singleton . toSet
+  in mkTypedSet (case o of
+  OE -> elemType ts
+  AO -> ts
+  Typed _ -> ts
+  User _ _ -> if ElemTy S `Set.member` ts then Set.singleton $ ElemTy U
+    else mkSetType U
+  Roles _ -> mkSetType R
+  Sessions -> mkSetType S
+  Permissions _ -> mkSetType P
+  Object _ -> mkSetType OBJ
+  Iors _ _ -> mkSetType R) $ UnOp o s
 
 isElemOrSet :: Base -> SetType -> Bool
 isElemOrSet s = (== Just s) . mElemOrSet
@@ -243,8 +259,8 @@ mElemOrSet t = case t of
   SetOf (ElemTy i) -> Just i -- p 215 "general notation device"
   _ -> Nothing
 
-mkSetType :: Base -> Set.Set SetType
-mkSetType = Set.singleton . SetOf . ElemTy
+toSet :: Base -> SetType
+toSet = SetOf . ElemTy
 
 elemType :: Set.Set SetType -> Set.Set SetType
 elemType = Set.foldr (ifSet Set.insert id) Set.empty
@@ -255,4 +271,4 @@ ifSet f c s = case s of
   _ -> c
 
 isElem :: SetType -> Bool
-isElem = foldSetType (const False) $ const True
+isElem = ifSet (const False) True
