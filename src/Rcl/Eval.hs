@@ -32,7 +32,7 @@ evalInput l m = let ls = map lineStmt l in do
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
-  let ins f b a = Map.insertWith (Set.union) (f a) . Set.singleton $ ElemTy b
+  let ins f b a = Map.insertWith Set.union (f a) . Set.singleton $ ElemTy b
   in foldr (ins resource OBJ) (foldr (ins fst S) (foldr (ins pStr_ P)
   (foldr (ins name U) (foldr (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
