@@ -4,8 +4,9 @@ import Control.Monad (unless)
 import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
-import qualified Data.Map as Map (delete, insert, member, toList)
+import qualified Data.Map as Map (delete, insertWith, member, toList)
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set (singleton, toList, union)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
@@ -31,11 +32,9 @@ evalInput l m = let ls = map lineStmt l in do
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
-  foldr (\ o -> Map.insert (resource o) $ ElemTy OBJ)
-  (foldr (\ p -> Map.insert (fst p) $ ElemTy S)
-  (foldr (\ p -> Map.insert (pStr_ p) $ ElemTy P)
-  (foldr (\ u -> Map.insert (name u) $ ElemTy U)
-  (foldr (\ r -> Map.insert (role r) $ ElemTy R) (getUserTypes m) $ roles m)
+  let ins f b a = Map.insertWith (Set.union) (f a) . Set.singleton $ ElemTy b
+  in foldr (ins resource OBJ) (foldr (ins fst S) (foldr (ins pStr_ P)
+  (foldr (ins name U) (foldr (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
 
 loop :: [Stmt] -> Model -> InputT IO ()
@@ -106,8 +105,9 @@ keys :: String -> [String]
 keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
 typeSet :: UserTypes -> Set -> String
-typeSet us a = maybe ("wrongly typed set: " ++ ppSet a) (const "")
-  $ typeOfSet us a
+typeSet us a = case Set.toList $ typeOfSet us a of
+  [_] -> ""
+  _ -> "wrongly typed set: " ++ ppSet a
 
 parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> String)
    -> String -> Either (Either String String) a

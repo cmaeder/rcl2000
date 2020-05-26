@@ -11,7 +11,6 @@ import qualified Data.Set as Set
 
 import Rcl.Ast (Base (..), Ior (..), OptStar (..), SetType (..), UnOp (..),
                 UserTypes)
-import Rcl.Type (elemType, isElem)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
@@ -67,7 +66,7 @@ emptyModel = Model
   , next = 1 }
 
 getUserTypes :: Model -> UserTypes
-getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
+getUserTypes = Map.map (\ (t, _, _) -> Set.singleton t) . userSets
 
 pStrC :: Char -> P -> String
 pStrC c p = operation (op p) ++ c : resource (obj p)
@@ -128,7 +127,9 @@ getStrings m b = case b of
 sUnOp :: Maybe SetType -> UnOp -> String
 sUnOp t o = let
   u = take 1 $ show o
-  mt = t >>= \ s -> if isElem s then Just s else elemType s
+  mt = t >>= \ s -> Just $ case s of
+    ElemTy _ -> s
+    SetOf e -> e
   in case o of
   User _ _ -> if t == Just (ElemTy S) then "u" else u
   Object _ -> "B"

@@ -65,7 +65,7 @@ readType u s = case s of
     Just t -> if null l then do
       putStrLn $ "missing names for: " ++ r
       return u
-      else return $ foldr (`Map.insert` t) u l
+      else return $ foldr (`Map.insert` Set.singleton t) u l
     Nothing -> do
       putStrLn $ "illegal type: " ++ r
       putStrLn $ "ignoring names: " ++ unwords l

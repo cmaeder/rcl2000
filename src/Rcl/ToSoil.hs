@@ -6,7 +6,11 @@ import qualified Data.Set as Set
 
 import Rcl.Ast (Base (..), SetType (..), baseType, foldSetType)
 import Rcl.Data
-import Rcl.ToOcl (aggName, enc, tr)
+import Rcl.ToOcl (aggName, enc)
+import qualified Rcl.ToOcl as ToOcl (tr)
+
+tr :: String -> String
+tr = ToOcl.tr Nothing
 
 toSoil :: Model -> String
 toSoil m = unlines $ let

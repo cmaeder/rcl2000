@@ -114,9 +114,8 @@ eval us m e = foldSet FoldSet
       Operations b -> let stOps = stUnOp o in case (r1, r2) of
         (Ints is, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- let rs = case mBaseType us s1 of
-                         Just U -> apply m "Ur" is
-                         _ -> is
+            | r <- let rs = if Set.member U $ mBaseType us s1 then
+                         apply m "Ur" is else is
                    in IntSet.toList $ if b == Star then apply m "j" rs else rs
             , ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
@@ -138,7 +137,7 @@ eval us m e = foldSet FoldSet
           (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
   , foldUn = \ (UnOp _ s) o v -> let
-      p = sUnOp (typeOfSet us s) o
+      p = sUnOp (fmap fst . Set.minView $ typeOfSet us s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
         User _ Star -> Right . Ints . apply m p $ apply m "s" is
