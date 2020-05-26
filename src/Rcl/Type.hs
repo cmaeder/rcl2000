@@ -101,36 +101,23 @@ tyTerm us t = case t of
   _ -> pure t
 
 disambig :: SetType -> Set -> State String Set
-disambig t s = let md m = report $ m ++ ": " ++ ppSet s in case s of
-  BinOp o (UnOp (Typed ts1) s1) (UnOp (Typed ts2) s2) -> do
-    let (r1, r2) = case o of
-          Operations _ -> (ts1, ts2)
-          _ -> (Set.filter (eqOrElem t) ts1, Set.filter (eqOrElem t) ts2)
-    if Set.size r1 == 1 && Set.size r2 == 1 then do
-          let t1 = getUniqueType r1
-              t2 = getUniqueType r2
-          m1 <- disambig t1 s1
-          m2 <- disambig t2 s2
-          pure . BinOp o (mkTypedSet r1 m1) $ mkTypedSet r2 m2
-        else do
-          md "ambiguous"
-          pure s
-  UnOp o (UnOp (Typed ts1) s1) -> do
-    let r1 = Set.filter (getArgumentTypes o t) ts1
-    if Set.size r1 == 1 then do
-        let t1 = getUniqueType r1
-        m1 <- disambig t1 s1
-        pure . UnOp o $ mkTypedSet r1 m1
-      else do
-        md "ambiguous"
-        pure s
-  _ -> pure s
-
-getArgumentTypes :: UnOp -> SetType -> SetType -> Bool
-getArgumentTypes o t a = case o of
-  OE -> a == SetOf t
-  AO -> a == t
-  _ -> True
+disambig t s = let
+  rt = mkTypedSet (Set.singleton t)
+  r = rt s in case s of
+  BinOp o s1 s2 -> case o of
+    Operations _ -> pure r
+    _ -> do
+      m1 <- filterType True (eqOrElem t) s1
+      m2 <- filterType True (eqOrElem t) s2
+      pure . rt $ BinOp o m1 m2
+  UnOp o s1 -> if isOp o then pure r else do
+      r1 <- filterType True (\ t1 -> case o of
+        OE -> SetOf t == t1
+        AO -> t1 == t
+        Typed ts -> t1 == t && Set.member t ts
+        _ -> False) s1
+      pure . rt $ UnOp o r1
+  _ -> pure r
 
 eqOrElem :: SetType -> SetType -> Bool
 eqOrElem t1 t2 = case t1 of
@@ -169,17 +156,18 @@ tySet us = let
       a2 <- s2
       case o of
         Operations _ -> do
-          b1 <- filterType True (\ t1 -> any (`isElemOrSet` t1) [R, U]) a1
+          b1 <- filterType True (\ t -> any (`isElemOrSet` t) [R, U]) a1
           b2 <- filterType True (isElemOrSet OBJ) a2
           pure . mkTypedSet (Set.singleton $ toSet OP)
             $ BinOp o b1 b2 -- R + U x OBJ -> 2^OP
         _ -> do
           let m1 = getType a1
               m2 = getType a2
-              s = BinOp o a1 a2
               ts = compatSetTys m1 m2
-          when (Set.null ts) $ md "wrongly typed set operation" s
-          pure $ mkTypedSet ts s
+              filt t = any (`Set.member` ts) [t, SetOf t]
+          b1 <- filterType False filt a1
+          b2 <- filterType False filt a2
+          pure . mkTypedSet ts $ BinOp o b1 b2
   , foldUn = \ _ o s1 -> do
       a1 <- s1
       b1 <- filterType (isOp o) (opArg o) a1
