@@ -63,9 +63,10 @@ readType :: UserTypes -> [String] -> IO UserTypes
 readType u s = case s of
   r : l -> case strT r of
     Just t -> if null l then do
-      putStrLn $ "missing names for: " ++ r
-      return u
-      else return $ foldr (`Map.insert` Set.singleton t) u l
+        putStrLn $ "missing names for: " ++ r
+        return u
+      else return
+        $ foldr (\ n -> Map.insertWith Set.union n $ Set.singleton t) u l
     Nothing -> do
       putStrLn $ "illegal type: " ++ r
       putStrLn $ "ignoring names: " ++ unwords l
