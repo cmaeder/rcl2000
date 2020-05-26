@@ -88,15 +88,10 @@ tyTerm :: UserTypes -> Term -> State String Term
 tyTerm us t = case t of
   Term b s -> do
     r <- tySet us s
-    let m = getType r
     case b of
-      Card ->
-        if Set.size m == 1 then do
-            n <- disambig (getUniqueType m) r
-            pure $ Term b n
-          else do
-            report $ "ambiguous set: " ++ ppSet s
-            pure t
+      Card -> do
+        n <- filterType True (const True) s
+        pure $ Term b n
       TheSet -> pure $ Term b r
   _ -> pure t
 

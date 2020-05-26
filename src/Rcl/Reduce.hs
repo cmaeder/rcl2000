@@ -9,6 +9,22 @@ import Rcl.Ast
 import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Type (elemType, typeOfSet)
 
+mapStmt :: FoldStmt Term Stmt
+mapStmt = FoldStmt
+  { foldBool = const BoolOp
+  , foldCmp = const CmpOp }
+
+mapTerm :: (Set -> Set) -> Term -> Term
+mapTerm f t = case t of
+  Term b s -> Term b $ f s
+  _ -> t
+
+mapSet :: FoldSet Set
+mapSet = FoldSet
+  { foldBin = const BinOp
+  , foldUn = const UnOp
+  , foldPrim = id }
+
 replaceAO :: Stmt -> Stmt
 replaceAO = foldStmt mapStmt $ mapTerm replAO
 
