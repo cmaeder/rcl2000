@@ -57,7 +57,7 @@ checkWords f = mapM_ $ \ (ws, i) -> do
 
 readTypes :: Int -> FilePath -> IO UserTypes
 readTypes v f =
-  readWordsFile v f >>= foldM readType Map.empty
+  readWordsFile v f >>= foldM readType builtinTypes
 
 readType :: UserTypes -> [String] -> IO UserTypes
 readType u s = case s of

@@ -1,8 +1,8 @@
 module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
-import Data.Map (Map)
-import qualified Data.Set as Set (Set, toList)
+import qualified Data.Map as Map (Map, empty, insert)
+import qualified Data.Set as Set (Set, singleton, toList)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -46,11 +46,16 @@ data Ior = Jun | Sen deriving (Eq, Show)
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
 data SetType = ElemTy Base | SetOf SetType deriving (Eq, Ord, Show)
 data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
-type UserTypes = Map String (Set.Set SetType)
+type UserTypes = Map.Map String (Set.Set SetType)
 type Vars = [(Var, Set)]
 
 primTypes :: [Base]
 primTypes = [U, R, OP, OBJ, P, S]
+
+builtinTypes :: UserTypes
+builtinTypes = foldr
+  (\ b -> Map.insert (show b) . Set.singleton . SetOf $ ElemTy b)
+  Map.empty primTypes
 
 forms :: [Format]
 forms = [Ascii, Uni, LaTeX]

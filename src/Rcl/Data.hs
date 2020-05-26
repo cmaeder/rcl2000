@@ -10,7 +10,7 @@ import Data.Set ((\\))
 import qualified Data.Set as Set
 
 import Rcl.Ast (Base (..), Ior (..), OptStar (..), SetType (..), UnOp (..),
-                UserTypes)
+                UserTypes, builtinTypes)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
@@ -66,7 +66,9 @@ emptyModel = Model
   , next = 1 }
 
 getUserTypes :: Model -> UserTypes
-getUserTypes = Map.map (\ (t, _, _) -> Set.singleton t) . userSets
+getUserTypes = foldr
+  (\ (n, (t, _, _)) -> Map.insertWith Set.union n $ Set.singleton t)
+  builtinTypes . Map.toList . userSets
 
 pStrC :: Char -> P -> String
 pStrC c p = operation (op p) ++ c : resource (obj p)
