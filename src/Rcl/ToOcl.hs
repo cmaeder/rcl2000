@@ -2,7 +2,7 @@ module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
 import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
                   toUpper)
-import Data.Map (findWithDefault, toList)
+import Data.Map (filterWithKey, findWithDefault, toList)
 import Data.Maybe (isNothing)
 import qualified Data.Set as Set
 import Numeric (showHex)
@@ -15,7 +15,9 @@ import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
                          (<+>))
 
 toUse :: UserTypes -> [String]
-toUse us = let l = toList us in
+toUse us = let
+  l = toList $ filterWithKey
+    (\ k _ -> k `notElem` map show primTypes) us in
   concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
   ++ concatMap toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ concatMap toOp l ++ [end, "constraints", "context RBAC"]
@@ -145,6 +147,7 @@ setToOclAux us = foldSet FoldSet
       a2 = singleSet us s2 d2
       in case o of
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
+      Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> let p = useOp (mBaseType us s) o in
         cat [text p, parens $ if p == "user" then d else singleSet us s d]
@@ -178,7 +181,7 @@ useBinOp :: Set.Set Base -> BinOp -> String
 useBinOp t o = case o of
   Union -> "union"
   Inter -> "intersection"
-  Minus -> "excludingAll"
+  Minus -> "-"
   Operations b -> let s = "ops" ++ optStar b in case Set.minView t of
     Just (r, _) -> map toLower (show r) ++ s
     _ -> s
