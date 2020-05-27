@@ -21,17 +21,17 @@ mBaseType :: UserTypes -> Set -> Set.Set Base
 mBaseType us = Set.map baseType . typeOfSet us
 
 typeOfSet :: UserTypes -> Set -> Set.Set SetType
-typeOfSet us s = getType $ evalState (tySet us s) ""
+typeOfSet us s = getType $ evalState (tySet us s) []
 
 wellTyped :: UserTypes -> Stmt -> Maybe String
-wellTyped us s = case execState (ty us s) "" of
-  "" -> Nothing
-  e -> Just $ e ++ "\n  in: " ++ ppStmt s
+wellTyped us s = case execState (ty us s) [] of
+  [] -> Nothing
+  e -> Just $ unlines e ++ "  in: " ++ ppStmt s
 
-report :: String -> State String ()
-report = modify . const
+report :: String -> State [String] ()
+report t = modify (t :)
 
-ty :: UserTypes -> Stmt -> State String Stmt
+ty :: UserTypes -> Stmt -> State [String] Stmt
 ty us = foldStmt FoldStmt
   { foldBool = \ _ o s1 s2 -> do
     r1 <- s1
@@ -51,11 +51,12 @@ ty us = foldStmt FoldStmt
                   Set.filter (ifSet (`Set.member` ts1) False) ts2
                   else compatSetTys ts1 ts2
                 filt t = any (`Set.member` ts) [t, SetOf t]
+                filt0 f = if Set.null ts then const True else f
                 filt1 t = if o == Elem then SetOf t `Set.member` ts else filt t
                 filt2 t = if o == Elem then t `Set.member` ts else filt t
-            b1 <- ft filt1 s1
-            b2 <- ft filt2 s2
-            when (null ts) $ md "wrongly typed relation"
+            b1 <- ft (filt0 filt1) s1
+            b2 <- ft (filt0 filt2) s2
+            when (Set.null ts) $ md "wrongly typed relation"
             pure . CmpOp o (Term TheSet b1) $ Term TheSet b2
         (Term TheSet s1, EmptySet) | o `elem` [Eq, Ne] -> do
           n <- ft (const True) s1
@@ -67,7 +68,7 @@ ty us = foldStmt FoldStmt
           md "wrong comparison"
           pure r } (tyTerm us)
 
-tyTerm :: UserTypes -> Term -> State String Term
+tyTerm :: UserTypes -> Term -> State [String] Term
 tyTerm us t = case t of
   Term b s -> do
     r <- tySet us s
@@ -78,20 +79,23 @@ tyTerm us t = case t of
       TheSet -> pure $ Term b r
   _ -> pure t
 
-disambig :: SetType -> Set -> State String Set
+disambig :: SetType -> Set -> State [String] Set
 disambig t s = let
   rt = mkTypedSet (Set.singleton t)
   r = rt s
-  ft = filterType ("set: " ++ ppSet s) True
+  filt str f a = filterType (str ++ " set: " ++ ppSet a) True f a
+  ft str = filt str (\ ts -> case t of
+      SetOf st -> st == ts
+      _ -> t == ts)
   in case s of
   BinOp o s1 s2 -> case o of
     Operations _ -> pure r
     _ -> do
-      m1 <- ft (eqOrElem t) s1
-      m2 <- ft (eqOrElem t) s2
+      m1 <- ft "left" s1
+      m2 <- ft "right" s2
       pure . rt $ BinOp o m1 m2
   UnOp o s1 -> if isOp o then pure r else do
-      r1 <- ft (\ t1 -> case o of
+      r1 <- filt "argument" (\ t1 -> case o of
         OE -> SetOf t == t1
         AO -> t1 == t
         Typed ts -> t1 == t && Set.member t ts
@@ -99,12 +103,7 @@ disambig t s = let
       pure . rt $ UnOp o r1
   _ -> pure r
 
-eqOrElem :: SetType -> SetType -> Bool
-eqOrElem t1 t2 = case t1 of
-  SetOf s -> s == t2
-  _ -> t1 == t2
-
-filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State String Set
+filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State [String] Set
 filterType str b f s = let
   md m = report $ m ++ " " ++ str
   t = getType s
@@ -122,7 +121,7 @@ filterType str b f s = let
     when b . md $ "ambiguous (" ++ ppType rs ++ ")"
     pure . mkTypedSet rs $ getUntypedSet s
 
-tySet :: UserTypes -> Set -> State String Set
+tySet :: UserTypes -> Set -> State [String] Set
 tySet us = let
   md t s = report $ t ++ ": " ++ ppSet s
   in foldSet FoldSet
@@ -139,9 +138,11 @@ tySet us = let
         _ -> do
           let ts = compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-          b1 <- filterType "" False filt a1
-          b2 <- filterType "" False filt a2
-          when (null ts) $ md "wrongly typed set operation" s
+              ft a = filterType ("set: " ++ ppSet a) False
+                (if Set.null ts then const True else filt) a
+          b1 <- ft a1
+          b2 <- ft a2
+          when (Set.null ts) $ md "wrongly typed set operation" s
           pure . mkTypedSet ts $ BinOp o b1 b2
   , foldUn = \ s o s1 -> do
       a1 <- s1
