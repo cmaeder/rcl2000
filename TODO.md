@@ -1,9 +1,5 @@
 # TODO
 
-## Nested sets
-
-- [ ] do not work properly (CR = CR) and toOcl (isElem Test)
-
 ## Interactive interface (issue #6)
 
 - [ ] allow to write out changed sessions
