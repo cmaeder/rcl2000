@@ -137,7 +137,7 @@ tySet us = let
             $ BinOp o b1 b2 -- R + U x OBJ -> 2^OP
         _ -> do
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
-                $ compatSetTys (getType a1) $ getType a2
+                . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
               ft a = filterType ("set: " ++ ppSet a) False
                 (if Set.null ts then const True else filt) a
