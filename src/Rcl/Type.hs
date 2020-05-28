@@ -32,7 +32,7 @@ report :: String -> State [String] ()
 report t = modify (t :)
 
 ty :: UserTypes -> Stmt -> State [String] Stmt
-ty us = foldStmt FoldStmt
+ty = foldStmt FoldStmt
   { foldBool = \ _ o s1 s2 -> do
     r1 <- s1
     BoolOp o r1 <$> s2
@@ -66,7 +66,7 @@ ty us = foldStmt FoldStmt
         (Num _, Term Card _) | o /= Elem -> pure r
         _ -> do
           md "wrong comparison"
-          pure r } (tyTerm us)
+          pure r } . tyTerm
 
 tyTerm :: UserTypes -> Term -> State [String] Term
 tyTerm us t = case t of
@@ -136,7 +136,8 @@ tySet us = let
           pure . mkTypedSet (Set.singleton $ toSet OP)
             $ BinOp o b1 b2 -- R + U x OBJ -> 2^OP
         _ -> do
-          let ts = compatSetTys (getType a1) $ getType a2
+          let ts = Set.map (\ t -> if isElem t then SetOf t else t)
+                $ compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
               ft a = filterType ("set: " ++ ppSet a) False
                 (if Set.null ts then const True else filt) a

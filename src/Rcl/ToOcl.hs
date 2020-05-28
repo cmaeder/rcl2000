@@ -115,7 +115,8 @@ stmtToOcl us = foldStmt FoldStmt
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
-      _ -> sep [singleTerm us s1 d1, pCmpOp o <+> singleTerm us s2 d2] }
+      _ -> let (a1, a2) = singleTerm us s1 s2 d1 d2 in
+        sep [a1, pCmpOp o <+> a2] }
   $ termToOcl us
 
 parenStmt :: Stmt -> Doc -> Doc
@@ -131,10 +132,11 @@ termToOcl us t = case t of
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
-singleTerm :: UserTypes -> Term -> Doc -> Doc
-singleTerm us t = case t of
-  Term TheSet s -> singleSet us s
-  _ -> id
+singleTerm :: UserTypes -> Term -> Term -> Doc -> Doc -> (Doc, Doc)
+singleTerm us t1 t2 d1 d2 = case (t1, t2) of
+  (Term TheSet s1, Term TheSet s2) -> let (b1, b2) = cast us s1 s2 in
+    (singleton b1 d1, singleton b2 d2)
+  _ -> (d1, d2)
 
 setToOcl :: UserTypes -> Set -> Doc
 setToOcl = setToOclAux
@@ -143,8 +145,14 @@ setToOclAux :: UserTypes -> Set -> Doc
 setToOclAux us = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
       p = text $ useBinOp (mBaseType us s1) o
-      a1 = singleSet us s1 d1
-      a2 = singleSet us s2 d2
+      (b1, b2) = cast us s1 s2
+      c1 = elemType us s1
+      c2 = elemType us s2
+      fs b c = singleton $ case o of
+        Operations _ -> c
+        _ -> b || c
+      a1 = fs b1 c1 d1
+      a2 = fs b2 c2 d2
       in case o of
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> parens $ hcat [a1, p, a2]
@@ -159,13 +167,25 @@ setToOclAux us = foldSet FoldSet
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
-singleSet :: UserTypes -> Set -> Doc -> Doc
-singleSet us = singleSetType . typeOfSet us
+cast :: UserTypes -> Set -> Set -> (Bool, Bool)
+cast us s1 s2 =
+  let ts1 = typeOfSet us s1
+      ts2 = typeOfSet us s2
+      f ts = any ((`Set.member` ts) . SetOf) . Set.toList
+      b1 = f ts2 ts1
+      b2 = f ts1 ts2
+  in (b1, b2)
 
-singleSetType :: Set.Set SetType -> Doc -> Doc
-singleSetType t d = case Set.minView t of
-  Just (m, s) | Set.null s && isElem m -> hcat [text "Set", braces d]
-  _ -> d
+singleSet :: UserTypes -> Set -> Doc -> Doc
+singleSet us = singleton . elemType us
+
+elemType :: UserTypes -> Set -> Bool
+elemType us s = case Set.toList $ typeOfSet us s of
+  m : _ -> isElem m
+  _ -> False
+
+singleton :: Bool -> Doc -> Doc
+singleton b d = if b then hcat [text "Set", braces d] else d
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
