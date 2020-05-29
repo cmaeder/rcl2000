@@ -13,9 +13,9 @@ import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Model (addSURs, initSess)
-import Rcl.Parse (stmt, set)
+import Rcl.Parse (set, stmt)
 import Rcl.Print (lineStmt)
-import Rcl.Type (wellTyped, typeSet)
+import Rcl.Type (typeSet, wellTyped)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
