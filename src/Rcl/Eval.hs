@@ -75,7 +75,7 @@ loop l m = do
           else outputStrLn ("unknown session: " ++ si) >> loop l m
       _ -> case (sp, fp) of
         (Right a, _) -> do
-          outputStrLn $ case eval us m IntMap.empty a of
+          outputStrLn $ case eval m IntMap.empty a of
             Left f -> f
             Right v -> stValue m v
           loop l m

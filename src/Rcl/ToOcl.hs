@@ -9,7 +9,7 @@ import Numeric (showHex)
 
 import Rcl.Ast
 import Rcl.Reduce (runReduce)
-import Rcl.Type (isElem, mBaseType, typeOfSet, wellTyped)
+import Rcl.Type (isElem, mBaseType, wellTyped)
 
 import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
                          (<+>))
@@ -115,7 +115,7 @@ stmtToOcl us = foldStmt FoldStmt
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
-      _ -> let (a1, a2) = singleTerm us s1 s2 d1 d2 in
+      _ -> let (a1, a2) = singleTerm s1 s2 d1 d2 in
         sep [a1, pCmpOp o <+> a2] }
   $ termToOcl us
 
@@ -132,9 +132,9 @@ termToOcl us t = case t of
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
-singleTerm :: UserTypes -> Term -> Term -> Doc -> Doc -> (Doc, Doc)
-singleTerm us t1 t2 d1 d2 = case (t1, t2) of
-  (Term TheSet s1, Term TheSet s2) -> let (b1, b2) = cast us s1 s2 in
+singleTerm :: Term -> Term -> Doc -> Doc -> (Doc, Doc)
+singleTerm t1 t2 d1 d2 = case (t1, t2) of
+  (Term TheSet s1, Term TheSet s2) -> let (b1, b2) = cast s1 s2 in
     (singleton b1 d1, singleton b2 d2)
   _ -> (d1, d2)
 
@@ -144,10 +144,10 @@ setToOcl = setToOclAux
 setToOclAux :: UserTypes -> Set -> Doc
 setToOclAux us = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
-      p = text $ useBinOp (mBaseType us s1) o
-      (b1, b2) = cast us s1 s2
-      c1 = elemType us s1
-      c2 = elemType us s2
+      p = text $ useBinOp (mBaseType s1) o
+      (b1, b2) = cast s1 s2
+      c1 = elemType s1
+      c2 = elemType s2
       fs b c = singleton $ case o of
         Operations _ -> c
         _ -> b || c
@@ -159,8 +159,8 @@ setToOclAux us = foldSet FoldSet
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
       Typed _ -> d
-      _ -> let p = useOp (mBaseType us s) o in
-        cat [text p, parens $ if p == "user" then d else singleSet us s d]
+      _ -> let p = useOp (mBaseType s) o in
+        cat [text p, parens $ if p == "user" then d else singleSet s d]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> let ts = findWithDefault Set.empty t us in
         case Set.minView ts of
@@ -169,20 +169,20 @@ setToOclAux us = foldSet FoldSet
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
-cast :: UserTypes -> Set -> Set -> (Bool, Bool)
-cast us s1 s2 =
-  let ts1 = typeOfSet us s1
-      ts2 = typeOfSet us s2
+cast :: Set -> Set -> (Bool, Bool)
+cast s1 s2 =
+  let ts1 = getType s1
+      ts2 = getType s2
       f ts = any ((`Set.member` ts) . SetOf) . Set.toList
       b1 = f ts2 ts1
       b2 = f ts1 ts2
   in (b1, b2)
 
-singleSet :: UserTypes -> Set -> Doc -> Doc
-singleSet us = singleton . elemType us
+singleSet :: Set -> Doc -> Doc
+singleSet = singleton . elemType
 
-elemType :: UserTypes -> Set -> Bool
-elemType us s = case Set.toList $ typeOfSet us s of
+elemType :: Set -> Bool
+elemType s = case Set.toList $ getType s of
   m : _ -> isElem m
   _ -> False
 

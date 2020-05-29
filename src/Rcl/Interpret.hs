@@ -13,7 +13,7 @@ import Rcl.Ast
 import Rcl.Data
 import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Reduce (runReduce)
-import Rcl.Type (mBaseType, typeOfSet, wellTyped)
+import Rcl.Type (mBaseType, wellTyped)
 
 type Env = IntMap Value
 
@@ -46,10 +46,10 @@ printVar vs k e = case find (\ (MkVar i _ _, _) -> i == k) vs of
 interpret :: UserTypes -> Model -> Env -> (Stmt, Vars)
   -> Either (Either String Env) ()
 interpret us m e (s, vs) = case vs of
-  [] -> case evalStmt us m e s of
+  [] -> case evalStmt m e s of
     Right b -> if b then Right () else Left $ Right e
     Left f -> Left $ Left f
-  (MkVar i _ _, a) : rs -> case eval us m e a of
+  (MkVar i _ _, a) : rs -> case eval m e a of
     Right v -> case v of
       Ints is -> mapM_ (\ j -> interpret us m (IntMap.insert i
         (Ints $ IntSet.singleton j) e) (s, rs)) $ IntSet.toList is
@@ -57,8 +57,8 @@ interpret us m e (s, vs) = case vs of
         $ Set.toList es
     Left f -> Left $ Left f
 
-evalStmt :: UserTypes -> Model -> Env -> Stmt -> Either String Bool
-evalStmt us m e = foldStmt FoldStmt
+evalStmt :: Model -> Env -> Stmt -> Either String Bool
+evalStmt m e = foldStmt FoldStmt
   { foldBool = \ _ o e1 e2 -> case (e1, e2) of
     (Left _, _) -> e1
     (_, Left _) -> e2
@@ -80,7 +80,7 @@ evalStmt us m e = foldStmt FoldStmt
         _ -> t1 /= t2
       _ -> case (t1, t2) of
         (VNum i1, VNum i2) -> Right $ cmpOp o i1 i2
-        _ -> Left $ "unexpected: " ++ t } (evalTerm us m e)
+        _ -> Left $ "unexpected: " ++ t } (evalTerm m e)
 
 cmpOp :: CmpOp -> Int -> Int -> Bool
 cmpOp o = case o of
@@ -92,9 +92,9 @@ cmpOp o = case o of
   Ne -> (/=)
   Elem -> error "cmpOp"
 
-evalTerm :: UserTypes -> Model -> Env -> Term -> TermVal
-evalTerm us m e t = case t of
-  Term card s -> case eval us m e s of
+evalTerm :: Model -> Env -> Term -> TermVal
+evalTerm m e t = case t of
+  Term card s -> case eval m e s of
     Left f -> Error f
     Right v -> case card of
       Card -> VNum $ vSize v
@@ -102,8 +102,8 @@ evalTerm us m e t = case t of
   EmptySet -> VEmptySet
   Num n -> VNum n
 
-eval :: UserTypes -> Model -> Env -> Set -> Either String Value
-eval us m e = foldSet FoldSet
+eval :: Model -> Env -> Set -> Either String Value
+eval m e = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o v1 v2 -> let
       t1 = ppSet s1
       t2 = ppSet s2 in case (v1, v2) of
@@ -113,7 +113,7 @@ eval us m e = foldSet FoldSet
       Operations b -> let stOps = stUnOp o in case (r1, r2) of
         (Ints is, Ints os) -> Right . Ints $ IntSet.unions
           [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- let rs = if Set.member U $ mBaseType us s1 then
+            | r <- let rs = if Set.member U $ mBaseType s1 then
                          apply m "Ur" is else is
                    in IntSet.toList $ if b == Star then apply m "j" rs else rs
             , ob <- IntSet.toList os]
@@ -138,7 +138,7 @@ eval us m e = foldSet FoldSet
   , foldUn = \ (UnOp _ s) o v -> case o of
     Typed _ -> v
     _ -> let
-      p = sUnOp (fmap fst . Set.minView $ typeOfSet us s) o
+      p = sUnOp (fmap fst . Set.minView $ getType s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
         User _ Star -> Right . Ints . apply m p $ apply m "s" is

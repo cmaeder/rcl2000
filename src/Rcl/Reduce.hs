@@ -2,12 +2,12 @@ module Rcl.Reduce (reduction, runReduce) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
-import Data.Char (toLower)
-import qualified Data.Set as Set (minView)
+import Data.Char (isLetter, toLower)
+import qualified Data.Set as Set (toList)
 
 import Rcl.Ast
 import Rcl.Print (ppSet, ppStmt, prStmt)
-import Rcl.Type (elemType, typeOfSet)
+import Rcl.Type (elemType, wellTyped)
 
 mapStmt :: FoldStmt Term Stmt
 mapStmt = FoldStmt
@@ -68,11 +68,11 @@ reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
 reduce us i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    let ts = elemType $ typeOfSet us r
-        p = case Set.minView ts of
-          Just (ElemTy e, _) -> show e
-          _ -> ppSet r
-        v = MkVar i (take 2 $ map toLower p) ts
+    let ts = elemType $ getType r
+        p = case Set.toList ts of
+          ElemTy e : _ -> show e
+          _ -> ppSet $ getUntypedSet r
+        v = MkVar i (take 2 . map toLower $ filter isLetter p) ts
     modify ((v, r) :)
     reduce us (i + 1) $ replaceOE r (Var v) s
 
@@ -82,8 +82,8 @@ runReduce us s = runState (reduce us 1 $ replaceAO s) []
 construct :: Stmt -> Vars -> Stmt
 construct = foldl (flip replaceVar)
 
-checkVar :: UserTypes -> (Var, Set) -> String
-checkVar us (i@(MkVar _ _ t), r) = let s = elemType $ typeOfSet us r in
+checkVar :: (Var, Set) -> String
+checkVar (i@(MkVar _ _ t), r) = let s = elemType $ getType r in
   if s == t then ""
   else "type missmatch in variable " ++ stVar i ++ ':' : ppType t
     ++ " versus " ++ ppSet r ++ ':' : ppType s
@@ -107,13 +107,15 @@ replMinus = foldSet mapSet
       _ -> BinOp o s1 s2 }
 
 reduceAndReconstruct :: UserTypes -> Stmt -> [String]
-reduceAndReconstruct us s = let
-  p@(r, vs) = runReduce us s
-  t = prStmt p
-  errs = filter (not . null) $ map (checkVar us) vs
-  n = replaceMinus (construct r vs)
-  in if null errs then if n == s then [t] else ["given: " ++ ppStmt s
-  , "reduced: " ++ t, "reconstructed: " ++ ppStmt n] else errs
+reduceAndReconstruct us so = case wellTyped us so of
+  Right s -> let
+    p@(r, vs) = runReduce us s
+    t = prStmt p
+    errs = filter (not . null) $ map checkVar vs
+    n = replaceMinus (construct r vs)
+    in if null errs then if n == s then [t] else ["given: " ++ ppStmt s
+    , "reduced: " ++ t, "reconstructed: " ++ ppStmt n] else errs
+  Left e -> [e]
 
 reduction :: UserTypes -> [Stmt] -> String
 reduction us = unlines . concatMap (reduceAndReconstruct us)

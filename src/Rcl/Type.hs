@@ -1,8 +1,8 @@
 module Rcl.Type (addPrimTypes, elemType, isElem, mBaseType, typeErrors,
-                 typeOfSet, typeSet, wellTyped) where
+                 typeSet, wellTyped) where
 
 import Control.Monad (unless, when)
-import Control.Monad.State (State, evalState, modify, runState)
+import Control.Monad.State (State, modify, runState)
 import Data.Either (lefts)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -17,11 +17,8 @@ addPrimTypes = flip (foldr $ \ b -> Map.insertWith Set.union (show b)
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . lefts . map (wellTyped us)
 
-mBaseType :: UserTypes -> Set -> Set.Set Base
-mBaseType us = Set.map baseType . typeOfSet us
-
-typeOfSet :: UserTypes -> Set -> Set.Set SetType
-typeOfSet us s = getType $ evalState (tySet us s) []
+mBaseType :: Set -> Set.Set Base
+mBaseType = Set.map baseType . getType
 
 typeSet :: UserTypes -> Set -> Either String Set
 typeSet us s = case runState (tySet us s >>=
@@ -171,12 +168,6 @@ isOp o = case o of
 
 mkTypedSet :: Set.Set SetType -> Set -> Set
 mkTypedSet ts = if Set.null ts then id else UnOp $ Typed ts
-
-getType :: Set -> Set.Set SetType
-getType s = case s of
-  UnOp (Typed ts) _ -> ts
-  Var (MkVar _ _ ts) -> ts
-  _ -> Set.empty
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
 compatSetTys s1 s2 = case Set.toList s1 of
