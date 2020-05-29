@@ -2,8 +2,8 @@ module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
 import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
                   toUpper)
+import Data.Either (rights)
 import Data.Map (filterWithKey, findWithDefault, toList)
-import Data.Maybe (isNothing)
 import qualified Data.Set as Set
 import Numeric (showHex)
 
@@ -97,7 +97,7 @@ ocl :: UserTypes -> [Stmt] -> String
 ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
     , uncurry (toOcl us) $ runReduce us s]) [1 :: Int ..]
-    (filter (isNothing . wellTyped us) l)
+    (rights $ map (wellTyped us) l)
 
 toOcl :: UserTypes -> Stmt -> Vars -> Doc
 toOcl us = foldl (\ f (i, s) -> cat
@@ -157,7 +157,9 @@ setToOclAux us = foldSet FoldSet
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
-  , foldUn = \ (UnOp _ s) o d -> let p = useOp (mBaseType us s) o in
+  , foldUn = \ (UnOp _ s) o d -> case o of
+      Typed _ -> d
+      _ -> let p = useOp (mBaseType us s) o in
         cat [text p, parens $ if p == "user" then d else singleSet us s d]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> let ts = findWithDefault Set.empty t us in

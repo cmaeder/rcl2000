@@ -6,16 +6,16 @@ import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (delete, insertWith, member, toList)
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set (singleton, toList, union)
+import qualified Data.Set as Set (singleton, union)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Model (addSURs, initSess)
-import Rcl.Parse (parser, set)
-import Rcl.Print (lineStmt, ppSet)
-import Rcl.Type (typeErrors, typeOfSet)
+import Rcl.Parse (stmt, set)
+import Rcl.Print (lineStmt)
+import Rcl.Type (wellTyped, typeSet)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
@@ -45,8 +45,8 @@ loop l m = do
     Nothing -> return () -- Ctrl-D pressed
     Just s -> let
       us = getAllUserTypes m
-      fp = parseAndType us parser typeErrors s
-      sp = parseAndType us (spaces *> set <* eof) typeSet s
+      fp = parseAndType us stmt wellTyped s
+      sp = parseAndType us set typeSet s
       ck w k = isLeft sp && ckCmd w k
       in case words s of
       [] -> loop l m
@@ -79,7 +79,7 @@ loop l m = do
             Left f -> f
             Right v -> stValue m v
           loop l m
-        (_, Right f) -> outputStr (interprets us m f)
+        (_, Right f) -> outputStr (interprets us m [f])
           >> loop l m
         (Left (Left err1), Left (Left err2)) -> do
           outputStrLn err1
@@ -104,16 +104,12 @@ isAdd s = map toLower s == "add"
 keys :: String -> [String]
 keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
-typeSet :: UserTypes -> Set -> String
-typeSet us a = case Set.toList $ typeOfSet us a of
-  [_] -> ""
-  _ -> "wrongly typed set: " ++ ppSet a
-
-parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> String)
+parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> Either String a)
    -> String -> Either (Either String String) a
-parseAndType us p tc s = case parse p "" s of
-  Right a -> let t = tc us a in
-    if null t then Right a else Left $ Right t
+parseAndType us p tc s = case parse (spaces *> p <* eof) "" s of
+  Right a -> case tc us a of
+    Right b -> Right b
+    Left err -> Left $ Right err
   Left err -> Left . Left $ show err
 
 printHelpText :: InputT IO ()

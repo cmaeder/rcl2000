@@ -93,7 +93,7 @@ pPrimSet s = text $ case s of
   _ -> error "pPrimSet"
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
-pParenSet o s = case s of
+pParenSet o s = case getUntypedSet s of
   BinOp i _ _ -> case o of
     Minus -> parens
     Inter -> case i of

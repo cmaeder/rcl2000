@@ -1,12 +1,12 @@
 module Rcl.Interpret (eval, interprets) where
 
+import Data.Either (partitionEithers)
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
-import Data.List (find, partition)
+import Data.List (find)
 import qualified Data.Map as Map
-import Data.Maybe (isNothing, mapMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
@@ -21,9 +21,8 @@ data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
   deriving (Eq, Show)
 
 interprets :: UserTypes -> Model -> [Stmt] -> String
-interprets us m l = let
-  (ws, es) = partition (isNothing . snd) $ map (\ s -> (s, wellTyped us s)) l
-  in unlines $ mapMaybe snd es ++ map (\ (s, _) -> let p = runReduce us s in
+interprets us m l = let (es, ws) = partitionEithers $ map (wellTyped us) l
+  in unlines $ es ++ map (\ s -> let p = runReduce us s in
   (\ r -> prStmt p ++ '\n' : if null r then "verified: " ++ ppStmt s else r)
   $ interpretError us m p) ws
 
@@ -136,7 +135,9 @@ eval us m e = foldSet FoldSet
         _ -> Right . VSet . (if o == Inter then Set.intersection else Set.union)
           (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
-  , foldUn = \ (UnOp _ s) o v -> let
+  , foldUn = \ (UnOp _ s) o v -> case o of
+    Typed _ -> v
+    _ -> let
       p = sUnOp (fmap fst . Set.minView $ typeOfSet us s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of

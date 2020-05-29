@@ -71,6 +71,11 @@ foldSet r s = case s of
   UnOp o p -> foldUn r s o $ foldSet r p
   _ -> foldPrim r s
 
+getUntypedSet :: Set -> Set
+getUntypedSet s = case s of
+  UnOp (Typed _) e -> getUntypedSet e
+  _ -> s
+
 foldSetType :: (a -> a) -> (Base -> a) -> SetType -> a
 foldSetType f g s = case s of
   ElemTy b -> g b

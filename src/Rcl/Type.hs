@@ -1,10 +1,10 @@
 module Rcl.Type (addPrimTypes, elemType, isElem, mBaseType, typeErrors,
-                 typeOfSet, wellTyped) where
+                 typeOfSet, typeSet, wellTyped) where
 
 import Control.Monad (unless, when)
-import Control.Monad.State (State, evalState, execState, modify)
+import Control.Monad.State (State, evalState, modify, runState)
+import Data.Either (lefts)
 import qualified Data.Map as Map
-import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
@@ -15,7 +15,7 @@ addPrimTypes = flip (foldr $ \ b -> Map.insertWith Set.union (show b)
   . Set.singleton $ toSet b) primTypes
 
 typeErrors :: UserTypes -> [Stmt] -> String
-typeErrors us = unlines . mapMaybe (wellTyped us)
+typeErrors us = unlines . lefts . map (wellTyped us)
 
 mBaseType :: UserTypes -> Set -> Set.Set Base
 mBaseType us = Set.map baseType . typeOfSet us
@@ -23,10 +23,16 @@ mBaseType us = Set.map baseType . typeOfSet us
 typeOfSet :: UserTypes -> Set -> Set.Set SetType
 typeOfSet us s = getType $ evalState (tySet us s) []
 
-wellTyped :: UserTypes -> Stmt -> Maybe String
-wellTyped us s = case execState (ty us s) [] of
-  [] -> Nothing
-  e -> Just $ unlines e ++ "  in: " ++ ppStmt s
+typeSet :: UserTypes -> Set -> Either String Set
+typeSet us s = case runState (tySet us s >>=
+    filterType ("set: " ++ ppSet s) True (const True)) [] of
+  (t, []) -> Right t
+  (_, l) -> Left $ unlines l
+
+wellTyped :: UserTypes -> Stmt -> Either String Stmt
+wellTyped us s = case runState (ty us s) [] of
+  (t, []) -> Right t
+  (_, e) -> Left $ unlines e ++ "  in: " ++ ppStmt s
 
 report :: String -> State [String] ()
 report t = modify (t :)
@@ -74,7 +80,7 @@ tyTerm us t = case t of
     r <- tySet us s
     case b of
       Card -> do
-        n <- filterType ("cardinality: " ++ ppSet s) True (const True) s
+        n <- filterType ("cardinality: " ++ ppSet s) True (const True) r
         pure $ Term b n
       TheSet -> pure $ Term b r
   _ -> pure t
@@ -171,11 +177,6 @@ getType s = case s of
   UnOp (Typed ts) _ -> ts
   Var (MkVar _ _ ts) -> ts
   _ -> Set.empty
-
-getUntypedSet :: Set -> Set
-getUntypedSet s = case s of
-  UnOp (Typed _) e -> getUntypedSet e
-  _ -> s
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
 compatSetTys s1 s2 = case Set.toList s1 of
