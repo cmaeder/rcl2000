@@ -2,9 +2,8 @@ module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar,
   Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
-import Text.PrettyPrint (Doc, Mode (OneLineMode), braces, cat, hcat, int, mode,
-                         parens, render, renderStyle, sep, style, text, vcat,
-                         (<+>))
+import Text.PrettyPrint (Doc, Mode (OneLineMode), cat, hcat, int, mode, parens,
+                         render, renderStyle, sep, style, text, vcat, (<+>))
 
 data Form = Form { format :: Format, prParen :: Bool }
 
@@ -78,7 +77,7 @@ pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet
   { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp f o in case o of
     Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
-    Minus -> cat [pParenSet o s1 d1, hcat [p, braces d2]]
+    Minus -> cat [pParenSet o s1 d1, hcat [p, pParenSet o s2 d2]]
     _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
   , foldUn = \ _ o d -> case o of
       Typed _ -> d
