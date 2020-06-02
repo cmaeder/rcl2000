@@ -27,15 +27,15 @@ typeSet us s = case runState (tySet us s >>=
   (_, l) -> Left $ unlines l
 
 wellTyped :: UserTypes -> Stmt -> Either String Stmt
-wellTyped us s = case runState (ty us s) [] of
+wellTyped us s = case runState (tyStmt us s) [] of
   (t, []) -> Right t
   (_, e) -> Left $ unlines e ++ "  in: " ++ ppStmt s
 
 report :: String -> State [String] ()
 report t = modify (t :)
 
-ty :: UserTypes -> Stmt -> State [String] Stmt
-ty = foldStmt FoldStmt
+tyStmt :: UserTypes -> Stmt -> State [String] Stmt
+tyStmt = foldStmt FoldStmt
   { foldBool = \ _ o s1 s2 -> do
     r1 <- s1
     BoolOp o r1 <$> s2
@@ -87,9 +87,7 @@ disambig t s = let
   rt = mkTypedSet (Set.singleton t)
   r = rt s
   filt str f a = filterType (str ++ " set: " ++ ppSet a) True f a
-  ft str = filt str (\ ts -> case t of
-      SetOf st -> st == ts
-      _ -> t == ts)
+  ft str = filt str (\ ts -> t == ts || t == SetOf ts)
   in case s of
   BinOp o s1 s2 -> case o of
     Operations _ -> pure r
@@ -112,6 +110,8 @@ filterType str b f s = let
   t = getType s
   l = Set.toList t
   r = filter f l
+  rs = Set.fromList r
+  mt = mkTypedSet rs
   in case r of
   [] -> do
     unless (null l) $ md "wrongly typed"
@@ -120,9 +120,8 @@ filterType str b f s = let
     _ : _ : _ -> disambig a $ getUntypedSet s
     _ -> pure s
   _ -> do
-    let rs = Set.fromList r
-    when b . md $ "ambiguous (" ++ ppType rs ++ ")"
-    pure . mkTypedSet rs $ getUntypedSet s
+    when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "' of"
+    pure . mt $ getUntypedSet s
 
 tySet :: UserTypes -> Set -> State [String] Set
 tySet us = let
@@ -151,7 +150,7 @@ tySet us = let
   , foldUn = \ s o s1 -> do
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
-      pure $ if Set.null $ getType b1 then UnOp o b1 else opResult o b1
+      pure $ opResult o b1
   , foldPrim = \ s -> case s of
       PrimSet p -> do
         let ts = Map.findWithDefault Set.empty p us
