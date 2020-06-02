@@ -87,7 +87,7 @@ disambig t s = let
   rt = mkTypedSet (Set.singleton t)
   r = rt s
   filt str f a = filterType (str ++ " set: " ++ ppSet a) True f a
-  ft str = filt str (\ ts -> t == ts || t == SetOf ts)
+  ft str = filt str (\ ts -> t `elem` [ts, SetOf ts])
   in case s of
   BinOp o s1 s2 -> case o of
     Operations _ -> pure r
@@ -141,7 +141,7 @@ tySet us = let
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-              ft a = filterType ("set: " ++ ppSet a) False
+              ft a = filterType ("set: " ++ ppSet a) (Set.size ts == 1)
                 (if Set.null ts then const True else filt) a
           b1 <- ft a1
           b2 <- ft a2
