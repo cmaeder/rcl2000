@@ -120,7 +120,7 @@ filterType str b f s = let
     _ : _ : _ -> disambig a $ getUntypedSet s
     _ -> pure s
   _ -> do
-    when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "' of"
+    when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "'"
     pure . mt $ getUntypedSet s
 
 tySet :: UserTypes -> Set -> State [String] Set
@@ -141,7 +141,7 @@ tySet us = let
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-              ft a = filterType ("set: " ++ ppSet a) (Set.size ts == 1)
+              ft a = filterType ("set: " ++ ppSet a) (Set.size ts <= 1)
                 (if Set.null ts then const True else filt) a
           b1 <- ft a1
           b2 <- ft a2
