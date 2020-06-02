@@ -45,7 +45,7 @@ tyStmt = foldStmt FoldStmt
     let r = CmpOp o t1 t2
         str = ppStmt r
         md m = report $ m ++ ": " ++ str
-        ft = filterType ("comparison: " ++ str) True
+        ft = filterType ("in relation: " ++ str) True
     case (t1, t2) of
         (Term TheSet s1, Term TheSet s2) | o `elem` [Eq, Ne, Elem] -> do
             let ts1 = getType s1
@@ -77,26 +77,26 @@ tyTerm us t = case t of
     r <- tySet us s
     case b of
       Card -> do
-        n <- filterType ("cardinality: " ++ ppSet s) True (const True) r
+        n <- filterType ("in cardinality of: " ++ ppSet s) True (const True) r
         pure $ Term b n
       TheSet -> pure $ Term b r
   _ -> pure t
 
-disambig :: SetType -> Set -> State [String] Set
-disambig t s = let
+disambig :: String -> SetType -> Set -> State [String] Set
+disambig str t s = let
   rt = mkTypedSet (Set.singleton t)
   r = rt s
-  filt str f a = filterType (str ++ " set: " ++ ppSet a) True f a
-  ft str = filt str (\ ts -> t `elem` [ts, SetOf ts])
+  filt = filterType str True
+  ft = filt (\ ts -> t `elem` [ts, SetOf ts])
   in case s of
   BinOp o s1 s2 -> case o of
     Operations _ -> pure r
     _ -> do
-      m1 <- ft "left" s1
-      m2 <- ft "right" s2
+      m1 <- ft s1
+      m2 <- ft s2
       pure . rt $ BinOp o m1 m2
   UnOp o s1 -> if isOp o then pure r else do
-      r1 <- filt "argument" (\ t1 -> case o of
+      r1 <- filt (\ t1 -> case o of
         OE -> SetOf t == t1
         AO -> t1 == t
         Typed ts -> t1 == t && Set.member t ts
@@ -117,7 +117,7 @@ filterType str b f s = let
     unless (null l) $ md "wrongly typed"
     pure $ getUntypedSet s
   [a] -> case l of
-    _ : _ : _ -> disambig a $ getUntypedSet s
+    _ : _ : _ -> disambig str a $ getUntypedSet s
     _ -> pure s
   _ -> do
     when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "'"
@@ -141,8 +141,8 @@ tySet us = let
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-              ft a = filterType ("set: " ++ ppSet a) (Set.size ts <= 1)
-                (if Set.null ts then const True else filt) a
+              ft = filterType ("in set: " ++ ppSet s) (Set.size ts <= 1)
+                (if Set.null ts then const True else filt)
           b1 <- ft a1
           b2 <- ft a2
           when (Set.null ts) $ md "wrongly typed set operation" s
