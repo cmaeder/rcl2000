@@ -19,8 +19,6 @@
 
 ## RCL extensions
 
-- [ ] allow type annotations for disambiguation
-
 - [ ] support multiple types for user sets
 
 - [ ] better set notation for user sets (with optional type)

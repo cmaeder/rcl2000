@@ -2,7 +2,10 @@ module Rcl.Parse (set, stmt, parser, ParseError) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)
+import qualified Data.Set as Set (singleton)
+
 import Rcl.Ast
+
 import Text.ParserCombinators.Parsec
 
 parser :: Parser [Stmt]
@@ -71,13 +74,12 @@ mayBe f a = maybe a $ f a
 
 minusSet :: Parser Set
 minusSet = mayBe (BinOp Minus)
-  <$> applSet <*> optionMaybe (pch '-' *> (braceSet <|> primSet))
+  <$> applSet <*> optionMaybe (pch '-' *> typedSet)
 
-braceSet :: Parser Set
-braceSet = pch '{' *> set <* pch '}'
+-- braceSet :: Parser Set -- braceSet = pch '{' *> set <* pch '}'
 
 applSet :: Parser Set
-applSet = unOpSet <|> opsSet <|> primSet
+applSet = unOpSet <|> opsSet <|> typedSet
 
 opsSet :: Parser Set
 opsSet = do
@@ -85,11 +87,20 @@ opsSet = do
   let p = BinOp o <$> (pch '(' *> set <* pch ',') <*> set <* pch ')'
   if o == Operations TheOp then p <|> return (PrimSet $ stUnOp o) else p
 
+typedSet :: Parser Set
+typedSet = (\ p -> maybe p (\ t -> UnOp (Typed $ Set.singleton t) p))
+  <$> primSet <*> optionMaybe (pch ':' *> pType)
+
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet
 
 setName :: Parser String
 setName = (:) <$> letter <*> many (alphaNum <|> char '_')
+
+pType :: Parser SetType
+pType = foldr (const SetOf) . ElemTy
+  <$> choice (map (\ a -> string (show a) >> return a) primTypes)
+  <*> (many (char 's') <* skip)
 
 unOpSet :: Parser Set
 unOpSet = do
