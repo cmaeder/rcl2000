@@ -76,7 +76,11 @@ minusSet :: Parser Set
 minusSet = mayBe (BinOp Minus)
   <$> applSet <*> optionMaybe (pch '-' *> typedSet)
 
--- braceSet :: Parser Set -- braceSet = pch '{' *> set <* pch '}'
+bracedSet :: Parser Set
+bracedSet = Braced <$> (pch '{' *> sets <* pch '}')
+
+sets :: Parser [Set]
+sets = (:) <$> set <*> many (optional (pch ',') *> set)
 
 applSet :: Parser Set
 applSet = unOpSet <|> opsSet <|> typedSet
@@ -92,7 +96,7 @@ typedSet = (\ p -> maybe p (\ t -> UnOp (Typed Explicit $ Set.singleton t) p))
   <$> primSet <*> optionMaybe (pch ':' *> pType)
 
 primSet :: Parser Set
-primSet = (PrimSet <$> setName <* skip) <|> parenSet
+primSet = (PrimSet <$> setName <* skip) <|> parenSet <|> bracedSet
 
 setName :: Parser String
 setName = (:) <$> letter <*> many (alphaNum <|> char '_')

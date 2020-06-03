@@ -2,8 +2,7 @@ module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar,
   Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
-import Text.PrettyPrint (Doc, Mode (OneLineMode), cat, hcat, int, mode, parens,
-                         render, renderStyle, sep, style, text, vcat, (<+>))
+import Text.PrettyPrint
 
 data Form = Form { format :: Format, prParen :: Bool }
 
@@ -86,6 +85,7 @@ pSet m = let f = format m in foldSet FoldSet
         , text $ ':' : ppType ts]
       _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)
           [pUnOp m o, if b then parens d else d]
+  , foldBraced = \ _ ds -> braces . fsep $ punctuate comma ds
   , foldPrim = pPrimSet }
 
 pPrimSet :: Set -> Doc

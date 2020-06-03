@@ -121,19 +121,9 @@ eval m e = foldSet FoldSet
           ++ stOps ++ " first argument: " ++ t1
         (_, VSet _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " second argument: " ++ t2
-      Minus -> case (r1, r2) of
-        (VSet s, _) -> if r2 `Set.member` s then
-           Right . VSet $ Set.delete r2 s else
-           Left $ t2 ++ " is no member of nested set: " ++ t1
-        (Ints is, Ints js) -> if js `IntSet.isSubsetOf` is
-          && IntSet.size js == 1 then Right . Ints $ is IntSet.\\ js
-          else Left $ t2 ++ " is no member of simple set : " ++ t1
-        _ -> Left $ "unexpected minus set: " ++ t2
       _ -> if sameNesting r1 r2 then case (r1, r2) of
-        (Ints is, Ints js) -> Right . Ints
-          $ (if o == Inter then IntSet.intersection else IntSet.union) is js
-        _ -> Right . VSet . (if o == Inter then Set.intersection else Set.union)
-          (toVSet r1) $ toVSet r2
+        (Ints is, Ints js) -> Right . Ints $ toIntOp o is js
+        _ -> Right . VSet . toOp o (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
   , foldUn = \ (UnOp _ s) o v -> case o of
     Typed _ _ -> v
@@ -165,7 +155,36 @@ eval m e = foldSet FoldSet
           else Right $ Set.findMax vs
         _ -> Left $ "unexpected set of set for " ++ stUnOp o ++ ": " ++ t
       _ -> v
+  , foldBraced = \ _ vs -> do
+      ss <- sequence vs
+      Right $ if all isSingle ss then Ints . IntSet.unions $ map getInts ss else
+        VSet $ Set.fromList ss
   , foldPrim = evalPrim m e }
+
+toIntOp :: BinOp -> IntSet.IntSet -> IntSet.IntSet -> IntSet.IntSet
+toIntOp o = case o of
+  Inter -> IntSet.intersection
+  Union -> IntSet.union
+  Minus -> (IntSet.\\)
+  _ -> error "toIntOp"
+
+toOp :: BinOp -> Set.Set Value -> Set.Set Value -> Set.Set Value
+toOp o = case o of
+  Inter -> Set.intersection
+  Union -> Set.union
+  Minus -> (Set.\\)
+  _ -> error "toOp"
+
+isSingle :: Value -> Bool
+isSingle v = case v of
+  Ints is -> IntSet.size is == 1
+  _ -> False
+
+getInts :: Value -> IntSet
+getInts v = case v of
+  Ints is -> is
+  _ -> IntSet.empty
+
 
 evalPrim :: Model -> Env -> Set -> Either String Value
 evalPrim m e s = case s of

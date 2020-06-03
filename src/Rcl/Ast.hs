@@ -19,12 +19,13 @@ data Term = Term OptCard Set | EmptySet | Num Int deriving (Eq, Show)
 
 data OptCard = Card | TheSet deriving (Eq, Show)
 
-data Set = PrimSet String | UnOp UnOp Set
+data Set = PrimSet String | UnOp UnOp Set | Braced [Set]
   | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
 
 data FoldSet a = FoldSet
   { foldBin :: Set -> BinOp -> a -> a -> a
   , foldUn :: Set -> UnOp -> a -> a
+  , foldBraced :: Set -> [a] -> a
   , foldPrim :: Set -> a }
 
 data Var = MkVar Int String (Set.Set SetType) deriving (Eq, Show)
@@ -71,6 +72,7 @@ foldSet :: FoldSet a -> Set -> a
 foldSet r s = case s of
   BinOp o s1 s2 -> foldBin r s o (foldSet r s1) $ foldSet r s2
   UnOp o p -> foldUn r s o $ foldSet r p
+  Braced ss -> foldBraced r s $ map (foldSet r) ss
   _ -> foldPrim r s
 
 getType :: Set -> Set.Set SetType

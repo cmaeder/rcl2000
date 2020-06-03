@@ -11,8 +11,7 @@ import Rcl.Ast
 import Rcl.Reduce (runReduce)
 import Rcl.Type (isElem, mBaseType, wellTyped)
 
-import Text.PrettyPrint (Doc, braces, cat, hcat, int, parens, render, sep, text,
-                         (<+>))
+import Text.PrettyPrint
 
 toUse :: UserTypes -> [String]
 toUse us = let
@@ -161,6 +160,7 @@ setToOclAux us = foldSet FoldSet
       Typed _ _ -> d
       _ -> let p = useOp (mBaseType s) o in
         cat [text p, parens $ if p == "user" then d else singleSet s d]
+  , foldBraced = \ _ ds -> hcat [text "Set", braces . fcat $ punctuate comma ds]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> let ts = findWithDefault Set.empty t us in
         case Set.minView ts of

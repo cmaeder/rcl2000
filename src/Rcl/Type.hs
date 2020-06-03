@@ -8,7 +8,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
-import Rcl.Print (ppSet, ppStmt)
+import Rcl.Print (ppSet, ppTerm, ppStmt)
 
 addPrimTypes :: UserTypes -> UserTypes
 addPrimTypes = flip (foldr $ \ b -> Map.insertWith Set.union (show b)
@@ -45,7 +45,7 @@ tyStmt = foldStmt FoldStmt
     let r = CmpOp o t1 t2
         str = ppStmt r
         md m = report $ m ++ ": " ++ str
-        ft = filterType ("in relation: " ++ str) True
+        ft = filterType ("in: " ++ str) True
     case (t1, t2) of
         (Term TheSet s1, Term TheSet s2) | o `elem` [Eq, Ne, Elem] -> do
             let ts1 = getType s1
@@ -77,7 +77,7 @@ tyTerm us t = case t of
     r <- tySet us s
     case b of
       Card -> do
-        n <- filterType ("in cardinality of: " ++ ppSet s) True (const True) r
+        n <- filterType ("in: " ++ ppTerm t) True (const True) r
         pure $ Term b n
       TheSet -> pure $ Term b r
   _ -> pure t
@@ -102,6 +102,9 @@ disambig str t s = let
         Typed _ ts -> t1 == t && Set.member t ts
         _ -> False) s1
       pure . rt $ UnOp o r1
+  Braced bs -> do
+    ms <- mapM (filterType str True ((== t) . SetOf)) bs
+    pure . rt $ Braced ms
   _ -> pure r
 
 filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State [String] Set
@@ -141,7 +144,7 @@ tySet us = let
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-              ft = filterType ("in set: " ++ ppSet s) (Set.size ts <= 1)
+              ft = filterType ("in: " ++ ppSet s) (Set.size ts <= 1)
                 (if Set.null ts then const True else filt)
           b1 <- ft a1
           b2 <- ft a2
@@ -151,6 +154,14 @@ tySet us = let
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
       pure $ opResult o b1
+  , foldBraced = \ s bs -> do
+      ss <- sequence bs
+      let ts = map getType ss
+          ft = foldr1 Set.intersection ts
+      fts <- mapM (filterType ("in: " ++ ppSet s) (Set.size ft <= 1)
+        $ if Set.null ft then const True else (`Set.member` ft)) ss
+      when (Set.null ft) $ md "wrongly typed explicit set" s
+      pure . mkTypedSet (Set.map SetOf ft) $ Braced fts
   , foldPrim = \ s -> case s of
       PrimSet p -> do
         let ts = Map.findWithDefault Set.empty p us

@@ -23,6 +23,7 @@ mapSet :: FoldSet Set
 mapSet = FoldSet
   { foldBin = const BinOp
   , foldUn = const UnOp
+  , foldBraced = const Braced
   , foldPrim = id }
 
 replaceAO :: Stmt -> Stmt
@@ -53,6 +54,7 @@ findOE = foldSet FoldSet
   , foldUn = \ s _ r -> r <|> case s of
       UnOp OE p -> Just p -- we omit the outer OE
       _ -> Nothing
+  , foldBraced = const $ foldl1 (<|>)
   , foldPrim = const Nothing }
 
 replaceOE :: Set -> Set -> Stmt -> Stmt
