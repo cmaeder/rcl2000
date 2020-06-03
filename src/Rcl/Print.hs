@@ -79,8 +79,11 @@ pSet m = let f = format m in foldSet FoldSet
     Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
     Minus -> cat [pParenSet o s1 d1, hcat [p, pParenSet o s2 d2]]
     _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
-  , foldUn = \ _ o d -> case o of
-      Typed _ -> d
+  , foldUn = \ (UnOp _ s) o d -> case o of
+      Typed ex ts -> if ex == Derived then d else cat [case getUntypedSet s of
+           PrimSet _ -> d
+           _ -> parens d
+        , text $ ':' : ppType ts]
       _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)
           [pUnOp m o, if b then parens d else d]
   , foldPrim = pPrimSet }

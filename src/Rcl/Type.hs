@@ -99,7 +99,7 @@ disambig str t s = let
       r1 <- filt (\ t1 -> case o of
         OE -> SetOf t == t1
         AO -> t1 == t
-        Typed ts -> t1 == t && Set.member t ts
+        Typed _ ts -> t1 == t && Set.member t ts
         _ -> False) s1
       pure . rt $ UnOp o r1
   _ -> pure r
@@ -162,11 +162,11 @@ isOp :: UnOp -> Bool
 isOp o = case o of
   OE -> False
   AO -> False
-  Typed _ -> False
+  Typed _ _ -> False
   _ -> True
 
 mkTypedSet :: Set.Set SetType -> Set -> Set
-mkTypedSet ts = if Set.null ts then id else UnOp $ Typed ts
+mkTypedSet ts = if Set.null ts then id else UnOp $ Typed Derived ts
 
 compatSetTys :: Set.Set SetType -> Set.Set SetType -> Set.Set SetType
 compatSetTys s1 s2 = case Set.toList s1 of
@@ -189,7 +189,7 @@ opArg o t = case o of
   Permissions _ -> any (`isElemOrSet` t) [R, U, S]
   Object _ -> isElemOrSet P t
   Iors _ _ -> isElemOrSet R t
-  Typed ts -> Set.member t ts
+  Typed _ ts -> Set.member t ts
   _ -> not $ isElem t
 
 opResult :: UnOp -> Set -> Set
@@ -199,7 +199,7 @@ opResult o s = let
   in mkTypedSet (case o of
   OE -> elemType ts
   AO -> ts
-  Typed _ -> ts
+  Typed _ _ -> ts
   User _ _ -> if ElemTy S `Set.member` ts then Set.singleton $ ElemTy U
     else mkSetType U
   Roles _ -> mkSetType R

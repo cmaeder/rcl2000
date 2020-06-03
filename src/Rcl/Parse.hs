@@ -88,7 +88,7 @@ opsSet = do
   if o == Operations TheOp then p <|> return (PrimSet $ stUnOp o) else p
 
 typedSet :: Parser Set
-typedSet = (\ p -> maybe p (\ t -> UnOp (Typed $ Set.singleton t) p))
+typedSet = (\ p -> maybe p (\ t -> UnOp (Typed Explicit $ Set.singleton t) p))
   <$> primSet <*> optionMaybe (pch ':' *> pType)
 
 primSet :: Parser Set

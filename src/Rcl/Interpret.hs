@@ -136,7 +136,7 @@ eval m e = foldSet FoldSet
           (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
   , foldUn = \ (UnOp _ s) o v -> case o of
-    Typed _ -> v
+    Typed _ _ -> v
     _ -> let
       p = sUnOp (fmap fst . Set.minView $ getType s) o
       t = ppSet s in case v of

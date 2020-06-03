@@ -34,10 +34,12 @@ data BinOp = Union | Inter | Operations OptStar | Minus deriving (Eq, Show)
 
 data OptStar = Star | TheOp deriving (Eq, Show)
 
-data UnOp = Typed (Set.Set SetType)
+data UnOp = Typed Annotation (Set.Set SetType)
   | AO | OE | User OptS OptStar | Roles OptStar | Sessions
   | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
 -- AO: all other, OE: one element, optional s and/or * suffix
+
+data Annotation = Explicit | Derived deriving (Eq, Show)
 
 data OptS = Plural | Singular deriving (Eq, Show)
 
@@ -73,13 +75,13 @@ foldSet r s = case s of
 
 getType :: Set -> Set.Set SetType
 getType s = case s of
-  UnOp (Typed ts) _ -> ts
+  UnOp (Typed _ ts) _ -> ts
   Var (MkVar _ _ ts) -> ts
   _ -> Set.empty
 
 getUntypedSet :: Set -> Set
 getUntypedSet s = case s of
-  UnOp (Typed _) e -> e
+  UnOp (Typed _ _) e -> e
   _ -> s
 
 foldSetType :: (a -> a) -> (Base -> a) -> SetType -> a

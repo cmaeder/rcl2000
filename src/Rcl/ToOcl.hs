@@ -158,7 +158,7 @@ setToOclAux us = foldSet FoldSet
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed _ -> d
+      Typed _ _ -> d
       _ -> let p = useOp (mBaseType s) o in
         cat [text p, parens $ if p == "user" then d else singleSet s d]
   , foldPrim = \ s -> text $ case s of
