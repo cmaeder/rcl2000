@@ -57,8 +57,10 @@ primTypes = let bs = [U, R, OP, OBJ, P, S] in zip bs $ map show bs
 
 builtinTypes :: UserTypes
 builtinTypes = foldr
-  (\ (b, s) -> Map.insert s . Set.singleton . SetOf $ ElemTy b)
-  Map.empty primTypes
+  (\ (b, s) -> Map.insert s . Set.singleton $ toSet b) Map.empty primTypes
+
+toSet :: Base -> SetType
+toSet = SetOf . ElemTy
 
 forms :: [Format]
 forms = [Ascii, Uni, LaTeX]

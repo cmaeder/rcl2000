@@ -242,9 +242,6 @@ isElemOrSet b t = case t of
   SetOf (ElemTy i) -> b == i -- p 215 "general notation device"
   _ -> False
 
-toSet :: Base -> SetType
-toSet = SetOf . ElemTy
-
 elemType :: Set.Set SetType -> Set.Set SetType
 elemType = Set.foldr (ifSet Set.insert id) Set.empty
 

@@ -3,7 +3,7 @@ module Rcl.ToOcl (ocl, aggName, tr, enc) where
 import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
                   toUpper)
 import Data.Either (rights)
-import Data.Map (filterWithKey, findWithDefault, toList)
+import Data.Map (differenceWith, findWithDefault, toList)
 import qualified Data.Set as Set
 import Numeric (showHex)
 
@@ -15,8 +15,9 @@ import Text.PrettyPrint
 
 toUse :: UserTypes -> [String]
 toUse us = let
-  l = toList $ filterWithKey
-    (\ k _ -> k `notElem` map snd primTypes) us in
+  l = toList $ differenceWith (\ s1 s2 ->
+    let s = Set.difference s1 s2 in
+    if Set.null s then Nothing else Just s) us builtinTypes in
   concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
   ++ concatMap toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ concatMap toOp l ++ [end, "constraints", "context RBAC"]
