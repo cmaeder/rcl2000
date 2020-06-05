@@ -65,8 +65,13 @@ readType u s = case s of
     Just t -> if null l then do
         putStrLn $ "missing names for: " ++ r
         return u
-      else return
-        $ foldr (\ n -> Map.insertWith Set.union n $ Set.singleton t) u l
+      else
+        foldM (\ m n -> case Map.lookup n m of
+          Nothing -> return $ Map.insert n (Set.singleton t) m
+          Just e -> if Set.member t e then do
+              putStrLn $ "set already known: " ++ n ++ ":" ++ r
+              return m
+            else return $ Map.insert n (Set.insert t e) m) u l
     Nothing -> do
       putStrLn $ "illegal type: " ++ r
       putStrLn $ "ignoring names: " ++ unwords l
