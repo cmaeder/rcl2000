@@ -111,12 +111,11 @@ stmtToOcl :: UserTypes -> Stmt -> Doc
 stmtToOcl us = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
-  , foldCmp = \ (CmpOp _ s1 s2) o d1 d2 -> case o of
+  , foldCmp = \ (CmpOp _ _ s2) o d1 d2 -> case o of
       Elem -> cat [hcat [d2, arr, text "includes"], parens d1]
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
-      _ -> let (a1, a2) = singleTerm s1 s2 d1 d2 in
-        sep [a1, pCmpOp o <+> a2] }
+      _ -> sep [d1, pCmpOp o <+> d2] }
   $ termToOcl us
 
 parenStmt :: Stmt -> Doc -> Doc
@@ -132,35 +131,20 @@ termToOcl us t = case t of
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
-singleTerm :: Term -> Term -> Doc -> Doc -> (Doc, Doc)
-singleTerm t1 t2 d1 d2 = case (t1, t2) of
-  (Term TheSet s1, Term TheSet s2) -> let (b1, b2) = cast s1 s2 in
-    (singleton b1 d1, singleton b2 d2)
-  _ -> (d1, d2)
-
 setToOcl :: UserTypes -> Set -> Doc
 setToOcl = setToOclAux
 
 setToOclAux :: UserTypes -> Set -> Doc
 setToOclAux us = foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
+  { foldBin = \ (BinOp _ s1 _) o a1 a2 -> let
       p = text $ useBinOp (mBaseType s1) o
-      (b1, b2) = cast s1 s2
-      c1 = elemType s1
-      c2 = elemType s2
-      fs b c = singleton $ case o of
-        Operations _ -> c
-        _ -> b || c
-      a1 = fs b1 c1 d1
-      a2 = fs b2 c2 d2
       in case o of
       Operations _ -> cat [p, parens $ hcat [a1, text ",", a2]]
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
       Typed _ _ -> d
-      _ -> let p = useOp (mBaseType s) o in
-        cat [text p, parens $ if p == "user" then d else singleSet s d]
+      _ -> cat [text $ useOp (mBaseType s) o, parens d]
   , foldBraced = \ _ ds -> hcat [text "Set", braces . fcat $ punctuate comma ds]
   , foldPrim = \ s -> text $ case s of
       PrimSet t -> let ts = findWithDefault Set.empty t us in
@@ -169,26 +153,6 @@ setToOclAux us = foldSet FoldSet
           _ -> error "setToOcl: prim set unknown"
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
-
-cast :: Set -> Set -> (Bool, Bool)
-cast s1 s2 =
-  let ts1 = getType s1
-      ts2 = getType s2
-      f ts = any ((`Set.member` ts) . SetOf) . Set.toList
-      b1 = f ts2 ts1
-      b2 = f ts1 ts2
-  in (b1, b2)
-
-singleSet :: Set -> Doc -> Doc
-singleSet = singleton . elemType
-
-elemType :: Set -> Bool
-elemType s = case Set.toList $ getType s of
-  m : _ -> isElem m
-  _ -> False
-
-singleton :: Bool -> Doc -> Doc
-singleton b d = if b then hcat [text "Set", braces d] else d
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of
