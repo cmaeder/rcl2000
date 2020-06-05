@@ -220,13 +220,10 @@ opResult o s = let
   Iors _ _ -> mkSetType R) $ UnOp o s
 
 isElemOrSet :: Base -> SetType -> Bool
-isElemOrSet s = (== Just s) . mElemOrSet
-
-mElemOrSet :: SetType -> Maybe Base
-mElemOrSet t = case t of
-  ElemTy i -> Just i
-  SetOf (ElemTy i) -> Just i -- p 215 "general notation device"
-  _ -> Nothing
+isElemOrSet b t = case t of
+  ElemTy i -> b == i
+  SetOf (ElemTy i) -> b == i -- p 215 "general notation device"
+  _ -> False
 
 toSet :: Base -> SetType
 toSet = SetOf . ElemTy
