@@ -2,8 +2,8 @@ module Rcl.Read (readModel, readTypes, readMyFile) where
 
 import Control.Exception (IOException, handle)
 import Control.Monad (foldM, unless, when)
-import Data.Char (isAlphaNum, isLetter, isUpper)
-import Data.List (find, partition)
+import Data.Char (isAlphaNum, isLetter)
+import Data.List (partition)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -11,9 +11,12 @@ import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
+import Rcl.Parse (pType)
 
 import System.Directory (doesFileExist, makeAbsolute)
 import System.IO (IOMode (..), hGetContents, hSetEncoding, openFile, utf8)
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Error
 
 readMyFile :: Int -> FilePath -> IO String
 readMyFile v f = handle (\ e -> do
@@ -57,32 +60,27 @@ checkWords f = mapM_ $ \ (ws, i) -> do
 
 readTypes :: Int -> FilePath -> IO UserTypes
 readTypes v f =
-  readWordsFile v f >>= foldM readType builtinTypes
+  readWordsFile v f >>= foldM (readType f) builtinTypes . zip [(1 :: Int) ..]
 
-readType :: UserTypes -> [String] -> IO UserTypes
-readType u s = case s of
-  r : l -> case strT r of
-    Just t -> if null l then do
-        putStrLn $ "missing names for: " ++ r
+readType :: FilePath -> UserTypes -> (Int, [String]) -> IO UserTypes
+readType f u (i, s) = let p = " (line " ++ show i ++ "): " in case s of
+  r : l -> case parse (pType <* eof) f r of
+    Right t -> if null l then do
+        putStrLn $ "missing names for" ++ p ++ r
         return u
       else
         foldM (\ m n -> case Map.lookup n m of
           Nothing -> return $ Map.insert n (Set.singleton t) m
           Just e -> if Set.member t e then do
-              putStrLn $ "set already known: " ++ n ++ ":" ++ r
+              putStrLn $ "set already known" ++ p ++ n ++ ":" ++ r
               return m
             else return $ Map.insert n (Set.insert t e) m) u l
-    Nothing -> do
-      putStrLn $ "illegal type: " ++ r
-      putStrLn $ "ignoring names: " ++ unwords l
+    Left e -> do
+      putStrLn $ "illegal type" ++ p ++ r
+      print $ setErrorPos (setSourceLine (errorPos e) i) e
+      putStrLn $ "ignoring names" ++ p ++ unwords l
       return u
   [] -> return u
-
-strT :: String -> Maybe SetType
-strT s = let (b, n) = span isUpper s in case find ((== b) . show) primTypes of
-    Just t | all (== 's') n ->
-      Just $ foldr (const SetOf) (ElemTy t) n
-    _ -> Nothing
 
 readModel :: Int -> [FilePath] -> IO Model
 readModel v l = case l of

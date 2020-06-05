@@ -1,4 +1,4 @@
-module Rcl.Parse (set, stmt, parser, ParseError) where
+module Rcl.Parse (ParseError, pType, parser, set, stmt) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)
@@ -93,7 +93,7 @@ opsSet = do
 
 typedSet :: Parser Set
 typedSet = (\ p -> maybe p (\ t -> UnOp (Typed Explicit $ Set.singleton t) p))
-  <$> primSet <*> optionMaybe (pch ':' *> pType)
+  <$> primSet <*> optionMaybe (pch ':' *> pType <* skip)
 
 primSet :: Parser Set
 primSet = (PrimSet <$> setName <* skip) <|> parenSet <|> bracedSet
@@ -103,8 +103,8 @@ setName = (:) <$> letter <*> many (alphaNum <|> char '_')
 
 pType :: Parser SetType
 pType = foldr (const SetOf) . ElemTy
-  <$> choice (map (\ a -> string (show a) >> return a) primTypes)
-  <*> (many (char 's') <* skip)
+  <$> choice (map (\ a -> try (string $ show a) >> return a) primTypes)
+  <*> many (char 's')
 
 unOpSet :: Parser Set
 unOpSet = do
