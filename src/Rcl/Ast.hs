@@ -53,7 +53,7 @@ type UserTypes = Map.Map String (Set.Set SetType)
 type Vars = [(Var, Set)]
 
 primTypes :: [(Base, String)]
-primTypes = let bs = [U, R, OP, OBJ, P, S] in map (\ b -> (b, show b)) bs
+primTypes = let bs = [U, R, OP, OBJ, P, S] in zip bs $ map show bs
 
 builtinTypes :: UserTypes
 builtinTypes = foldr
