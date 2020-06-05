@@ -32,7 +32,8 @@ replaceAO = foldStmt mapStmt $ mapTerm replAO
 replAO :: Set -> Set
 replAO = foldSet mapSet
   { foldUn = \ _ o p -> case o of
-      AO -> BinOp Minus p (UnOp OE p)
+      AO -> let ts = getType p in
+        BinOp Minus p . UnOp (Typed Derived ts) $ Braced [UnOp OE p]
       _ -> UnOp o p }
 
 const2 :: a -> b -> c -> a
@@ -105,7 +106,7 @@ replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 replMinus :: Set -> Set
 replMinus = foldSet mapSet
   { foldBin = \ _ o s1 s2 -> case o of
-      Minus | s2 == UnOp OE s1 -> UnOp AO s1
+      Minus | getUntypedSet s2 == Braced [UnOp OE s1] -> UnOp AO s1
       _ -> BinOp o s1 s2 }
 
 reduceAndReconstruct :: UserTypes -> Stmt -> [String]
