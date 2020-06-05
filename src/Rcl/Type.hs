@@ -57,10 +57,11 @@ tyStmt = foldStmt FoldStmt
                 filt0 f = if Set.null ts then const True else f
                 filt1 t = if o == Elem then SetOf t `Set.member` ts else filt t
                 filt2 t = if o == Elem then t `Set.member` ts else filt t
+                mkSing = if o /= Elem then mkSingle ts else id
             b1 <- ft (filt0 filt1) s1
             b2 <- ft (filt0 filt2) s2
             when (Set.null ts) $ md "wrongly typed relation"
-            pure . CmpOp o (Term TheSet b1) $ Term TheSet b2
+            pure . CmpOp o (Term TheSet $ mkSing b1) . Term TheSet $ mkSing b2
         (Term TheSet s1, EmptySet) | o `elem` [Eq, Ne] -> do
           n <- ft (const True) s1
           pure $ CmpOp o (Term TheSet n) t2
@@ -78,13 +79,14 @@ tyTerm us t = case t of
     case b of
       Card -> do
         n <- filterType ("in: " ++ ppTerm t) True (const True) r
-        pure $ Term b n
+        pure . Term b $ mkSingleton True n
       TheSet -> pure $ Term b r
   _ -> pure t
 
 disambig :: String -> SetType -> Set -> State [String] Set
 disambig str t s = let
-  rt = mkTypedSet (Set.singleton t)
+  st = Set.singleton t
+  rt = mkTypedSet st
   r = rt s
   filt = filterType str True
   ft = filt (\ ts -> t `elem` [ts, SetOf ts])
@@ -94,7 +96,7 @@ disambig str t s = let
     _ -> do
       m1 <- ft s1
       m2 <- ft s2
-      pure . rt $ BinOp o m1 m2
+      pure . rt . BinOp o (mkSingle st m1) $ mkSingle st m2
   UnOp o s1 -> if isOp o then pure r else do
       r1 <- filt (\ t1 -> case o of
         OE -> SetOf t == t1
@@ -139,7 +141,8 @@ tySet us = let
             True (\ t -> any (`isElemOrSet` t) [R, U]) a1
           b2 <- filterType ("2nd arg: " ++ ppSet s) True (isElemOrSet OBJ) a2
           pure . mkTypedSet (Set.singleton $ toSet OP)
-            $ BinOp o b1 b2 -- R + U x OBJ -> 2^OP
+            . BinOp o (mkSingleton True b1) $ mkSingleton True b2
+            -- R + U x OBJ -> 2^OP
         _ -> do
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
@@ -149,7 +152,7 @@ tySet us = let
           b1 <- ft a1
           b2 <- ft a2
           when (Set.null ts) $ md "wrongly typed set operation" s
-          pure . mkTypedSet ts $ BinOp o b1 b2
+          pure . mkTypedSet ts . BinOp o (mkSingle ts b1) $ mkSingle ts b2
   , foldUn = \ s o s1 -> do
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
@@ -217,7 +220,21 @@ opResult o s = let
   Sessions -> mkSetType S
   Permissions _ -> mkSetType P
   Object _ -> mkSetType OBJ
-  Iors _ _ -> mkSetType R) $ UnOp o s
+  Iors _ _ -> mkSetType R) . UnOp o $ mkSingleton (case o of
+    User _ _ -> ElemTy S `Set.notMember` ts
+    _ -> isOp o) s
+
+mkSingle :: Set.Set SetType -> Set -> Set
+mkSingle ts s =
+  mkBraced (Set.size ts > 0 && Set.map SetOf (getType s) == ts) s
+
+mkSingleton :: Bool -> Set -> Set
+mkSingleton b s = let ts = getType s in
+  mkBraced (b && Set.size ts == 1 && isElem (Set.findMin ts)) s
+
+mkBraced :: Bool -> Set -> Set
+mkBraced b s =
+  if b then mkTypedSet (Set.map SetOf $ getType s) $ Braced [s] else s
 
 isElemOrSet :: Base -> SetType -> Bool
 isElemOrSet b t = case t of
