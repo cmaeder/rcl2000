@@ -45,7 +45,7 @@ tyStmt = foldStmt FoldStmt
     let r = CmpOp o t1 t2
         str = ppStmt r
         md m = report $ m ++ ": " ++ str
-        ft = filterType ("in: " ++ str) True
+        ft = filterType ("relation: " ++ str) True
     case (t1, t2) of
         (Term TheSet s1, Term TheSet s2) | o `elem` [Eq, Ne, Elem] -> do
             let ts1 = getType s1
@@ -78,8 +78,8 @@ tyTerm us t = case t of
     r <- tySet us s
     case b of
       Card -> do
-        n <- filterType ("in: " ++ ppTerm t) True (const True) r
-        pure . Term b $ mkSingleton True n
+        n <- filterType ("cardinality: " ++ ppTerm t) True (not . isElem) r
+        pure $ Term b n
       TheSet -> pure $ Term b r
   _ -> pure t
 
@@ -111,7 +111,7 @@ disambig str t s = let
 
 filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State [String] Set
 filterType str b f s = let
-  md m = report $ m ++ " " ++ str
+  md m = report $ m ++ " in " ++ str
   t = getType s
   l = Set.toList t
   r = filter f l
@@ -119,7 +119,7 @@ filterType str b f s = let
   mt = mkTypedSet rs
   in case r of
   [] -> do
-    unless (null l) $ md "wrongly typed"
+    unless (null l) . md $ "wrongly typed '" ++ ppSet s ++ "'"
     pure $ getUntypedSet s
   [a] -> case l of
     _ : _ : _ -> disambig str a $ getUntypedSet s
@@ -147,7 +147,7 @@ tySet us = let
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
                 . compatSetTys (getType a1) $ getType a2
               filt t = any (`Set.member` ts) [t, SetOf t]
-              ft = filterType ("in: " ++ ppSet s) (Set.size ts <= 1)
+              ft = filterType ("set operation: " ++ ppSet s) (Set.size ts <= 1)
                 (if Set.null ts then const True else filt)
           b1 <- ft a1
           b2 <- ft a2
@@ -161,9 +161,9 @@ tySet us = let
       ss <- sequence bs
       let ts = map getType ss
           ft = foldr1 Set.intersection ts
-      fts <- mapM (filterType ("in: " ++ ppSet s) (Set.size ft <= 1)
+      fts <- mapM (filterType ("braced set: " ++ ppSet s) (Set.size ft <= 1)
         $ if Set.null ft then const True else (`Set.member` ft)) ss
-      when (Set.null ft) $ md "wrongly typed explicit set" s
+      when (Set.null ft) $ md "wrongly typed braced set" s
       pure . mkTypedSet (Set.map SetOf ft) $ Braced fts
   , foldPrim = \ s -> case s of
       PrimSet p -> do
