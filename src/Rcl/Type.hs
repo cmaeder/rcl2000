@@ -89,7 +89,7 @@ disambig str t s = let
   rt = mkTypedSet st
   r = rt s
   filt = filterType str True
-  ft = filt (\ ts -> t `elem` [ts, SetOf ts])
+  ft = filt (\ e -> t `elem` [e, SetOf e])
   in case s of
   BinOp o s1 s2 -> case o of
     Operations _ -> pure r
