@@ -30,7 +30,7 @@ data Model = Model
   , objects :: Set.Set OBJ
   , permissions :: Set.Set P
   , sessions :: Map String S
-  , userSets :: Map String (SetType, Value, [String])
+  , userSets :: Map String (Map SetType (Value, [String]))
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- all junior roles
@@ -67,7 +67,7 @@ emptyModel = Model
 
 getUserTypes :: Model -> UserTypes
 getUserTypes = foldr
-  (\ (n, (t, _, _)) -> Map.insertWith Set.union n $ Set.singleton t)
+  (\ (n, m) -> Map.insertWith Set.union n $ Map.keysSet m)
   builtinTypes . Map.toList . userSets
 
 pStrC :: Char -> P -> String
