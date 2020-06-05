@@ -103,7 +103,7 @@ setName = (:) <$> letter <*> many (alphaNum <|> char '_')
 
 pType :: Parser SetType
 pType = foldr (const SetOf) . ElemTy
-  <$> choice (map (\ a -> try (string $ show a) >> return a) primTypes)
+  <$> choice (map (\ (a, s) -> try (string s) >> return a) primTypes)
   <*> many (char 's')
 
 unOpSet :: Parser Set

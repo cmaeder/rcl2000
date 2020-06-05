@@ -29,10 +29,8 @@ fromList = foldr
 invert :: Map R (Set.Set R) -> Map R (Set.Set R)
 invert = fromList . map (\ (a, b) -> (b, a)) . toList
 
-insUserSet :: Base -> Model -> Model
-insUserSet b m = let
-  l = Set.toList $ getStrings m b
-  s = show b in addStr s m
+insUserSet :: (Base, String) -> Model -> Model
+insUserSet (b, s) m = let l = Set.toList $ getStrings m b in addStr s m
   { userSets = Map.insert s (SetOf $ ElemTy b, toInts m l, l) $ userSets m }
 
 addS :: String -> Model -> Model
@@ -155,5 +153,5 @@ function bo m = let
   _ -> error "function"
 
 initSess :: Model -> Model
-initSess = insUserSet S . flip (foldr initFctMap)
+initSess = insUserSet (S, "S") . flip (foldr initFctMap)
   [(S, Roles TheOp), (S, User Singular TheOp), (U, Sessions)]

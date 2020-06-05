@@ -80,7 +80,7 @@ getInts v = case v of
 
 getAllStrings :: Model -> Set.Set String
 getAllStrings m =
-  Set.unions $ Map.keysSet (userSets m) : map (getStrings m) primTypes
+  Set.unions $ Map.keysSet (userSets m) : map (getStrings m . fst) primTypes
 
 checkInts :: Model -> Base -> IntSet -> Bool
 checkInts m b =

@@ -16,7 +16,7 @@ import Text.PrettyPrint
 toUse :: UserTypes -> [String]
 toUse us = let
   l = toList $ filterWithKey
-    (\ k _ -> k `notElem` map show primTypes) us in
+    (\ k _ -> k `notElem` map snd primTypes) us in
   concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
   ++ concatMap toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ concatMap toOp l ++ [end, "constraints", "context RBAC"]
@@ -32,7 +32,7 @@ toSubsAux t = case t of
 -- | translate user _c_onflict set names
 tr :: Maybe SetType -> String -> String
 tr mt s = case mt of
-  Nothing -> if s `elem` map show primTypes
+  Nothing -> if s `elem` map snd primTypes
     || all (\ c -> isDigit c || isAsciiUpper c) s
     && s `notElem` words "RRAC RH UA PA HR SU"
     then s else "c_" ++ enc s

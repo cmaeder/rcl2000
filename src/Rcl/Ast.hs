@@ -52,12 +52,12 @@ data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
 type UserTypes = Map.Map String (Set.Set SetType)
 type Vars = [(Var, Set)]
 
-primTypes :: [Base]
-primTypes = [U, R, OP, OBJ, P, S]
+primTypes :: [(Base, String)]
+primTypes = let bs = [U, R, OP, OBJ, P, S] in map (\ b -> (b, show b)) bs
 
 builtinTypes :: UserTypes
 builtinTypes = foldr
-  (\ b -> Map.insert (show b) . Set.singleton . SetOf $ ElemTy b)
+  (\ (b, s) -> Map.insert s . Set.singleton . SetOf $ ElemTy b)
   Map.empty primTypes
 
 forms :: [Format]

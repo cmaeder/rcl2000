@@ -171,7 +171,7 @@ readSets m s = case s of
     us = userSets m
     r = addS n m
     ign = putStrLn $ "ignoring user set: " ++ n
-    in if Map.member n us || n `elem` map show primTypes then do
+    in if Map.member n us || n `elem` map snd primTypes then do
       putStrLn $ "known user set: " ++ n
       ign
       return m

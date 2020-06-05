@@ -11,7 +11,7 @@ import Rcl.Ast
 import Rcl.Print (ppSet, ppTerm, ppStmt)
 
 addPrimTypes :: UserTypes -> UserTypes
-addPrimTypes = flip (foldr $ \ b -> Map.insertWith Set.union (show b)
+addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s
   . Set.singleton $ toSet b) primTypes
 
 typeErrors :: UserTypes -> [Stmt] -> String
