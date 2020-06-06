@@ -1,9 +1,8 @@
 module Rcl.ToOcl (ocl, aggName, tr, enc) where
 
-import Data.Char (isAlphaNum, isAscii, isAsciiUpper, isDigit, ord, toLower,
-                  toUpper)
+import Data.Char (isAlphaNum, isAscii, ord, toLower, toUpper)
 import Data.Either (rights)
-import Data.Map (differenceWith, findWithDefault, toList)
+import Data.Map (differenceWith, toList)
 import qualified Data.Set as Set
 import Numeric (showHex)
 
@@ -31,13 +30,9 @@ toSubsAux t = case t of
   SetOf s -> Set.insert t $ toSubsAux s
 
 -- | translate user _c_onflict set names
-tr :: Maybe SetType -> String -> String
-tr mt s = case mt of
-  Nothing -> if s `elem` map snd primTypes
-    || all (\ c -> isDigit c || isAsciiUpper c) s
-    && s `notElem` words "RRAC RH UA PA HR SU"
-    then s else "c_" ++ enc s
-  Just t -> 'c' : stSet t ++ '_' : enc s
+tr :: SetType -> String -> String
+tr t s = if (baseType t, s) `elem` primTypes then s else
+    'c' : stSet t ++ '_' : enc s
 
 -- | code out non-valid characters
 enc :: String -> String
@@ -47,21 +42,16 @@ enc = concatMap $ \ c -> case c of
     | otherwise -> '_' : map toUpper (showHex (ord c) "_")
 
 toClass :: (String, Set.Set SetType) -> [String]
-toClass (s, ts) = case Set.minView ts of
-  Just (t, r) | Set.null r -> [toClassAux True s t]
-  _ -> map (toClassAux False s) $ Set.toList ts
+toClass (s, ts) = map (toClassAux s) $ Set.toList ts
 
-toClassAux :: Bool -> String -> SetType -> String
-toClassAux b s t = "class " ++ tr (if b then Nothing else Just t) s
-  ++ " < " ++ stSet t ++ " end"
+toClassAux :: String -> SetType -> String
+toClassAux s t = "class " ++ tr t s ++ " < " ++ stSet t ++ " end"
 
 toOp :: (String, Set.Set SetType) -> [String]
-toOp (s, ts) = case Set.minView ts of
-  Just (t, r) | Set.null r -> [toOpAux True s t]
-  _ -> map (toOpAux False s) $ Set.toList ts
+toOp (s, ts) = map (toOpAux s) $ Set.toList ts
 
-toOpAux :: Bool -> String -> SetType -> String
-toOpAux b s t = let r = tr (if b then Nothing else Just t) s in
+toOpAux :: String -> SetType -> String
+toOpAux s t = let r = tr t s in
   "  " ++ r ++ "() : " ++ useType t ++ " = " ++ r
   ++ ".allInstances->any(true).c()"
 
@@ -96,19 +86,19 @@ end = "end"
 ocl :: UserTypes -> [Stmt] -> String
 ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
-    , uncurry (toOcl us) $ runReduce us s]) [1 :: Int ..]
+    , uncurry toOcl $ runReduce us s]) [1 :: Int ..]
     (rights $ map (wellTyped us) l)
 
-toOcl :: UserTypes -> Stmt -> Vars -> Doc
-toOcl us = foldl (\ f (i, s) -> cat
-   [ hcat [setToOcl us s, arr, text "forAll"]
-   , parens $ sep [text $ stVar i ++ " |", f]]) . stmtToOcl us
+toOcl :: Stmt -> Vars -> Doc
+toOcl = foldl (\ f (i, s) -> cat
+   [ hcat [setToOcl s, arr, text "forAll"]
+   , parens $ sep [text $ stVar i ++ " |", f]]) . stmtToOcl
 
 arr :: Doc
 arr = text "->"
 
-stmtToOcl :: UserTypes -> Stmt -> Doc
-stmtToOcl us = foldStmt FoldStmt
+stmtToOcl :: Stmt -> Doc
+stmtToOcl = foldStmt FoldStmt
   { foldBool = \ (BoolOp _ s1 s2) o d1 d2 ->
       sep [parenStmt s1 d1, pBoolOp o <+> parenStmt s2 d2]
   , foldCmp = \ (CmpOp _ _ s2) o d1 d2 -> case o of
@@ -116,26 +106,23 @@ stmtToOcl us = foldStmt FoldStmt
       Eq | s2 == EmptySet -> hcat [d1, arr, text "isEmpty"]
       Ne | s2 == EmptySet -> hcat [d1, arr, text "notEmpty"]
       _ -> sep [d1, pCmpOp o <+> d2] }
-  $ termToOcl us
+  termToOcl
 
 parenStmt :: Stmt -> Doc -> Doc
 parenStmt s = case s of
   BoolOp Impl _ _ -> parens
   _ -> id
 
-termToOcl :: UserTypes -> Term -> Doc
-termToOcl us t = case t of
-  Term b s -> let d = setToOcl us s in case b of
+termToOcl :: Term -> Doc
+termToOcl t = case t of
+  Term b s -> let d = setToOcl s in case b of
     Card -> hcat [d, arr, text "size"]
     TheSet -> d
   EmptySet -> text "Set{}" -- never possible see isEmpty and notEmpty
   Num i -> int i
 
-setToOcl :: UserTypes -> Set -> Doc
-setToOcl = setToOclAux
-
-setToOclAux :: UserTypes -> Set -> Doc
-setToOclAux us = foldSet FoldSet
+setToOcl :: Set -> Doc
+setToOcl = foldSet FoldSet
   { foldBin = \ (BinOp _ s1 _) o a1 a2 -> let
       p = text $ useBinOp (mBaseType s1) o
       in case o of
@@ -143,14 +130,14 @@ setToOclAux us = foldSet FoldSet
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed _ _ -> d
+      Typed _ ts -> case s of
+        PrimSet t -> case Set.minView ts of
+          Just (e, r) | Set.null r -> text $ tr e t ++ "()"
+          _ -> error "setToOcl: prim set unknown"
+        _ -> d
       _ -> cat [text $ useOp (mBaseType s) o, parens d]
   , foldBraced = \ _ ds -> hcat [text "Set", braces . fcat $ punctuate comma ds]
   , foldPrim = \ s -> text $ case s of
-      PrimSet t -> let ts = findWithDefault Set.empty t us in
-        case Set.minView ts of
-          Just (e, r) -> tr (if Set.null r then Nothing else Just e) t ++ "()"
-          _ -> error "setToOcl: prim set unknown"
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
 
