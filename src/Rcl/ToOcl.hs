@@ -31,8 +31,8 @@ toSubsAux t = case t of
 
 -- | translate user _c_onflict set names
 tr :: SetType -> String -> String
-tr t s = if (baseType t, s) `elem` primTypes then s else
-    'c' : stSet t ++ '_' : enc s
+tr t s = let b = baseType t in if (b, s) `elem` primTypes && t == toSet b
+  then s else 'c' : stSet t ++ '_' : enc s
 
 -- | code out non-valid characters
 enc :: String -> String
@@ -53,7 +53,7 @@ toOp (s, ts) = map (toOpAux s) $ Set.toList ts
 toOpAux :: String -> SetType -> String
 toOpAux s t = let r = tr t s in
   "  " ++ r ++ "() : " ++ useType t ++ " = " ++ r
-  ++ ".allInstances->any(true).c()"
+  ++ ".allInstances->any(true)" ++ if isElem t then "" else ".c()"
 
 toSetClass :: SetType -> [String]
 toSetClass t = case t of

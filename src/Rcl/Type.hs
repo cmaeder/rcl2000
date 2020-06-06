@@ -63,7 +63,7 @@ tyStmt = foldStmt FoldStmt
             when (Set.null ts) $ md "wrongly typed relation"
             pure . CmpOp o (Term TheSet $ mkSing b1) . Term TheSet $ mkSing b2
         (Term TheSet s1, EmptySet) | o `elem` [Eq, Ne] -> do
-          n <- ft (const True) s1
+          n <- ft (not . isElem) s1
           pure $ CmpOp o (Term TheSet n) t2
         (Term Card _, Term Card _) | o /= Elem -> pure r
         (Term Card _, Num _) | o /= Elem -> pure r

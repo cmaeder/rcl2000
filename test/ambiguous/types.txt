@@ -1,0 +1,26 @@
+Us R
+R R
+U U
+S s
+R s
+OBJ S
+
+Us ABC
+Rs ABC
+Ps ABC
+
+Us ABD
+Rs ABD
+Ss ABD
+
+Us ACD
+Ps ACD
+Ss ACD
+U  ACD
+
+Us ACB
+Rs ACB
+Ps ACB
+U  ACB
+Us U
+Os O

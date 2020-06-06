@@ -1,0 +1,33 @@
+R = R:Rs
+R = Us
+|R| = 1
+R = S
+
+|R & R & U| = 1
+|U| = 1
+
+|R & R| = 1
+
+|R & U| = 1
+
+|U & U| = 1
+
+roles Us = {}
+roles PR = {}
+
+U=U
+|U & S| = 1
+|PR| = 1
+
+roles OBJ = {}
+
+user s:S = {}
+
+operations (R, OBJ) = {}
+operations (U, OBJ) = {}
+operations (S, OBJ) = {}
+operations (S, S) = {}
+
+(ABC & ABD) & (ACB & ACD) = {}
+(ABC & ABD) & (ACB & AO ACD) = {}
+(ABC & ABD) & (ACB & OE ACD) = {}
