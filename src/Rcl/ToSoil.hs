@@ -41,7 +41,8 @@ toSoil m = unlines $ let
     . Set.toList $ activeRoles s) sl)
   ++ map (\ s -> mkNew (tr s) $ tr s) ("RBAC" : Map.keys us)
   ++ map (\ (s, t, r) -> mkInsert (tr s) (code t r) $ aggName t) (concatMap
-     (\ (s, (t, _, l)) -> map (\ e -> (s, t, e)) l) $ Map.toList us)
+     (\ (s, tm) -> concatMap (\ (t, (_, l)) -> map (\ e -> (s, t, e)) l)
+       $ Map.toList tm) $ Map.toList us)
 
 mkNew :: String -> String -> String
 mkNew c n = "!create " ++ n ++ " : " ++ c

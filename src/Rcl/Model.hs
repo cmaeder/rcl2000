@@ -1,5 +1,5 @@
-module Rcl.Model (initModel, addS, addU, checkU, addP, addR, addSURs, initRH,
-  initSess) where
+module Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initModel, initRH,
+  initSess, insSet) where
 
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
@@ -9,8 +9,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast (Base (..), Ior (..), OptS (..), OptStar (..), SetType (..),
-                UnOp (..), primTypes)
+import Rcl.Ast
 import Rcl.Data
 
 sessionsOfU :: Model -> U -> Map String S
@@ -29,9 +28,17 @@ fromList = foldr
 invert :: Map R (Set.Set R) -> Map R (Set.Set R)
 invert = fromList . map (\ (a, b) -> (b, a)) . toList
 
+insSet :: String -> SetType -> Value -> [String] -> Model -> Model
+insSet s k v l m = let
+  u = userSets m
+  r = (v, l) in m
+  { userSets = Map.insert s (case Map.lookup s u of
+      Nothing -> Map.singleton k r
+      Just e -> Map.insert k r e) u }
+
 insUserSet :: (Base, String) -> Model -> Model
-insUserSet (b, s) m = let l = Set.toList $ getStrings m b in addStr s m
-  { userSets = Map.insert s (SetOf $ ElemTy b, toInts m l, l) $ userSets m }
+insUserSet (b, s) m = let l = Set.toList $ getStrings m b in
+  addS s $ insSet s (toSet b) (toInts m l) l m
 
 addS :: String -> Model -> Model
 addS s m = if null s then error "addS" else case Map.lookup s $ strMap m of

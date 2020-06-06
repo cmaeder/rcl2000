@@ -57,20 +57,21 @@ properStructure m = let
   && getAll (Map.foldMapWithKey (\ s js ->
        All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) h)
        $ Set.toList js) i)
-  && all checkValue vs
-  && all (\ (t, v, _) -> checkInts m (baseType t) $ getInts v) vs
+  && all (all checkValue . Map.toList) vs
+  && all (all (\ (t, (v, _)) -> checkInts m (baseType t) $ getInts v)
+         . Map.toList) vs
   && strs == getAllStrings m
   && strs == Set.fromList (IntMap.elems im)
   && is == IntSet.fromList (Map.elems sm)
   && IntSet.size is == Set.size strs
   && maybe True ((< next m) . fst) (IntSet.maxView is)
 
-checkValue :: (SetType, Value, a) -> Bool
+checkValue :: (SetType, (Value, a)) -> Bool
 checkValue p = case p of
-  (SetOf (ElemTy _), Ints _, _) -> True
-  (SetOf e@(SetOf _), VSet s, a) ->
-    all (\ v -> checkValue (e, v, a)) $ Set.toList s
-  (ElemTy _, Ints vs, _) -> IntSet.size vs == 1
+  (SetOf (ElemTy _), (Ints _, _)) -> True
+  (SetOf e@(SetOf _), (VSet s, a)) ->
+    all (\ v -> checkValue (e, (v, a))) $ Set.toList s
+  (ElemTy _, (Ints vs, _)) -> IntSet.size vs == 1
   _ -> False
 
 getInts :: Value -> IntSet

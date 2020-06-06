@@ -10,8 +10,9 @@ import qualified Data.Set as Set
 import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
-import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH)
+import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH, insSet)
 import Rcl.Parse (pType)
+import Rcl.Type (isElem)
 
 import System.Directory (doesFileExist, makeAbsolute)
 import System.IO (IOMode (..), hGetContents, hSetEncoding, openFile, utf8)
@@ -167,51 +168,63 @@ addRH r js m = let
 readSets :: Model -> [String] -> IO Model
 readSets m s = case s of
   n : vs@(_ : _) -> let
-    mts = mapM (findSetType m) vs
-    us = userSets m
+    ts = map (findSetType m) vs
+    is = foldr1 Set.intersection ts
+    js = Set.filter (not . isElem) is
+    ks = if Set.size js > 0 then js else is
     r = addS n m
     ign = putStrLn $ "ignoring user set: " ++ n
-    in if Map.member n us || n `elem` map snd primTypes then do
-      putStrLn $ "known user set: " ++ n
+    kn t = do
+      putStrLn $ "known user set: " ++ n ++ ":" ++ stSet t
       ign
       return m
-    else case mts of
-      Just ts@(t : rs) | all (== t) rs -> return r
-        { userSets = Map.insert n (SetOf t, joinValues m t vs, vs) us }
-        | allPs ts -> do
+    in case Set.toList ks of
+      [t] -> let st = SetOf t in
+        if knownSet n st m then kn st else
+        return $ insSet n st (joinValues m t vs) vs r
+      [] | allPs ts -> do
         let os = joinPs m vs
             (cs, es) = partition (`Set.member` permissions m) os
+            ps = map pStr cs
+            pt = toSet P
         unless (null es) . putStrLn $ "ignoring unknown permissions: "
           ++ unwords (map pStr es)
-        return r
-          { userSets = let ps = map pStr cs in
-            Map.insert n (SetOf $ ElemTy P, toInts m ps, ps) us }
+        if knownSet n pt m then kn pt else
+          return $ insSet n pt (toInts m ps) ps r
       _ -> do
-        putStrLn $ "unknown or inhomogeneous elements: " ++ unwords vs
+        putStrLn $ "unknown, ambiguous or inhomogeneous elements: "
+          ++ unwords vs ++ if Set.null ks then "" else " : " ++ ppType ks
         ign
         return m
   _ -> return m
 
-allPs :: [SetType] -> Bool
+knownSet :: String -> SetType -> Model -> Bool
+knownSet s t m = case Map.lookup s $ userSets m of
+  Nothing -> False
+  Just mt -> Map.member t mt
+
+allPs :: [Set.Set SetType] -> Bool
 allPs l = case l of
-  (ElemTy OP : ElemTy OBJ : r) -> allPs r
+  (f : s : r) ->
+    ElemTy OP `Set.member` f && ElemTy OBJ `Set.member` s && allPs r
   [] -> True
   _ -> False
 
 joinValues :: Model -> SetType -> [String] -> Value
 joinValues m t vs = case t of
   ElemTy _ -> toInts m vs
-  _ -> VSet . Set.fromList $ map ((\ (_, v, _) -> v)
-    . flip (Map.findWithDefault $ error "joinValues") (userSets m)) vs
+  _ -> VSet . Set.fromList $ map (\ s -> getValue s t m) vs
+
+getValue :: String -> SetType -> Model -> Value
+getValue s t = fst . Map.findWithDefault (error "getValue") t
+  . Map.findWithDefault Map.empty s . userSets
 
 joinPs :: Model -> [String] -> [P]
 joinPs m l = case l of
   oP : oBj : r -> strP oP oBj : joinPs m r
   _ -> []
 
-findSetType :: Model -> String -> Maybe SetType
-findSetType m v = case Map.lookup v $ userSets m of
-  Just (t, _, _) -> Just t
-  Nothing -> case strToBase m v of
-    b : _ -> Just $ ElemTy b
-    [] -> Nothing
+findSetType :: Model -> String -> Set.Set SetType
+findSetType m v =
+  Set.union (Map.keysSet . Map.findWithDefault Map.empty v $ userSets m)
+  . Set.fromList . map ElemTy $ strToBase m v
