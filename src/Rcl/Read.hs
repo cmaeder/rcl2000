@@ -199,9 +199,8 @@ readSets m s = case s of
   _ -> return m
 
 knownSet :: String -> SetType -> Model -> Bool
-knownSet s t m = case Map.lookup s $ userSets m of
-  Nothing -> False
-  Just mt -> Map.member t mt
+knownSet s t m = Map.member t (Map.findWithDefault Map.empty s $ userSets m)
+  || any (\ (b, r) -> r == s && t == toSet b) primTypes
 
 allPs :: [Set.Set SetType] -> Bool
 allPs l = case l of
