@@ -130,7 +130,7 @@ setToOcl = foldSet FoldSet
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed _ ts -> case s of
+      Typed _ ts -> case getUntypedSet s of
         PrimSet t -> case Set.minView ts of
           Just (e, r) | Set.null r -> text $ tr e t ++ "()"
           _ -> error "setToOcl: prim set unknown"

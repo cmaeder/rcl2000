@@ -74,10 +74,14 @@ pTerm m t = case t of
 
 pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp f o in case o of
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
+      p = pBinOp f o
+      a1 = pParenSet o s1 d1
+      a2 = pParenSet o s2 d2
+      in case o of
     Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
-    Minus -> cat [pParenSet o s1 d1, hcat [p, pParenSet o s2 d2]]
-    _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
+    Minus -> cat [a1, hcat [p, a2]]
+    _ -> sep [a1, p <+> a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
       Typed ex ts -> if ex == Derived then d else cat [case getUntypedSet s of
            PrimSet _ -> d

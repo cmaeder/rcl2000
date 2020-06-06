@@ -126,8 +126,8 @@ eval m e = foldSet FoldSet
         _ -> Right . VSet . toOp o (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
   , foldUn = \ (UnOp _ s) o v -> case o of
-    Typed _ ts -> case s of
-      PrimSet _ | Set.size ts == 1 -> evalPrim m e (Just $ Set.findMin ts) s
+    Typed _ ts -> case getUntypedSet s of
+      PrimSet p | Set.size ts == 1 -> evalPrim m (Set.findMin ts) p
       _ -> v
     _ -> let
       p = sUnOp (fmap fst . Set.minView $ getType s) o
@@ -161,7 +161,7 @@ eval m e = foldSet FoldSet
       ss <- sequence vs
       Right $ if all isSingle ss then Ints . IntSet.unions $ map getInts ss else
         VSet $ Set.fromList ss
-  , foldPrim = evalPrim m e Nothing }
+  , foldPrim = evalVar e }
 
 toIntOp :: BinOp -> IntSet.IntSet -> IntSet.IntSet -> IntSet.IntSet
 toIntOp o = case o of
@@ -187,23 +187,18 @@ getInts v = case v of
   Ints is -> is
   _ -> IntSet.empty
 
-
-evalPrim :: Model -> Env -> Maybe SetType -> Set -> Either String Value
-evalPrim m e mt s = case s of
-  PrimSet p -> case Map.lookup p $ userSets m of
-    Just q | maybe (Map.size q == 1) (`Map.member` q) mt -> case mt of
-      Just t -> case Map.lookup t q of
-        Just (v, _) -> Right v
-        _ -> error "evalPrim1"
-      Nothing -> case Map.elems q of
-        [(v, _)] -> Right v
-        _ -> error "evalPrim2"
+evalPrim :: Model -> SetType -> String -> Either String Value
+evalPrim m t p = case Map.lookup p $ userSets m of
+    Just q | Map.member t q -> Right . fst $ q Map.! t
     _ -> case Map.lookup p $ strMap m of
       Just i -> Right . Ints $ IntSet.singleton i
       Nothing ->
         let ps = filter ((== p) . pStr_) . Set.toList $ permissions m in
         if null ps then Left $ "unknown set: " ++ p
         else Right . toInts m $ map pStr ps
+
+evalVar :: Env -> Set -> Either String Value
+evalVar e s = case s of
   Var v@(MkVar i _ _) -> case IntMap.lookup i e of
     Just r -> Right r
     Nothing -> Left $ "unknown variable: " ++ stVar v
