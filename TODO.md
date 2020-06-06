@@ -19,8 +19,6 @@
 
 ## RCL extensions
 
-- [ ] support multiple types for user sets
-
 - [ ] better set notation for user sets (with optional type)
 
         CR:Rss = {{r1, r2}, {r3, r4}}
