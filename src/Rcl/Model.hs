@@ -40,6 +40,11 @@ insUserSet :: (Base, String) -> Model -> Model
 insUserSet (b, s) m = let l = Set.toList $ getStrings m b in
   addS s $ insSet s (toSet b) (toInts m l) l m
 
+insUserSetAux :: Base -> Model -> Model
+insUserSetAux b m = case lookup b primTypes of
+  Just s -> insUserSet (b, s) m
+  _ -> error "insUserSetAux"
+
 addS :: String -> Model -> Model
 addS s m = if null s then error "addS" else case Map.lookup s $ strMap m of
     Nothing -> addStr s m
@@ -160,5 +165,5 @@ function bo m = let
   _ -> error "function"
 
 initSess :: Model -> Model
-initSess = insUserSet (S, "S") . flip (foldr initFctMap)
+initSess = insUserSetAux S . flip (foldr initFctMap)
   [(S, Roles TheOp), (S, User Singular TheOp), (U, Sessions)]
