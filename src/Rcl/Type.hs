@@ -156,7 +156,9 @@ tySet us = let
   , foldUn = \ s o s1 -> do
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
-      pure $ opResult o b1
+      pure $ case o of
+        Typed ex _ -> UnOp (Typed ex $ getType b1) $ getUntypedSet b1
+        _ -> opResult o b1
   , foldBraced = \ s bs -> do
       ss <- sequence bs
       let ts = map getType ss

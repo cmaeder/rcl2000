@@ -40,9 +40,13 @@ data UnOp = Typed Annotation (Set.Set SetType)
   | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
 -- AO: all other, OE: one element, optional s and/or * suffix
 
-data Annotation = Explicit | Derived deriving (Eq, Show)
+data Annotation = Explicit | Derived deriving Show
+instance Eq Annotation where
+  _ == _ = True
 
-data OptS = Plural | Singular deriving (Eq, Show)
+data OptS = Plural | Singular deriving Show
+instance Eq OptS where
+  _ == _ = True
 
 data Ior = Jun | Sen deriving (Eq, Show)
 

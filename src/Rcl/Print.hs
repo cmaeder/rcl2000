@@ -83,10 +83,12 @@ pSet m = let f = format m in foldSet FoldSet
     Minus -> cat [a1, hcat [p, a2]]
     _ -> sep [a1, p <+> a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed ex ts -> if ex == Derived then d else cat [case getUntypedSet s of
-           PrimSet _ -> d
-           _ -> parens d
-        , text $ ':' : ppType ts]
+      Typed ex ts -> case ex of
+        Derived -> d
+        Explicit -> cat [case getUntypedSet s of
+            PrimSet _ -> d
+            _ -> parens d
+          , text $ ':' : ppType ts]
       _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)
           [pUnOp m o, if b then parens d else d]
   , foldBraced = \ _ ds -> braces . fsep $ punctuate comma ds
