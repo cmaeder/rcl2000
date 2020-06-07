@@ -1,0 +1,5 @@
+u1 r1
+u2 r2
+U R s
+ACD
+ACB

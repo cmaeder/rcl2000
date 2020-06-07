@@ -1,0 +1,15 @@
+R u1 u2
+ABC u1 u2
+ABC r1 r2
+ABC op1 obj1
+ABD u1 u2
+ABD r1 r2
+ABD s1 s2
+ACD u1 u2
+ACD op1 obj1
+ACD s1 s2
+ACB u1 u2
+ACB r1 r2
+ACB op1 obj1
+U u1 u2
+O o1 o2

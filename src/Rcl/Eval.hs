@@ -1,4 +1,4 @@
-module Rcl.Eval (evalInput) where
+module Rcl.Eval (evalInput, getAllUserTypes) where
 
 import Control.Monad (unless)
 import Data.Char

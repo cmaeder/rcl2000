@@ -1,4 +1,4 @@
-module Rcl.ToOcl (ocl, aggName, tr, enc) where
+module Rcl.ToOcl (aggName, enc, ocl, tr) where
 
 import Data.Char (isAlphaNum, isAscii, ord, toLower, toUpper)
 import Data.Either (rights)

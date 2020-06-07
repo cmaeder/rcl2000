@@ -9,8 +9,8 @@ import Data.Version (showVersion)
 
 import Paths_rcl2000 (getDataFileName, version)
 import Rcl.Ast (Stmt, UserTypes)
-import Rcl.Data (Model, getUserTypes)
-import Rcl.Eval (evalInput)
+import Rcl.Data (Model)
+import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
 import Rcl.Parse (ParseError, parser)
@@ -196,7 +196,7 @@ reportParse mus o file eith = case eith of
         i = prompt o
         v = verbose o
         use = replaceDirectory (replaceExtension file "use") $ outDir o
-        us = either getUserTypes id mus
+        us = either getAllUserTypes id mus
     when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) ast
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast

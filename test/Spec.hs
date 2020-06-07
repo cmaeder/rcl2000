@@ -27,3 +27,4 @@ main = do
   as <- getDirectoryContents a
   let qs = map (a </>) $ fr as
   b $ ["-t", "-o" , "-r", "-d", a ] ++ qs
+  b $ ["-otest" , "-e", "-d", a ] ++ qs
