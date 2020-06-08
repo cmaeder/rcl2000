@@ -2,19 +2,19 @@ module Rcl.ToOcl (aggName, enc, ocl, tr) where
 
 import Data.Char (isAlphaNum, isAscii, ord, toLower, toUpper)
 import Data.Either (rights)
-import Data.Map (differenceWith, toList)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Numeric (showHex)
 
 import Rcl.Ast
-import Rcl.Reduce (runReduce)
+import Rcl.Reduce (const2, runReduce)
 import Rcl.Type (isElem, mBaseType, wellTyped)
 
 import Text.PrettyPrint
 
 toUse :: UserTypes -> [String]
 toUse us = let
-  l = toList $ differenceWith (\ s1 s2 ->
+  l = Map.toList $ Map.differenceWith (\ s1 s2 ->
     let s = Set.difference s1 s2 in
     if Set.null s then Nothing else Just s) us builtinTypes in
   concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
@@ -84,10 +84,14 @@ end :: String
 end = "end"
 
 ocl :: UserTypes -> [Stmt] -> String
-ocl us l = unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
+ocl u l = let
+  rs = rights $ map (wellTyped u) l
+  cs = foldr (\ (s, t) -> Map.insertWith Set.union s $ Set.singleton t)
+       Map.empty . Set.toList . Set.unions $ map stmtCs rs
+  us = Map.unionWith Set.union cs $ Map.map (Set.filter $ not . isElem) u
+  in unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
-    , uncurry toOcl $ runReduce us s]) [1 :: Int ..]
-    (rights $ map (wellTyped us) l)
+    , uncurry toOcl $ runReduce us s]) [1 :: Int ..] rs
 
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
@@ -140,6 +144,29 @@ setToOcl = foldSet FoldSet
   , foldPrim = \ s -> text $ case s of
       Var (MkVar i t _) -> t ++ show i
       _ -> error "setToOcl: no prim set" }
+
+stmtCs :: Stmt -> Set.Set (String, SetType)
+stmtCs = foldStmt FoldStmt
+  { foldBool = const2 Set.union
+  , foldCmp = const2 Set.union } termCs
+
+termCs :: Term -> Set.Set (String, SetType)
+termCs t = case t of
+  Term _ s -> setCs s
+  _ -> Set.empty
+
+setCs :: Set -> Set.Set (String, SetType)
+setCs = foldSet FoldSet
+  { foldBin = const2 Set.union
+  , foldUn = \ (UnOp _ s) o d -> case o of
+      Typed _ ts -> case getUntypedSet s of
+        PrimSet t -> case Set.minView ts of
+          Just (e, r) | isElem e && Set.null r -> Set.singleton (t, e)
+          _ -> d
+        _ -> d
+      _ -> d
+  , foldBraced = const Set.unions
+  , foldPrim = const Set.empty }
 
 pBoolOp :: BoolOp -> Doc
 pBoolOp o = text $ case o of

@@ -1,4 +1,4 @@
-module Rcl.Reduce (reduction, runReduce) where
+module Rcl.Reduce (const2, reduction, runReduce) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
