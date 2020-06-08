@@ -11,7 +11,7 @@ import Rcl.Ast
 import Rcl.Data
 import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Reduce (runReduce)
-import Rcl.Type (mBaseType, wellTyped)
+import Rcl.Type (wellTyped)
 
 type Env = IntMap.IntMap Value
 
@@ -124,11 +124,11 @@ eval m e = foldSet FoldSet
         _ -> Right . VSet . toOp o (toVSet r1) $ toVSet r2
         else Left $ "incompatible set types: " ++ t1 ++ "versus: " ++ t2
   , foldUn = \ (UnOp _ s) o v -> case o of
-    Typed _ ts -> case getUntypedSet s of
+    Typed _ ts -> case untyped s of
       PrimSet p | Set.size ts == 1 -> evalPrim m (Set.findMin ts) p
       _ -> v
     _ -> let
-      p = sUnOp (fmap fst . Set.minView $ getType s) o
+      p = sUnOp (fmap fst . Set.minView $ typeOf s) o
       t = ppSet s in case v of
       Right (Ints is) -> case o of
         User _ Star -> Right . Ints . apply m p $ apply m "s" is

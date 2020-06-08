@@ -32,7 +32,7 @@ replaceAO = foldStmt mapStmt $ mapTerm replAO
 replAO :: Set -> Set
 replAO = foldSet mapSet
   { foldUn = \ _ o p -> case o of
-      AO -> let ts = getType p in
+      AO -> let ts = typeOf p in
         BinOp Minus p . UnOp (Typed Derived ts) $ Braced [UnOp OE p]
       _ -> UnOp o p }
 
@@ -71,10 +71,10 @@ reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
 reduce us i s = case findSimpleOE s of
   Nothing -> pure s
   Just r -> do
-    let ts = elemType $ getType r
+    let ts = elemType $ typeOf r
         p = case Set.toList ts of
           ElemTy e : _ -> show e
-          _ -> ppSet $ getUntypedSet r
+          _ -> ppSet $ untyped r
         v = MkVar i (take 2 . map toLower $ filter isLetter p) ts
     modify ((v, r) :)
     reduce us (i + 1) $ replaceOE r (Var v) s
@@ -86,7 +86,7 @@ construct :: Stmt -> Vars -> Stmt
 construct = foldl (flip replaceVar)
 
 checkVar :: (Var, Set) -> String
-checkVar (i@(MkVar _ _ t), r) = let s = elemType $ getType r in
+checkVar (i@(MkVar _ _ t), r) = let s = elemType $ typeOf r in
   if s == t then ""
   else "type missmatch in variable " ++ stVar i ++ ':' : ppType t
     ++ " versus " ++ ppSet r ++ ':' : ppType s
@@ -106,7 +106,7 @@ replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 replMinus :: Set -> Set
 replMinus = foldSet mapSet
   { foldBin = \ _ o s1 s2 -> case o of
-      Minus | getUntypedSet s2 == Braced [UnOp OE s1] -> UnOp AO s1
+      Minus | untyped s2 == Braced [UnOp OE s1] -> UnOp AO s1
       _ -> BinOp o s1 s2 }
 
 reduceAndReconstruct :: UserTypes -> Stmt -> [String]

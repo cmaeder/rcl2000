@@ -1,5 +1,5 @@
-module Rcl.Type (addPrimTypes, elemType, isElem, mBaseType, typeErrors,
-                 typeSet, wellTyped) where
+module Rcl.Type (addPrimTypes, elemType, isElem, typeErrors, typeOf, typeSet,
+                 wellTyped) where
 
 import Control.Monad (unless, when)
 import Control.Monad.State (State, modify, runState)
@@ -16,9 +16,6 @@ addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s
 
 typeErrors :: UserTypes -> [Stmt] -> String
 typeErrors us = unlines . lefts . map (wellTyped us)
-
-mBaseType :: Set -> Set.Set Base
-mBaseType = Set.map baseType . getType
 
 typeSet :: UserTypes -> Set -> Either String Set
 typeSet us s = case runState (tySet us s >>=
@@ -48,8 +45,8 @@ tyStmt = foldStmt FoldStmt
         ft = filterType ("relation: " ++ str) True
     case (t1, t2) of
         (Term TheSet s1, Term TheSet s2) | o `elem` [Eq, Ne, Elem] -> do
-            let ts1 = getType s1
-                ts2 = getType s2
+            let ts1 = typeOf s1
+                ts2 = typeOf s2
                 ts = if o == Elem then
                   Set.filter (ifSet (`Set.member` ts1) False) ts2
                   else compatSetTys ts1 ts2
@@ -112,7 +109,7 @@ disambig str t s = let
 filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State [String] Set
 filterType str b f s = let
   md m = report $ m ++ " in " ++ str
-  t = getType s
+  t = typeOf s
   l = Set.toList t
   r = filter f l
   rs = Set.fromList r
@@ -120,13 +117,13 @@ filterType str b f s = let
   in case r of
   [] -> do
     unless (null l) . md $ "wrongly typed '" ++ ppSet s ++ "'"
-    pure $ getUntypedSet s
+    pure $ untyped s
   [a] -> case l of
-    _ : _ : _ -> disambig str a $ getUntypedSet s
+    _ : _ : _ -> disambig str a $ untyped s
     _ -> pure s
   _ -> do
     when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "'"
-    pure . mt $ getUntypedSet s
+    pure . mt $ untyped s
 
 tySet :: UserTypes -> Set -> State [String] Set
 tySet us = let
@@ -145,7 +142,7 @@ tySet us = let
             -- R + U x OBJ -> 2^OP
         _ -> do
           let ts = Set.map (\ t -> if isElem t then SetOf t else t)
-                . compatSetTys (getType a1) $ getType a2
+                . compatSetTys (typeOf a1) $ typeOf a2
               filt t = any (`Set.member` ts) [t, SetOf t]
               ft = filterType ("set operation: " ++ ppSet s) (Set.size ts <= 1)
                 (if Set.null ts then const True else filt)
@@ -157,11 +154,11 @@ tySet us = let
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
       pure $ case o of
-        Typed ex _ -> UnOp (Typed ex $ getType b1) $ getUntypedSet b1
+        Typed ex _ -> UnOp (Typed ex $ typeOf b1) $ untyped b1
         _ -> opResult o b1
   , foldBraced = \ s bs -> do
       ss <- sequence bs
-      let ts = map getType ss
+      let ts = map typeOf ss
           ft = foldr1 Set.intersection ts
       fts <- mapM (filterType ("braced set: " ++ ppSet s) (Set.size ft <= 1)
         $ if Set.null ft then const True else (`Set.member` ft)) ss
@@ -210,7 +207,7 @@ opArg o t = case o of
 
 opResult :: UnOp -> Set -> Set
 opResult o s = let
-  ts = getType s
+  ts = typeOf s
   mkSetType = Set.singleton . toSet
   in mkTypedSet (case o of
   OE -> elemType ts
@@ -228,15 +225,15 @@ opResult o s = let
 
 mkSingle :: Set.Set SetType -> Set -> Set
 mkSingle ts s =
-  mkBraced (Set.size ts > 0 && Set.map SetOf (getType s) == ts) s
+  mkBraced (Set.size ts > 0 && Set.map SetOf (typeOf s) == ts) s
 
 mkSingleton :: Bool -> Set -> Set
-mkSingleton b s = let ts = getType s in
+mkSingleton b s = let ts = typeOf s in
   mkBraced (b && Set.size ts == 1 && isElem (Set.findMin ts)) s
 
 mkBraced :: Bool -> Set -> Set
 mkBraced b s =
-  if b then mkTypedSet (Set.map SetOf $ getType s) $ Braced [s] else s
+  if b then mkTypedSet (Set.map SetOf $ typeOf s) $ Braced [s] else s
 
 isElemOrSet :: Base -> SetType -> Bool
 isElemOrSet b t = case t of

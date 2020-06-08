@@ -60,7 +60,7 @@ options =
       (ReqArg (\ f o -> o {ext = f}) "<ext>")
       $ "extension for input files, default: " ++ ext dOpts
     , Option "t" ["types"]
-      (OptArg (\ mt o -> let o1 = o {getTypes = True} in
+      (OptArg (\ mt o -> let o1 = o {onlyType = True} in
                   maybe o1 (\ t -> o1 {typesFile = t}) mt) "file")
       $ "read user defined types from file, default: " ++ typesFile dOpts
     , Option "R" ["Roles"]
@@ -99,7 +99,7 @@ data Opts = Opts
   , check :: Bool
   , reduce :: Bool
   , evaluate :: Bool
-  , getTypes :: Bool
+  , onlyType :: Bool
   , toOcl :: Bool
   , prompt :: Bool
   , help :: Bool
@@ -124,7 +124,7 @@ dOpts = Opts
   , check = False
   , reduce = False
   , evaluate = False
-  , getTypes = False
+  , onlyType = False
   , toOcl = False
   , prompt = False
   , help = False
@@ -157,7 +157,7 @@ cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
           else rm >>= evalInput [] . initModel
         _ -> do
           eith <- if onlyPrint o then return $ Right Map.empty else
-            if getTypes o then fmap Right . readTypes v $ optsFile o typesFile
+            if onlyType o then fmap Right . readTypes v $ optsFile o typesFile
             else fmap Left rm
           mapM_ (processFile eith o) n
       (_, _, errs) -> mapM_ putStrLn errs

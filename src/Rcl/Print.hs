@@ -85,7 +85,7 @@ pSet m = let f = format m in foldSet FoldSet
   , foldUn = \ (UnOp _ s) o d -> case o of
       Typed ex ts -> case ex of
         Derived -> d
-        Explicit -> cat [case getUntypedSet s of
+        Explicit -> cat [case untyped s of
             PrimSet _ -> d
             _ -> parens d
           , text $ ':' : ppType ts]
@@ -101,7 +101,7 @@ pPrimSet s = text $ case s of
   _ -> error "pPrimSet"
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
-pParenSet o s = case getUntypedSet s of
+pParenSet o s = case untyped s of
   BinOp i _ _ -> case o of
     Minus -> parens
     Inter -> case i of

@@ -8,7 +8,7 @@ import Numeric (showHex)
 
 import Rcl.Ast
 import Rcl.Reduce (const2, runReduce)
-import Rcl.Type (isElem, mBaseType, wellTyped)
+import Rcl.Type (isElem, wellTyped)
 
 import Text.PrettyPrint
 
@@ -134,7 +134,7 @@ setToOcl = foldSet FoldSet
       Minus -> parens $ hcat [a1, p, a2]
       _ -> cat [hcat [a1, arr, p], parens a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed _ ts -> case getUntypedSet s of
+      Typed _ ts -> case untyped s of
         PrimSet t -> case Set.minView ts of
           Just (e, r) | Set.null r -> text $ tr e t ++ "()"
           _ -> error "setToOcl: prim set unknown"
@@ -159,7 +159,7 @@ setCs :: Set -> Set.Set (String, SetType)
 setCs = foldSet FoldSet
   { foldBin = const2 Set.union
   , foldUn = \ (UnOp _ s) o d -> case o of
-      Typed _ ts -> case getUntypedSet s of
+      Typed _ ts -> case untyped s of
         PrimSet t -> case Set.minView ts of
           Just (e, r) | isElem e && Set.null r -> Set.singleton (t, e)
           _ -> d

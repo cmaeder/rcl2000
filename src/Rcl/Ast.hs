@@ -2,7 +2,7 @@ module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
 import qualified Data.Map as Map (Map, empty, insert)
-import qualified Data.Set as Set (Set, empty, singleton, toList)
+import qualified Data.Set as Set (Set, empty, map, singleton, toList)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -81,16 +81,16 @@ foldSet r s = case s of
   Braced ss -> foldBraced r s $ map (foldSet r) ss
   _ -> foldPrim r s
 
-getType :: Set -> Set.Set SetType
-getType s = case s of
+untyped :: Set -> Set
+untyped s = case s of
+  UnOp (Typed _ _) e -> e
+  _ -> s
+
+typeOf :: Set -> Set.Set SetType
+typeOf s = case s of
   UnOp (Typed _ ts) _ -> ts
   Var (MkVar _ _ ts) -> ts
   _ -> Set.empty
-
-getUntypedSet :: Set -> Set
-getUntypedSet s = case s of
-  UnOp (Typed _ _) e -> e
-  _ -> s
 
 foldSetType :: (a -> a) -> (Base -> a) -> SetType -> a
 foldSetType f g s = case s of
@@ -99,6 +99,9 @@ foldSetType f g s = case s of
 
 baseType :: SetType -> Base
 baseType = foldSetType id id
+
+mBaseType :: Set -> Set.Set Base
+mBaseType = Set.map baseType . typeOf
 
 stVar :: Var -> String
 stVar (MkVar i t _) = t ++ show i
