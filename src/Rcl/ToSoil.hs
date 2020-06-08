@@ -4,12 +4,12 @@ import Data.Char (toLower)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Rcl.Ast (Base (..), SetType (..), baseType, foldSetType)
+import Rcl.Ast
 import Rcl.Data
 import Rcl.ToOcl (aggName, enc, tr)
 
-toSoil :: Model -> String
-toSoil m = unlines $ let
+toSoil :: Model -> UserTypes -> String
+toSoil m cs = unlines $ let
   ps = permissions m
   pl = Set.toList ps
   ss = sessions m
@@ -18,15 +18,15 @@ toSoil m = unlines $ let
   rs = roles m
   hs = rhim m
   ks = Set.union (Map.keysSet hs) . Map.keysSet $ invim m
-  in new R role (Set.difference rs ks)
+  in new cs R role (Set.difference rs ks)
   ++ map (mkNew "HR" . codeB R . role) (Set.toList ks)
-  ++ new U name (users m)
-  ++ new OP operation (operations m)
-  ++ new OBJ resource (objects m)
-  ++ new P pStr ps
+  ++ new cs U name (users m)
+  ++ new cs OP operation (operations m)
+  ++ new cs OBJ resource (objects m)
+  ++ new cs P pStr ps
   ++ set "op" (codeB P . pStr) (codeB OP . operation . op) pl
   ++ set "obj" (codeB P . pStr) (codeB OBJ . resource . obj) pl
-  ++ new S id (Map.keysSet ss)
+  ++ new cs S id (Map.keysSet ss)
   ++ set "user" (codeB S . fst) (codeB U . name . user . snd) sl
   ++ insert "UA" (codeB U . name) role (Set.toList $ ua m)
   ++ insert "PA" (codeB P . pStr) role (Set.toList $ pa m)
@@ -35,15 +35,23 @@ toSoil m = unlines $ let
   ++ insert "SessionRoles" (codeB S) role
     (concatMap (\ (i, s) -> map (\ e -> (i, e))
     . Set.toList $ activeRoles s) sl)
-  ++ map (\ s -> mkNew (tr s) $ tr s) ("RBAC" : Map.keys us)
-  ++ map (\ (s, t, r) -> mkInsert (tr s) (code t r) $ aggName t) (concatMap
-     (\ (s, (t, _, l)) -> map (\ e -> (s, t, e)) l) $ Map.toList us)
+  ++ mkNew "RBAC" "RBAC"
+  : concatMap (\ (s, mt) -> map (\ t -> mkNew (tr t s) $ tr t s)
+      $ Map.keys mt) (Map.toList us)
+  ++ map (\ (s, t, r) -> mkInsert (tr t s) (code t r) $ aggName t)
+    (concatMap (\ (s, tm) -> concatMap (\ (t, (_, l)) -> map
+      (\ e -> (s, t, e)) l) $ Map.toList tm) $ Map.toList us)
 
 mkNew :: String -> String -> String
 mkNew c n = "!create " ++ n ++ " : " ++ c
 
-new :: Base -> (a -> String) -> Set.Set a -> [String]
-new b f = map (mkNew (show b) . codeB b . f) . Set.toList
+new :: UserTypes -> Base -> (a -> String) -> Set.Set a -> [String]
+new cs b f = map (\ s -> let
+  r = f s
+  t = ElemTy b
+  in mkNew (case Map.lookup r cs of
+    Just ts | Set.member t ts -> tr t r
+    _ -> show b) $ codeB b r) . Set.toList
 
 set :: String -> (a -> String) -> (a -> String) -> [a] -> [String]
 set a f g = map $ \ o -> '!' : f o ++ "." ++ a ++ " := " ++ g o
@@ -61,7 +69,9 @@ baseSet :: SetType -> Maybe Base
 baseSet s = if depth s <= 1 then Just $ baseType s else Nothing
 
 code :: SetType -> String -> String
-code = maybe tr codeB . baseSet
+code t = case t of
+  SetOf e -> maybe (tr e) codeB $ baseSet t
+  _ -> error "code"
 
 codeB :: Base -> String -> String
 codeB b s = case words s of

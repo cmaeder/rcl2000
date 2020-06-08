@@ -126,14 +126,21 @@ The parser is more liberal than described in the [paper][1]:
   be any alphanum or the underscore. Other characters may be easily
   allowed if they are not used elsewhere.
 
-- The minus sign `-` can be used directly to remove an element from a
-  set: "`AO(S)`" is the same as "`S-{OE(S)}`" or "`S - OE S`" as also
-  the curly braces are optional. The second argument of minus `-` must
-  be an element of the first argument. (The first part of the reduction
-  is in fact the replacement of `AO` using `-` and `OE`.)
+- The minus sign `-` can be used for set difference: "`AO(S)`" is the
+  same as "`S-{OE(S)}`" or "`S - OE S`" as the curly braces will be
+  derived by type checking. (The first part of the reduction is in
+  fact the replacement of `AO` using `-`, curly braces and `OE`.)
+
+- user defined set may be overloaded and type annotated for
+  disambiguation. "`U`" has type "`Us`" and may be written as
+  "`U:Us`".
+
+- (non-empty) sets can be constructed on the fly using curly
+  braces. (In fact singleton sets are constructed during type checking
+  and reduction.)
 
 The type checker is as liberal as described in the [paper][1]. Many
-elements are regarded as singleton sets to ensure proper typing. The
+elements are turned to singleton sets to ensure proper typing. The
 following reflexive transitive closure functions have been added:
 
         juniors* : R -> 2^R, juniors*(r) = { j | j <= r }
@@ -236,8 +243,9 @@ demonstrates the expresive power of RCL with these additional
 `juniors` and `seniors` functions.
 
 The conflict sets `CR`, `CP`, or `CU` described in the [paper][1] are
-set of sets of `R`, `P`, or `U` respectively. These sets can be used
-to describe separation of duty (SoD) constraints in RCL.
+set of sets of `R`, `P`, or `U` (with types `Rss`, `Pss`, or `Uss`),
+respectively. These sets can be used to describe separation of duty
+(SoD) constraints in RCL.
 
         |roles*(OE(U)) ∩ OE(CR)| ≤ 1
 

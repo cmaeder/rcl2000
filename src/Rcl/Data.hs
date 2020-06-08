@@ -10,8 +10,7 @@ import Data.Set ((\\))
 import qualified Data.Set as Set
 
 import Rcl.Ast (Base (..), Ior (..), OptStar (..), SetType (..), UnOp (..),
-                UserTypes)
-import Rcl.Type (elemType, isElem)
+                UserTypes, builtinTypes)
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
@@ -31,7 +30,7 @@ data Model = Model
   , objects :: Set.Set OBJ
   , permissions :: Set.Set P
   , sessions :: Map String S
-  , userSets :: Map String (SetType, Value, [String])
+  , userSets :: Map String (Map SetType (Value, [String]))
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
   , rh :: Map R (Set.Set R) -- all junior roles
@@ -67,7 +66,9 @@ emptyModel = Model
   , next = 1 }
 
 getUserTypes :: Model -> UserTypes
-getUserTypes = Map.map (\ (t, _, _) -> t) . userSets
+getUserTypes = foldr
+  (\ (n, m) -> Map.insertWith Set.union n $ Map.keysSet m)
+  builtinTypes . Map.toList . userSets
 
 pStrC :: Char -> P -> String
 pStrC c p = operation (op p) ++ c : resource (obj p)
@@ -128,7 +129,9 @@ getStrings m b = case b of
 sUnOp :: Maybe SetType -> UnOp -> String
 sUnOp t o = let
   u = take 1 $ show o
-  mt = t >>= \ s -> if isElem s then Just s else elemType s
+  mt = t >>= \ s -> Just $ case s of
+    ElemTy _ -> s
+    SetOf e -> e
   in case o of
   User _ _ -> if t == Just (ElemTy S) then "u" else u
   Object _ -> "B"

@@ -1,7 +1,8 @@
 module Rcl.Ast where
 
 import Data.Char (isLetter, toLower)
-import Data.Map (Map)
+import qualified Data.Map as Map (Map, empty, insert)
+import qualified Data.Set as Set (Set, empty, singleton, toList)
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)
@@ -18,68 +19,78 @@ data Term = Term OptCard Set | EmptySet | Num Int deriving (Eq, Show)
 
 data OptCard = Card | TheSet deriving (Eq, Show)
 
-data Set = PrimSet { stPrim :: String } | UnOp UnOp Set
+data Set = PrimSet String | UnOp UnOp Set | Braced [Set]
   | BinOp BinOp Set Set | Var Var deriving (Eq, Show) -- named term by Ahn
 
 data FoldSet a = FoldSet
   { foldBin :: Set -> BinOp -> a -> a -> a
   , foldUn :: Set -> UnOp -> a -> a
+  , foldBraced :: Set -> [a] -> a
   , foldPrim :: Set -> a }
 
-data Var = MkVar Int String (Maybe SetType) deriving (Eq, Show)
+data Var = MkVar Int String (Set.Set SetType) deriving (Eq, Show)
 
 data BinOp = Union | Inter | Operations OptStar | Minus deriving (Eq, Show)
 -- operations is special binary and Minus is used for reduction of AO
 
 data OptStar = Star | TheOp deriving (Eq, Show)
 
-data UnOp = AO | OE | User OptS OptStar | Roles OptStar | Sessions
+data UnOp = Typed Annotation (Set.Set SetType)
+  | AO | OE | User OptS OptStar | Roles OptStar | Sessions
   | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
 -- AO: all other, OE: one element, optional s and/or * suffix
 
-data OptS = Plural | Singular deriving (Eq, Show)
+data Annotation = Explicit | Derived deriving Show
+instance Eq Annotation where
+  _ == _ = True
+
+data OptS = Plural | Singular deriving Show
+instance Eq OptS where
+  _ == _ = True
 
 data Ior = Jun | Sen deriving (Eq, Show)
 
 data Base = U | R | OP | OBJ | P | S deriving (Eq, Ord, Show)
-data SetType = ElemTy Base | SetOf SetType deriving (Eq, Show)
-data Type = SetTy SetType | NatTy | EmptySetTy deriving (Eq, Show)
+data SetType = ElemTy Base | SetOf SetType deriving (Eq, Ord, Show)
 data Format = Ascii | Uni | LaTeX deriving (Eq, Show)
-type UserTypes = Map String SetType
+type UserTypes = Map.Map String (Set.Set SetType)
 type Vars = [(Var, Set)]
 
-primTypes :: [Base]
-primTypes = [U, R, OP, OBJ, P, S]
+primTypes :: [(Base, String)]
+primTypes = let bs = [U, R, OP, OBJ, P, S] in zip bs $ map show bs
+
+builtinTypes :: UserTypes
+builtinTypes = foldr
+  (\ (b, s) -> Map.insert s . Set.singleton $ toSet b) Map.empty primTypes
+
+toSet :: Base -> SetType
+toSet = SetOf . ElemTy
 
 forms :: [Format]
 forms = [Ascii, Uni, LaTeX]
-
-mapStmt :: FoldStmt Term Stmt
-mapStmt = FoldStmt
-  { foldBool = const BoolOp
-  , foldCmp = const CmpOp }
 
 foldStmt :: FoldStmt a b -> (Term -> a) -> Stmt -> b
 foldStmt r f s = case s of
   BoolOp o s1 s2 -> foldBool r s o (foldStmt r f s1) $ foldStmt r f s2
   CmpOp o s1 s2 -> foldCmp r s o (f s1) $ f s2
 
-mapTerm :: (Set -> Set) -> Term -> Term
-mapTerm f t = case t of
-  Term b s -> Term b $ f s
-  _ -> t
-
-mapSet :: FoldSet Set
-mapSet = FoldSet
-  { foldBin = const BinOp
-  , foldUn = const UnOp
-  , foldPrim = id }
-
 foldSet :: FoldSet a -> Set -> a
 foldSet r s = case s of
   BinOp o s1 s2 -> foldBin r s o (foldSet r s1) $ foldSet r s2
   UnOp o p -> foldUn r s o $ foldSet r p
+  Braced ss -> foldBraced r s $ map (foldSet r) ss
   _ -> foldPrim r s
+
+getType :: Set -> Set.Set SetType
+getType s = case s of
+  UnOp (Typed _ ts) _ -> ts
+  Var (MkVar _ _ ts) -> ts
+  _ -> Set.empty
+
+getUntypedSet :: Set -> Set
+getUntypedSet s = case s of
+  UnOp (Typed _ _) e -> e
+  _ -> s
 
 foldSetType :: (a -> a) -> (Base -> a) -> SetType -> a
 foldSetType f g s = case s of
@@ -189,3 +200,9 @@ keySigns = concatMap (\ f -> f Uni) [sAnd, sImpl, sUnion, sInter, sEmpty]
 -- | OCL compliant class name
 stSet :: SetType -> String
 stSet = foldSetType (++ "s") show
+
+ppType :: Set.Set SetType -> String
+ppType s = case Set.toList s of
+  [] -> "Unknown"
+  [t] -> stSet t
+  ts -> unwords $ map stSet ts

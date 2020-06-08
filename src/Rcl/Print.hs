@@ -1,10 +1,8 @@
-module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar, ppType,
+module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar,
   Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
-import Text.PrettyPrint (Doc, Mode (OneLineMode), braces, cat, hcat, int, mode,
-                         parens, render, renderStyle, sep, style, text, vcat,
-                         (<+>))
+import Text.PrettyPrint
 
 data Form = Form { format :: Format, prParen :: Bool }
 
@@ -18,7 +16,7 @@ ppStmt :: Stmt -> String
 ppStmt = render . pStmt form
 
 lineStmt :: Stmt -> String
-lineStmt = renderStyle style { mode = OneLineMode} . pStmt form
+lineStmt = renderStyle style {mode = OneLineMode} . pStmt form
 
 ppTerm :: Term -> String
 ppTerm = render . pTerm form
@@ -31,9 +29,6 @@ ppVar = render . pVar form
 
 form :: Form
 form = Form Uni True
-
-ppType :: Maybe SetType -> String
-ppType = maybe "Unknown" stSet
 
 pStmts :: Form -> [Stmt] -> Doc
 pStmts m = vcat . map (lStmt m)
@@ -79,13 +74,24 @@ pTerm m t = case t of
 
 pSet :: Form -> Set -> Doc
 pSet m = let f = format m in foldSet FoldSet
-  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let p = pBinOp f o in case o of
+  { foldBin = \ (BinOp _ s1 s2) o d1 d2 -> let
+      p = pBinOp f o
+      a1 = pParenSet o s1 d1
+      a2 = pParenSet o s2 d2
+      in case o of
     Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
-    Minus -> cat [pParenSet o s1 d1, hcat [p, braces d2]]
-    _ -> sep [pParenSet o s1 d1, p <+> pParenSet o s2 d2]
-  , foldUn = \ _ o d -> let b = prParen m
-      in (if b || f == LaTeX then cat else sep)
+    Minus -> cat [a1, hcat [p, a2]]
+    _ -> sep [a1, p <+> a2]
+  , foldUn = \ (UnOp _ s) o d -> case o of
+      Typed ex ts -> case ex of
+        Derived -> d
+        Explicit -> cat [case getUntypedSet s of
+            PrimSet _ -> d
+            _ -> parens d
+          , text $ ':' : ppType ts]
+      _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)
           [pUnOp m o, if b then parens d else d]
+  , foldBraced = \ _ ds -> braces . fsep $ punctuate comma ds
   , foldPrim = pPrimSet }
 
 pPrimSet :: Set -> Doc
@@ -95,7 +101,7 @@ pPrimSet s = text $ case s of
   _ -> error "pPrimSet"
 
 pParenSet :: BinOp -> Set -> Doc -> Doc
-pParenSet o s = case s of
+pParenSet o s = case getUntypedSet s of
   BinOp i _ _ -> case o of
     Minus -> parens
     Inter -> case i of

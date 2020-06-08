@@ -9,8 +9,8 @@ import Data.Version (showVersion)
 
 import Paths_rcl2000 (getDataFileName, version)
 import Rcl.Ast (Stmt, UserTypes)
-import Rcl.Data (Model, getUserTypes)
-import Rcl.Eval (evalInput)
+import Rcl.Data (Model)
+import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
 import Rcl.Parse (ParseError, parser)
@@ -27,28 +27,6 @@ import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
                         takeFileName, (</>))
 import System.IO (hSetEncoding, stdout, utf8)
 import Text.ParserCombinators.Parsec (parse)
-
--- | top level call with program name and arguments
-cli :: String -> [String] -> IO ()
-cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
-      (os, n, []) -> let o = foldl (flip id) dOpts os in
-        if help o then putStrLn $
-          usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
-        else if vers o then putStrLn $ prN ++ " Version " ++ showVersion version
-        else let
-          v = verbose o
-          rm = readModel v $ map (optsFile o)
-            [rhFile, uaFile, paFile, sessFile, setsFile]
-          in case n of
-        [] -> if stmtOpts o then
-          putStrLn "unexpected options without file arguments"
-          else rm >>= evalInput [] . initModel
-        _ -> do
-          eith <- if onlyPrint o then return $ Right Map.empty else
-            if getTypes o then fmap Right . readTypes v $ optsFile o typesFile
-            else fmap Left rm
-          mapM_ (processFile eith o) n
-      (_, _, errs) -> mapM_ putStrLn errs
 
 -- | describe all available options
 options :: [OptDescr (Opts -> Opts)]
@@ -162,21 +140,27 @@ dOpts = Opts
   , useFile = "use/RBAC.use"
   , outDir = "use" }
 
-optsFile :: Opts -> (Opts -> FilePath) -> FilePath
-optsFile o sel = let f = sel o in
-  (if takeFileName f == f then (dir o </>) else id)
-  $ if hasExtension f then f else replaceExtension f $ ext o
-
-stmtOpts :: Opts -> Bool
-stmtOpts o = any (\ f -> f o) [pprint, check, reduce, evaluate, toOcl]
-
-onlyPrint :: Opts -> Bool
-onlyPrint o = not (prompt o) && (pprint o || not (stmtOpts o))
-
-form :: Opts -> Form
-form o = let low = map toLower in
-  Form (fromMaybe Uni $ find (\ f -> low (show f) == low (format o))
-    [LaTeX, Ascii]) $ parens o
+-- | top level call with program name and arguments
+cli :: String -> [String] -> IO ()
+cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
+      (os, n, []) -> let o = foldl (flip id) dOpts os in
+        if help o then putStrLn $
+          usageInfo ("usage: " ++ prN ++ " [options] <file>*") options
+        else if vers o then putStrLn $ prN ++ " Version " ++ showVersion version
+        else let
+          v = verbose o
+          rm = readModel v $ map (optsFile o)
+            [rhFile, uaFile, paFile, sessFile, setsFile]
+          in case n of
+        [] -> if stmtOpts o then
+          putStrLn "unexpected options without file arguments"
+          else rm >>= evalInput [] . initModel
+        _ -> do
+          eith <- if onlyPrint o then return $ Right Map.empty else
+            if getTypes o then fmap Right . readTypes v $ optsFile o typesFile
+            else fmap Left rm
+          mapM_ (processFile eith o) n
+      (_, _, errs) -> mapM_ putStrLn errs
 
 processFile :: Either Model UserTypes -> Opts -> FilePath -> IO ()
 processFile eith o file = do
@@ -196,20 +180,21 @@ reportParse mus o file eith = case eith of
         i = prompt o
         v = verbose o
         use = replaceDirectory (replaceExtension file "use") $ outDir o
-        us = either getUserTypes id mus
+        us = either getAllUserTypes id mus
     when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) ast
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do
       let uf = useFile o
+          (cs, res) = ocl us ast
       str0 <- readMyFile v uf
       str <- if null str0 then do
           f <- getDataFileName uf
           readMyFile v f
         else return str0
-      writeMyFile v use $ str ++ ocl us ast
+      writeMyFile v use $ str ++ res
       case mus of
-        Left m -> writeMyFile v (replaceExtension use "soil") $ toSoil m
+        Left m -> writeMyFile v (replaceExtension use "soil") $ toSoil m cs
         _ -> when (v > 0) $ putStrLn
           "no .soil file written for option -t"
     case mus of
@@ -227,3 +212,19 @@ writeMyFile v f s = do
   when (v > 1) $ do
     a <- makeAbsolute f
     putStrLn $ "successfully written: " ++ a
+
+optsFile :: Opts -> (Opts -> FilePath) -> FilePath
+optsFile o sel = let f = sel o in
+  (if takeFileName f == f then (dir o </>) else id)
+  $ if hasExtension f then f else replaceExtension f $ ext o
+
+stmtOpts :: Opts -> Bool
+stmtOpts o = any (\ f -> f o) [pprint, check, reduce, evaluate, toOcl]
+
+onlyPrint :: Opts -> Bool
+onlyPrint o = not (prompt o) && (pprint o || not (stmtOpts o))
+
+form :: Opts -> Form
+form o = let low = map toLower in
+  Form (fromMaybe Uni $ find (\ f -> low (show f) == low (format o))
+    [LaTeX, Ascii]) $ parens o

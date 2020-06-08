@@ -10,9 +10,11 @@ main :: IO ()
 main = do
   let e = "examples"
       d = "test" </> "expectedParseErrors"
+      a = "test" </> "ambiguous"
       b = cli "rcl2000"
+      fr = filter ((== ".rcl") . takeExtension)
   es <- getDirectoryContents e
-  let rs = map (e </>) $ filter ((== ".rcl") . takeExtension) es
+  let rs = map (e </>) $ fr es
   mapM_ (\ f -> b $ ["-f", show f] ++ rs) forms
   mapM_ (\ f -> b $ ["-n", "-f", show f] ++ rs) forms
   mapM_ (\ o -> b $ o : "-t" : rs) ["-c", "-r"]
@@ -22,3 +24,7 @@ main = do
   ts <- getDirectoryContents d
   fs <- filterM doesFileExist $ map (d </>) ts
   b fs
+  as <- getDirectoryContents a
+  let qs = map (a </>) $ fr as
+  b $ ["-t", "-o" , "-r", "-d", a ] ++ qs
+  b $ ["-otest" , "-e", "-d", a ] ++ qs

@@ -1,20 +1,21 @@
-module Rcl.Eval (evalInput) where
+module Rcl.Eval (evalInput, getAllUserTypes) where
 
 import Control.Monad (unless)
 import Data.Char
 import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
-import qualified Data.Map as Map (delete, insert, member, toList)
+import qualified Data.Map as Map (delete, insertWith, member, toList)
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set (singleton, union)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Model (addSURs, initSess)
-import Rcl.Parse (parser, set)
-import Rcl.Print (lineStmt, ppSet)
-import Rcl.Type (typeErrors, typeOfSet)
+import Rcl.Parse (set, stmt)
+import Rcl.Print (lineStmt)
+import Rcl.Type (typeSet, wellTyped)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
@@ -31,11 +32,9 @@ evalInput l m = let ls = map lineStmt l in do
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
-  foldr (\ o -> Map.insert (resource o) $ ElemTy OBJ)
-  (foldr (\ p -> Map.insert (fst p) $ ElemTy S)
-  (foldr (\ p -> Map.insert (pStr_ p) $ ElemTy P)
-  (foldr (\ u -> Map.insert (name u) $ ElemTy U)
-  (foldr (\ r -> Map.insert (role r) $ ElemTy R) (getUserTypes m) $ roles m)
+  let ins f b a = Map.insertWith Set.union (f a) . Set.singleton $ ElemTy b
+  in foldr (ins resource OBJ) (foldr (ins fst S) (foldr (ins pStr_ P)
+  (foldr (ins name U) (foldr (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
 
 loop :: [Stmt] -> Model -> InputT IO ()
@@ -46,8 +45,8 @@ loop l m = do
     Nothing -> return () -- Ctrl-D pressed
     Just s -> let
       us = getAllUserTypes m
-      fp = parseAndType us parser typeErrors s
-      sp = parseAndType us (spaces *> set <* eof) typeSet s
+      fp = parseAndType us stmt wellTyped s
+      sp = parseAndType us set typeSet s
       ck w k = isLeft sp && ckCmd w k
       in case words s of
       [] -> loop l m
@@ -76,11 +75,11 @@ loop l m = do
           else outputStrLn ("unknown session: " ++ si) >> loop l m
       _ -> case (sp, fp) of
         (Right a, _) -> do
-          outputStrLn $ case eval us m IntMap.empty a of
+          outputStrLn $ case eval m IntMap.empty a of
             Left f -> f
             Right v -> stValue m v
           loop l m
-        (_, Right f) -> outputStr (interprets us m f)
+        (_, Right f) -> outputStr (interprets us m [f])
           >> loop l m
         (Left (Left err1), Left (Left err2)) -> do
           outputStrLn err1
@@ -105,15 +104,12 @@ isAdd s = map toLower s == "add"
 keys :: String -> [String]
 keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
-typeSet :: UserTypes -> Set -> String
-typeSet us a = maybe ("wrongly typed set: " ++ ppSet a) (const "")
-  $ typeOfSet us a
-
-parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> String)
+parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> Either String a)
    -> String -> Either (Either String String) a
-parseAndType us p tc s = case parse p "" s of
-  Right a -> let t = tc us a in
-    if null t then Right a else Left $ Right t
+parseAndType us p tc s = case parse (spaces *> p <* eof) "" s of
+  Right a -> case tc us a of
+    Right b -> Right b
+    Left err -> Left $ Right err
   Left err -> Left . Left $ show err
 
 printHelpText :: InputT IO ()

@@ -1,4 +1,4 @@
 U = S
 U + S = {}
-OE(U) & U = {}
 roles(CU) = U
+|OE(U)| = 1
