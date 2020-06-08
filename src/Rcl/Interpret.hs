@@ -1,9 +1,7 @@
 module Rcl.Interpret (eval, interprets) where
 
 import Data.Either (partitionEithers)
-import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
-import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
 import Data.List (find)
 import qualified Data.Map as Map
@@ -15,7 +13,7 @@ import Rcl.Print (ppSet, ppStmt, prStmt)
 import Rcl.Reduce (runReduce)
 import Rcl.Type (mBaseType, wellTyped)
 
-type Env = IntMap Value
+type Env = IntMap.IntMap Value
 
 data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
   deriving (Eq, Show)
@@ -182,7 +180,7 @@ isSingle v = case v of
   Ints is -> IntSet.size is == 1
   _ -> False
 
-getInts :: Value -> IntSet
+getInts :: Value -> IntSet.IntSet
 getInts v = case v of
   Ints is -> is
   _ -> IntSet.empty
@@ -228,7 +226,7 @@ sameNesting v1 v2 = case (v1, v2) of
   (Ints _, VSet _) -> sameNesting (VSet $ toVSet v1) v2
   (VSet _, Ints _) -> sameNesting v1 . VSet $ toVSet v2
 
-apply :: Model -> String -> IntSet -> IntSet
+apply :: Model -> String -> IntSet.IntSet -> IntSet.IntSet
 apply m s is = let
   im = Map.findWithDefault (error $ "apply: " ++ s) s $ fctMap m
   in IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i im)

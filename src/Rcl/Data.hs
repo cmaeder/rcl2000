@@ -1,9 +1,7 @@
 module Rcl.Data where
 
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap (empty, findWithDefault)
-import Data.IntSet (IntSet)
-import qualified Data.IntSet as IntSet (fromList, toList)
+import qualified Data.IntMap as IntMap (IntMap, empty, findWithDefault)
+import qualified Data.IntSet as IntSet (IntSet, fromList, toList)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -18,7 +16,7 @@ data S = Session { user :: U, activeRoles :: Set.Set R }
 data P = Permission { op :: OP, obj :: OBJ }
   deriving (Eq, Ord, Show)
 
-data Value = Ints IntSet | VSet (Set.Set Value) deriving (Eq, Ord, Show)
+data Value = Ints IntSet.IntSet | VSet (Set.Set Value) deriving (Eq, Ord, Show)
 
 data Model = Model
   { roles :: Set.Set R
@@ -35,9 +33,9 @@ data Model = Model
   , rhim :: Map.Map R (Set.Set R) -- immediate junior roles
   , invim :: Map.Map R (Set.Set R) -- inverse immediate senior roles
   , strMap :: Map.Map String Int
-  , intMap :: IntMap String
-  , fctMap :: Map.Map String (IntMap IntSet)
-  , opsMap :: Map.Map (Int, Int) IntSet -- operations
+  , intMap :: IntMap.IntMap String
+  , fctMap :: Map.Map String (IntMap.IntMap IntSet.IntSet)
+  , opsMap :: Map.Map (Int, Int) IntSet.IntSet -- operations
   , next :: Int } -- next unused Int
   deriving Show
 

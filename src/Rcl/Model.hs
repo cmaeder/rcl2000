@@ -1,9 +1,7 @@
 module Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initModel, initRH,
   initSess, insSet) where
 
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
-import Data.IntSet (IntSet)
+import qualified Data.IntMap as IntMap (IntMap, fromList, insert)
 import qualified Data.IntSet as IntSet
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -125,7 +123,7 @@ initFctMap :: (Base, UnOp) -> Model -> Model
 initFctMap p@(b, o) m = m
   { fctMap = Map.insert (sUnOp (Just $ ElemTy b) o) (function p m) $ fctMap m }
 
-function :: (Base, UnOp) -> Model -> IntMap IntSet
+function :: (Base, UnOp) -> Model -> IntMap.IntMap IntSet.IntSet
 function bo m = let
   ss = Map.toList $ sessions m
   rs = Set.toList $ roles m
