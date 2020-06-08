@@ -83,15 +83,15 @@ useType = foldSetType (("Set(" ++) . (++ ")")) show
 end :: String
 end = "end"
 
-ocl :: UserTypes -> [Stmt] -> String
+ocl :: UserTypes -> [Stmt] -> (UserTypes, String)
 ocl u l = let
   rs = rights $ map (wellTyped u) l
   cs = foldr (\ (s, t) -> Map.insertWith Set.union s $ Set.singleton t)
        Map.empty . Set.toList . Set.unions $ map stmtCs rs
   us = Map.unionWith Set.union cs $ Map.map (Set.filter $ not . isElem) u
-  in unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
+  in (cs, unlines $ toUse us ++ zipWith (\ n s -> render $ hcat
     [ text $ "inv i" ++ show n ++ ": "
-    , uncurry toOcl $ runReduce us s]) [1 :: Int ..] rs
+    , uncurry toOcl $ runReduce us s]) [1 :: Int ..] rs)
 
 toOcl :: Stmt -> Vars -> Doc
 toOcl = foldl (\ f (i, s) -> cat
