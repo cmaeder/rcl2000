@@ -5,27 +5,26 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
-import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
 
-sessionsOfU :: Model -> U -> Map String S
+sessionsOfU :: Model -> U -> Map.Map String S
 sessionsOfU m u = Map.filter ((== u) . user) $ sessions m
 
-getRoles :: Map R (Set.Set R) -> R -> Set.Set R
+getRoles :: Map.Map R (Set.Set R) -> R -> Set.Set R
 getRoles m r = Set.insert r $ Map.findWithDefault Set.empty r m
 
-toList :: Map R (Set.Set R) -> [(R, R)]
+toList :: Map.Map R (Set.Set R) -> [(R, R)]
 toList = concatMap (\ (k, s) -> map (\ e -> (k, e)) $ Set.toList s) . Map.toList
 
-fromList :: [(R, R)] -> Map R (Set.Set R)
+fromList :: [(R, R)] -> Map.Map R (Set.Set R)
 fromList = foldr
   (\ (r1, r2) -> Map.insertWith Set.union r1 $ Set.singleton r2) Map.empty
 
-invert :: Map R (Set.Set R) -> Map R (Set.Set R)
+invert :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
 invert = fromList . map (\ (a, b) -> (b, a)) . toList
 
 insSet :: String -> SetType -> Value -> [String] -> Model -> Model

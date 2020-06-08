@@ -3,10 +3,8 @@ module Rcl.Check (properStructure, checkAccess) where
 import qualified Data.IntMap as IntMap
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Monoid (All (..))
-import Data.Set (isSubsetOf)
 import qualified Data.Set as Set
 
 import Rcl.Ast (Base, SetType (..), baseType, primTypes)
@@ -16,7 +14,7 @@ properSessions :: Model -> Bool
 properSessions m =
   all (Set.null . illegalActiveRoles m) . Map.elems $ sessions m
 
-nonCyclicRH :: Map R (Set.Set R) -> Bool
+nonCyclicRH :: Map.Map R (Set.Set R) -> Bool
 nonCyclicRH m =
   all (Set.null . rhCycle m) $ Map.keys m
 
@@ -37,19 +35,19 @@ properStructure m = let
   strs = Map.keysSet sm
   is = IntMap.keysSet im
   in all ((`Set.member` us) . user) ss
-  && all ((`isSubsetOf` rs) . activeRoles) ss
-  && Set.map op ps `isSubsetOf` operations m
-  && Set.map obj ps `isSubsetOf` objects m
-  && Set.map fst uas `isSubsetOf` us
-  && Set.map snd uas `isSubsetOf` rs
-  && Set.map fst pas `isSubsetOf` ps
-  && Set.map snd pas `isSubsetOf` rs
+  && all ((`Set.isSubsetOf` rs) . activeRoles) ss
+  && Set.map op ps `Set.isSubsetOf` operations m
+  && Set.map obj ps `Set.isSubsetOf` objects m
+  && Set.map fst uas `Set.isSubsetOf` us
+  && Set.map snd uas `Set.isSubsetOf` rs
+  && Set.map fst pas `Set.isSubsetOf` ps
+  && Set.map snd pas `Set.isSubsetOf` rs
   && properSessions m
-  && Map.keysSet h `isSubsetOf` rs
-  && all (`isSubsetOf` rs) (Map.elems h)
+  && Map.keysSet h `Set.isSubsetOf` rs
+  && all (`Set.isSubsetOf` rs) (Map.elems h)
   && nonCyclicRH h
-  && Map.keysSet i `isSubsetOf` rs
-  && all (`isSubsetOf` rs) (Map.elems i)
+  && Map.keysSet i `Set.isSubsetOf` rs
+  && all (`Set.isSubsetOf` rs) (Map.elems i)
   && nonCyclicRH i
   && getAll (Map.foldMapWithKey (\ s js ->
        All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) i)

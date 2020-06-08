@@ -1,16 +1,13 @@
 module Rcl.Data where
 
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
+import qualified Data.IntMap as IntMap (empty, findWithDefault)
 import Data.IntSet (IntSet)
-import qualified Data.IntSet as IntSet
-import Data.Map (Map)
+import qualified Data.IntSet as IntSet (fromList, toList)
 import qualified Data.Map as Map
-import Data.Set ((\\))
 import qualified Data.Set as Set
 
-import Rcl.Ast (Base (..), Ior (..), OptStar (..), SetType (..), UnOp (..),
-                UserTypes, builtinTypes)
+import Rcl.Ast
 
 newtype U = Name { name :: String } deriving (Eq, Ord, Show)
 newtype R = Role { role :: String } deriving (Eq, Ord, Show)
@@ -29,18 +26,18 @@ data Model = Model
   , operations :: Set.Set OP
   , objects :: Set.Set OBJ
   , permissions :: Set.Set P
-  , sessions :: Map String S
-  , userSets :: Map String (Map SetType (Value, [String]))
+  , sessions :: Map.Map String S
+  , userSets :: Map.Map String (Map.Map SetType (Value, [String]))
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
-  , rh :: Map R (Set.Set R) -- all junior roles
-  , inv :: Map R (Set.Set R) -- inverse senior roles
-  , rhim :: Map R (Set.Set R) -- immediate junior roles
-  , invim :: Map R (Set.Set R) -- inverse immediate senior roles
-  , strMap :: Map String Int
+  , rh :: Map.Map R (Set.Set R) -- all junior roles
+  , inv :: Map.Map R (Set.Set R) -- inverse senior roles
+  , rhim :: Map.Map R (Set.Set R) -- immediate junior roles
+  , invim :: Map.Map R (Set.Set R) -- inverse immediate senior roles
+  , strMap :: Map.Map String Int
   , intMap :: IntMap String
-  , fctMap :: Map String (IntMap IntSet)
-  , opsMap :: Map (Int, Int) IntSet -- operations
+  , fctMap :: Map.Map String (IntMap IntSet)
+  , opsMap :: Map.Map (Int, Int) IntSet -- operations
   , next :: Int } -- next unused Int
   deriving Show
 
@@ -89,7 +86,7 @@ usersOfRs m r = Set.foldr
 usersOfR :: Model -> R -> Set.Set U
 usersOfR m = usersOfRs m . rolesOfR (inv m) . Set.singleton
 
-rolesOfR :: Map R (Set.Set R) -> Set.Set R -> Set.Set R
+rolesOfR :: Map.Map R (Set.Set R) -> Set.Set R -> Set.Set R
 rolesOfR m s = Set.unions $ s
   : map (flip (Map.findWithDefault Set.empty) m) (Set.toList s)
 
@@ -108,12 +105,12 @@ permissionsOfRs m r = Set.foldr
 permissionsOfR :: Model -> R -> Set.Set P
 permissionsOfR m = permissionsOfRs m . rolesOfR (rh m) . Set.singleton
 
-juniors :: Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
+juniors :: Map.Map R (Set.Set R) -> Set.Set R -> R -> Set.Set R
 juniors m visited r = let s = Map.findWithDefault Set.empty r m
   in if Set.null s then s else Set.unions . (s :)
-  . map (juniors m $ Set.insert r visited) . Set.toList $ s \\ visited
+  . map (juniors m $ Set.insert r visited) . Set.toList $ s Set.\\ visited
 
-transClosure :: Map R (Set.Set R) -> Map R (Set.Set R)
+transClosure :: Map.Map R (Set.Set R) -> Map.Map R (Set.Set R)
 transClosure m = Map.mapWithKey (const . juniors m Set.empty) m
 
 getStrings :: Model -> Base -> Set.Set String
@@ -151,10 +148,10 @@ sUnOp t o = let
 
 stValue :: Model -> Value -> String
 stValue m v = case v of
-    Ints is -> case IntSet.maxView is of
-      Just (i, s) | IntSet.null s -> rb $ toStr i m
-      _ -> '{' : unwords (map rb . Set.toList . Set.fromList
-        . map (`toStr` m) $ IntSet.toList is) ++ "}"
+    Ints is -> case IntSet.toList is of
+      [i] -> rb $ toStr i m
+      l -> '{' : unwords (map rb . Set.toList . Set.fromList
+        $ map (`toStr` m) l) ++ "}"
     VSet vs -> '{' : unwords (Set.toList $ Set.map (stValue m) vs) ++ "}"
 
 -- | replace space
@@ -180,8 +177,9 @@ strToBase m v = let t (e, f, b) = if e v `Set.member` f m then (b :) else id
   $ t (id, Set.map pStr . permissions, P) []
 
 illegalActiveRoles :: Model -> S -> Set.Set R
-illegalActiveRoles m s = activeRoles s \\ rolesOfR (rh m) (rolesOfU m $ user s)
+illegalActiveRoles m s =
+  activeRoles s Set.\\ rolesOfR (rh m) (rolesOfU m $ user s)
 
-rhCycle :: Map R (Set.Set R) -> R -> Set.Set R
+rhCycle :: Map.Map R (Set.Set R) -> R -> Set.Set R
 rhCycle m k = let rs = juniors m Set.empty k in
   if k `Set.member` rs then rs else Set.empty
