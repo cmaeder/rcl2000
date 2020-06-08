@@ -1,7 +1,6 @@
 module Rcl.Check (properStructure, checkAccess) where
 
 import qualified Data.IntMap as IntMap
-import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
 import qualified Data.Map as Map
 import Data.Monoid (All (..))
@@ -72,7 +71,7 @@ checkValue p = case p of
   (ElemTy _, (Ints vs, _)) -> IntSet.size vs == 1
   _ -> False
 
-getInts :: Value -> IntSet
+getInts :: Value -> IntSet.IntSet
 getInts v = case v of
   Ints is -> is
   VSet s -> IntSet.unions . map getInts $ Set.toList s
@@ -81,7 +80,7 @@ getAllStrings :: Model -> Set.Set String
 getAllStrings m =
   Set.unions $ Map.keysSet (userSets m) : map (getStrings m . fst) primTypes
 
-checkInts :: Model -> Base -> IntSet -> Bool
+checkInts :: Model -> Base -> IntSet.IntSet -> Bool
 checkInts m b =
   all (\ i -> toStr i m `Set.member` getStrings m b) . IntSet.toList
 
