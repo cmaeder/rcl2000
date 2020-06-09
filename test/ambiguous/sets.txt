@@ -11,5 +11,5 @@ ACD s1 s2
 ACB u1 u2
 ACB r1 r2
 ACB op1 obj1
- U:Us={u1, u2}
+ U:Us={u1:U, u2}
  O = {o1 o2}

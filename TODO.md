@@ -19,9 +19,7 @@
 
 ## RCL extensions
 
-- [ ] better set notation for user sets (with optional type)
-
-        CR:Rss = {{r1, r2}, {r3, r4}}
+- [ ] allow top-level "let ... in" before statements
 
 ## Access history
 
