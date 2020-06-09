@@ -11,7 +11,7 @@ import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH, insSet)
-import Rcl.Parse (pType)
+import Rcl.Parse (setDef, pType)
 import Rcl.Type (isElem)
 
 import System.Directory (doesFileExist, makeAbsolute)
@@ -46,6 +46,9 @@ readWordsFile v f = do
   checkWords f . zip l $ [(1 :: Int) ..]
   return l
 
+readSetsFile :: Int -> FilePath -> IO [(Int, String)]
+readSetsFile v = fmap (zip [(1 :: Int) ..] . lines) . readMyFile v
+
 isRcl :: String -> Bool
 isRcl s = case s of
   f : r -> isLetter f && all (\ c -> isAlphaNum c || c == '_') r
@@ -63,8 +66,11 @@ readTypes :: Int -> FilePath -> IO UserTypes
 readTypes v f =
   readWordsFile v f >>= foldM (readType f) builtinTypes . zip [(1 :: Int) ..]
 
+lp :: Int -> String
+lp i = " (line " ++ show i ++ "): "
+
 readType :: FilePath -> UserTypes -> (Int, [String]) -> IO UserTypes
-readType f u (i, s) = let p = " (line " ++ show i ++ "): " in case s of
+readType f u (i, s) = let p = lp i in case s of
   r : l -> case parse (pType <* eof) f r of
     Right t -> if null l then do
         putStrLn $ "missing names for" ++ p ++ r
@@ -90,7 +96,7 @@ readModel v l = case l of
     m2 <- readWordsFile v uaf >>= foldM readUA (initRH m1)
     m3 <- readWordsFile v paf >>= foldM readPA m2
     m4 <- readWordsFile v sf >>= foldM readS m3
-    m5 <- readWordsFile v uf >>= foldM readSets m4
+    m5 <- readSetsFile v uf >>= foldM (readSets uf) m4
     if properStructure m5 then return m5 else do
       putStrLn "internal model error after readModel"
       putStrLn "please report this and include your input files"
@@ -165,35 +171,43 @@ addRH r js m = let
       putStrLn $ "ignoring hierarchy of: " ++ unwords (r : js)
       return m1
 
-readSets :: Model -> [String] -> IO Model
-readSets m s = case s of
-  n : vs@(_ : _) -> let
-    ts = map (findSetType m) vs
-    is = foldr1 Set.intersection ts
+readSets :: FilePath -> Model -> (Int, String) -> IO Model
+readSets f m (i, s) = case parse setDef f s of
+  Left e -> do
+      print $ setErrorPos (setSourceLine (errorPos e) i) e
+      putStrLn $ "ignoring line: " ++ s
+      return m
+  Right ((n, mt) : ws@(_ : _)) -> let
+    ts = map (findSetType m) ws
+    vs = map fst ws
+    is = case mt of
+        Just (SetOf t) -> if all (Set.member t) ts then Set.singleton t else
+          Set.empty
+        _ -> foldr1 Set.intersection ts
     js = Set.filter (not . isElem) is
     ks = if Set.size js > 0 then js else is
     r = addS n m
-    ign = putStrLn $ "ignoring user set: " ++ n
+    p = lp i
+    ign = putStrLn $ "ignoring user set" ++ p ++ n
     kn t = do
-      putStrLn $ "known user set: " ++ n ++ ":" ++ stSet t
+      putStrLn $ "known user set" ++ p ++ n ++ ":" ++ stSet t
       ign
       return m
     in case Set.toList ks of
       [t] -> let st = SetOf t in
         if knownSet n st m then kn st else
         return $ insSet n st (joinValues m t vs) vs r
-      [] | allPs ts -> do
+      [] | allPs ts && maybe True (== toSet P) mt -> do
         let os = joinPs m vs
             (cs, es) = partition (`Set.member` permissions m) os
             ps = map pStr cs
             pt = toSet P
-        unless (null es) . putStrLn $ "ignoring unknown permissions: "
+        unless (null es) . putStrLn $ "ignoring unknown permissions" ++ p
           ++ unwords (map pStr es)
         if knownSet n pt m then kn pt else
           return $ insSet n pt (toInts m ps) ps r
       _ -> do
-        putStrLn $ "unknown, ambiguous or inhomogeneous elements: "
-          ++ unwords vs ++ if Set.null ks then "" else " : " ++ ppType ks
+        putStrLn $ "unknown, ambiguous or inhomogeneous elements" ++ p ++ s
         ign
         return m
   _ -> return m
@@ -223,7 +237,9 @@ joinPs m l = case l of
   oP : oBj : r -> strP oP oBj : joinPs m r
   _ -> []
 
-findSetType :: Model -> String -> Set.Set SetType
-findSetType m v =
-  Set.union (Map.keysSet . Map.findWithDefault Map.empty v $ userSets m)
-  . Set.fromList . map ElemTy $ strToBase m v
+findSetType :: Model -> (String, Maybe SetType) -> Set.Set SetType
+findSetType m (v, mt) = let
+  ts = Set.union (Map.keysSet . Map.findWithDefault Map.empty v $ userSets m)
+    . Set.fromList . map ElemTy $ strToBase m v in case mt of
+  Nothing -> ts
+  Just t -> if Set.member t ts then Set.singleton t else Set.empty

@@ -1,4 +1,4 @@
-module Rcl.Parse (ParseError, pType, parser, set, stmt) where
+module Rcl.Parse (pType, parser, set, setDef, stmt) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)
@@ -77,10 +77,16 @@ minusSet = mayBe (BinOp Minus)
   <$> applSet <*> optionMaybe (pch '-' *> typedSet)
 
 bracedSet :: Parser Set
-bracedSet = Braced <$> (pch '{' *> sets <* pch '}')
+bracedSet = Braced <$> braced sets
+
+braced :: Parser a -> Parser a
+braced p = pch '{' *> p <* pch '}'
 
 sets :: Parser [Set]
-sets = (:) <$> set <*> many (optional (pch ',') *> set)
+sets = list set
+
+list :: Parser a -> Parser [a]
+list p = (:) <$> p <*> many (optional (pch ',') *> p)
 
 applSet :: Parser Set
 applSet = unOpSet <|> opsSet <|> typedSet
@@ -93,13 +99,24 @@ opsSet = do
 
 typedSet :: Parser Set
 typedSet = (\ p -> maybe p (\ t -> UnOp (Typed Explicit $ Set.singleton t) p))
-  <$> primSet <*> optionMaybe (pch ':' *> pType <* skip)
+  <$> primSet <*> mType
+
+typedName :: Parser (String, Maybe SetType)
+typedName = curry id <$> setName <*> mType
+
+setDef :: Parser [(String, Maybe SetType)]
+setDef = let l = list typedName in
+  skip *> (((:) <$> (typedName <* optional (pch '=')) <*> (l <|> braced l))
+  <|> return []) <* eof
+
+mType :: Parser (Maybe SetType)
+mType = optionMaybe (pch ':' *> pType <* skip)
 
 primSet :: Parser Set
-primSet = (PrimSet <$> setName <* skip) <|> parenSet <|> bracedSet
+primSet = PrimSet <$> setName <|> parenSet <|> bracedSet
 
 setName :: Parser String
-setName = (:) <$> letter <*> many (alphaNum <|> char '_')
+setName = (:) <$> letter <*> (many (alphaNum <|> char '_') <* skip)
 
 pType :: Parser SetType
 pType = foldr (const SetOf) . ElemTy

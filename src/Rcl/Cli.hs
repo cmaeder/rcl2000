@@ -13,7 +13,7 @@ import Rcl.Data (Model)
 import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
-import Rcl.Parse (ParseError, parser)
+import Rcl.Parse (parser)
 import Rcl.Print (Form (Form), Format (..), pStmts, render)
 import Rcl.Read (readModel, readMyFile, readTypes)
 import Rcl.Reduce (reduction)
@@ -26,7 +26,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
                         takeFileName, (</>))
 import System.IO (hSetEncoding, stdout, utf8)
-import Text.ParserCombinators.Parsec (parse)
+import Text.ParserCombinators.Parsec (ParseError, parse)
 
 -- | describe all available options
 options :: [OptDescr (Opts -> Opts)]
