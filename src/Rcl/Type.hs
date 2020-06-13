@@ -29,7 +29,8 @@ wellTyped us s = case runState (tyStmt us s) [] of
 
 wellTypedLet :: UserTypes -> Let -> String
 wellTypedLet us s = case runState (tyLet us s) [] of
-  (t, e) -> (if null e then "" else unlines e ++ "  in: ") ++ ppStmts [t]
+  (t, e) -> (if null e then "" else unlines (reverse e) ++ "  in: ")
+    ++ ppStmts [t]
 
 report :: String -> State [String] ()
 report t = modify (t :)
