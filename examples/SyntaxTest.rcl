@@ -12,3 +12,4 @@ U&U+U&U={}
 (U+U)&(U+U)={}
 |U| < 000999999999
 OE(U) & U = {}
+let u1:U = (OE U):U u2:U = OE OE CU in u1 = u2

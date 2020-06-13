@@ -17,7 +17,7 @@ pLet = Let <$> (pString id "let" *> many1 ass <* pString id "in" <|> return [])
 
 ass :: Parser (String, Set)
 ass = (\ (s, mt) r -> (s, maybeTyped r mt))
-  <$> typedName <*> (pch '=' *> set <* optional (pch ';'))
+  <$> (try $ typedName <* pch '=') <*> (set <* optional (pch ';'))
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
