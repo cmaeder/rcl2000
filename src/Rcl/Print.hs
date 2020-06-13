@@ -6,7 +6,7 @@ import Text.PrettyPrint
 
 data Form = Form { format :: Format, prParen :: Bool }
 
-ppStmts :: [Stmt] -> String
+ppStmts :: [Let] -> String
 ppStmts = render . pStmts form
 
 prStmt :: (Stmt, Vars) -> String
@@ -30,8 +30,8 @@ ppVar = render . pVar form
 form :: Form
 form = Form Uni True
 
-pStmts :: Form -> [Stmt] -> Doc
-pStmts m = vcat . map (lStmt m)
+pStmts :: Form -> [Let] -> Doc
+pStmts m = vcat . map (pLet m)
 
 rStmt :: Form -> (Stmt, Vars) -> Doc
 rStmt m (s, vs) = sep [cat . map (pVar m) $ reverse vs, lStmt m s]
@@ -39,6 +39,14 @@ rStmt m (s, vs) = sep [cat . map (pVar m) $ reverse vs, lStmt m s]
 pVar :: Form -> (Var, Set) -> Doc
 pVar m (i, e) = let f = format m in hcat $ map text [sAll f, stVar i, sIn f]
   ++ [pSet m e, text $ sDot f]
+
+pLet :: Form -> Let -> Doc
+pLet m (Let as s) = let d = lStmt m s in
+  if null as then d else
+    hsep $ text "let" : punctuate semi (map (pAss m) as) ++ [text "in", d]
+
+pAss :: Form -> (String, Set) -> Doc
+pAss m (s, r) = hsep [text $ s ++ " =", pSet m r]
 
 lStmt :: Form -> Stmt -> Doc
 lStmt m s = let d = pStmt m s in case format m of

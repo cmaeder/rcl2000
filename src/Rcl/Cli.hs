@@ -8,7 +8,7 @@ import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 
 import Paths_rcl2000 (getDataFileName, version)
-import Rcl.Ast (Stmt, UserTypes)
+import Rcl.Ast (Let, UserTypes, cond)
 import Rcl.Data (Model)
 import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
@@ -168,10 +168,10 @@ processFile eith o file = do
   reportParse eith o file $ parse parser file str
 
 reportParse :: Either Model UserTypes -> Opts -> FilePath
-  -> Either ParseError [Stmt] -> IO ()
+  -> Either ParseError [Let] -> IO ()
 reportParse mus o file eith = case eith of
   Left err -> print err
-  Right ast -> do
+  Right lets -> do
     let p = pprint o
         c = check o
         r = reduce o
@@ -181,7 +181,8 @@ reportParse mus o file eith = case eith of
         v = verbose o
         use = replaceDirectory (replaceExtension file "use") $ outDir o
         us = either getAllUserTypes id mus
-    when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) ast
+        ast = map cond lets
+    when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) lets
     when c . putStrLn $ typeErrors us ast
     when r . putStrLn $ reduction us ast
     when t $ do

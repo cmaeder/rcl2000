@@ -8,8 +8,16 @@ import Rcl.Ast
 
 import Text.ParserCombinators.Parsec
 
-parser :: Parser [Stmt]
-parser = skip *> many stmt <* eof
+parser :: Parser [Let]
+parser = skip *> many pLet <* eof
+
+pLet :: Parser Let
+pLet = Let <$> (pString id "let" *> many1 ass <* pString id "in" <|> return [])
+  <*> stmt
+
+ass :: Parser (String, Set)
+ass = (\ (s, mt) r -> (s, maybeTyped r mt))
+  <$> typedName <*> (pch '=' *> set <* optional (pch ';'))
 
 stmt :: Parser Stmt
 stmt = mayBe (BoolOp And)
@@ -98,8 +106,10 @@ opsSet = do
   if o == Operations TheOp then p <|> return (PrimSet $ stUnOp o) else p
 
 typedSet :: Parser Set
-typedSet = (\ p -> maybe p (\ t -> UnOp (Typed Explicit $ Set.singleton t) p))
-  <$> primSet <*> mType
+typedSet = maybeTyped <$> primSet <*> mType
+
+maybeTyped :: Set -> Maybe SetType -> Set
+maybeTyped s = maybe s $ \ t -> UnOp (Typed Explicit $ Set.singleton t) s
 
 typedName :: Parser (String, Maybe SetType)
 typedName = curry id <$> setName <*> mType
