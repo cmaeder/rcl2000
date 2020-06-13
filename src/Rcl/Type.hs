@@ -1,21 +1,20 @@
 module Rcl.Type (addPrimTypes, elemType, isElem, typeErrors, typeOf, typeSet,
                  wellTyped) where
 
-import Control.Monad (unless, when)
+import Control.Monad (foldM, unless, when)
 import Control.Monad.State (State, modify, runState)
-import Data.Either (lefts)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
-import Rcl.Print (ppSet, ppTerm, ppStmt)
+import Rcl.Print (ppSet, ppTerm, ppStmt, ppStmts)
 
 addPrimTypes :: UserTypes -> UserTypes
 addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s
   . Set.singleton $ toSet b) primTypes
 
-typeErrors :: UserTypes -> [Stmt] -> String
-typeErrors us = unlines . lefts . map (wellTyped us)
+typeErrors :: UserTypes -> [Let] -> String
+typeErrors us = unlines . map (wellTypedLet us)
 
 typeSet :: UserTypes -> Set -> Either String Set
 typeSet us s = case runState (tySet us s >>=
@@ -28,8 +27,30 @@ wellTyped us s = case runState (tyStmt us s) [] of
   (t, []) -> Right t
   (_, e) -> Left $ unlines e ++ "  in: " ++ ppStmt s
 
+wellTypedLet :: UserTypes -> Let -> String
+wellTypedLet us s = case runState (tyLet us s) [] of
+  (t, e) -> (if null e then "" else unlines e ++ "  in: ") ++ ppStmts [t]
+
 report :: String -> State [String] ()
 report t = modify (t :)
+
+tyLet :: UserTypes -> Let -> State [String] Let
+tyLet us (Let as s) = do
+  (bs, vs) <- foldM (\ (l, ws) (n, a) -> do
+     b <- tySet ws a
+     c <- filterType (n ++ " = " ++ ppSet b) True (const True) b
+     case Set.toList $ typeOf c of
+       [t] -> case Map.lookup n ws of
+         Just ts -> if Set.member t ts then do
+             report $ "shadowing: " ++ n ++ ":" ++ stSet t
+             return ((n, c) : l, ws)
+           else return ((n, c) : l, Map.insert n (Set.insert t ts) ws)
+         Nothing -> return ((n, c) : l, Map.insert n (Set.singleton t) ws)
+       _ -> do
+         report $ "wrong definition of: " ++ n
+         return ((n, c) : l, ws)) ([], us) as
+  st <- tyStmt vs s
+  return $ Let (reverse bs) st
 
 tyStmt :: UserTypes -> Stmt -> State [String] Stmt
 tyStmt = foldStmt FoldStmt

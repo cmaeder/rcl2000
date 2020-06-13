@@ -183,7 +183,7 @@ reportParse mus o file eith = case eith of
         us = either getAllUserTypes id mus
         ast = map cond lets
     when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) lets
-    when c . putStrLn $ typeErrors us ast
+    when c . putStrLn $ typeErrors us lets
     when r . putStrLn $ reduction us ast
     when t $ do
       let uf = useFile o
