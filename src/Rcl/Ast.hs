@@ -4,7 +4,7 @@ import Data.Char (isLetter, toLower)
 import qualified Data.Map as Map (Map, empty, insert)
 import qualified Data.Set as Set (Set, empty, map, singleton, toList)
 
-data Let = Let { assign :: [(String, Set)], cond :: Stmt }
+data Let = Let [(String, Set)] Stmt
 
 data Stmt = CmpOp CmpOp Term Term -- named expression by Ahn
   | BoolOp BoolOp Stmt Stmt deriving (Eq, Show)

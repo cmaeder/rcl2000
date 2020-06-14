@@ -9,8 +9,8 @@ import qualified Data.Set as Set
 
 import Rcl.Ast
 import Rcl.Data
-import Rcl.Print (ppSet, ppStmt, prStmt)
-import Rcl.Reduce (runReduce)
+import Rcl.Print (ppSet, ppStmt, ppStmts, prStmt)
+import Rcl.Reduce (runReduce, unlet)
 import Rcl.Type (wellTyped)
 
 type Env = IntMap.IntMap Value
@@ -18,10 +18,10 @@ type Env = IntMap.IntMap Value
 data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
   deriving (Eq, Show)
 
-interprets :: UserTypes -> Model -> [Stmt] -> String
+interprets :: UserTypes -> Model -> [Let] -> String
 interprets us m l = let (es, ws) = partitionEithers $ map (wellTyped us) l
-  in unlines $ es ++ map (\ s -> let p = runReduce us s in
-  (\ r -> prStmt p ++ '\n' : if null r then "verified: " ++ ppStmt s else r)
+  in unlines $ es ++ map (\ s -> let p = runReduce us $ unlet s in
+  (\ r -> prStmt p ++ '\n' : if null r then "verified: " ++ ppStmts [s] else r)
   $ interpretError us m p) ws
 
 interpretError :: UserTypes -> Model -> (Stmt, Vars) -> String

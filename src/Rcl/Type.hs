@@ -14,7 +14,7 @@ addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s
   . Set.singleton $ toSet b) primTypes
 
 typeErrors :: UserTypes -> [Let] -> String
-typeErrors us = unlines . map (wellTypedLet us)
+typeErrors us = unlines . map (fst . wellTypedLet us)
 
 typeSet :: UserTypes -> Set -> Either String Set
 typeSet us s = case runState (tySet us s >>=
@@ -22,15 +22,15 @@ typeSet us s = case runState (tySet us s >>=
   (t, []) -> Right t
   (_, l) -> Left $ unlines l
 
-wellTyped :: UserTypes -> Stmt -> Either String Stmt
-wellTyped us s = case runState (tyStmt us s) [] of
-  (t, []) -> Right t
-  (_, e) -> Left $ unlines e ++ "  in: " ++ ppStmt s
+wellTyped :: UserTypes -> Let -> Either String Let
+wellTyped us s = let (t, e) = runState (tyLet us s) [] in
+  if null e then Right t else
+    Left $ unlines (reverse e) ++ "  in: " ++ ppStmts [s]
 
-wellTypedLet :: UserTypes -> Let -> String
+wellTypedLet :: UserTypes -> Let -> (String, Let)
 wellTypedLet us s = case runState (tyLet us s) [] of
-  (t, e) -> (if null e then "" else unlines (reverse e) ++ "  in: ")
-    ++ ppStmts [t]
+  (t, e) -> ((if null e then "" else unlines (reverse e) ++ "  in: ")
+    ++ ppStmts [t], t)
 
 report :: String -> State [String] ()
 report t = modify (t :)

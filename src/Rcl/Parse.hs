@@ -1,4 +1,4 @@
-module Rcl.Parse (pType, parser, set, setDef, stmt) where
+module Rcl.Parse (pLet, pType, parser, set, setDef, stmt) where
 
 import Data.Char (isLetter)
 import Data.Functor (void)

@@ -17,10 +17,6 @@
 - [ ] RCL Categories: After what changes do statements need to be
   evaluated?
 
-## RCL extensions
-
-- [ ] allow top-level "let ... in" before statements
-
 ## Access history
 
 - [ ] extend RCL by a UP = U x P relation reflecting the access

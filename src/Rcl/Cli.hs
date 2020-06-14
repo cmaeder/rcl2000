@@ -8,7 +8,7 @@ import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 
 import Paths_rcl2000 (getDataFileName, version)
-import Rcl.Ast (Let, UserTypes, cond)
+import Rcl.Ast (Let, UserTypes)
 import Rcl.Data (Model)
 import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
@@ -181,13 +181,12 @@ reportParse mus o file eith = case eith of
         v = verbose o
         use = replaceDirectory (replaceExtension file "use") $ outDir o
         us = either getAllUserTypes id mus
-        ast = map cond lets
     when (p || onlyPrint o) . putStrLn . render $ pStmts (form o) lets
     when c . putStrLn $ typeErrors us lets
-    when r . putStrLn $ reduction us ast
+    when r . putStrLn $ reduction us lets
     when t $ do
       let uf = useFile o
-          (cs, res) = ocl us ast
+          (cs, res) = ocl us lets
       str0 <- readMyFile v uf
       str <- if null str0 then do
           f <- getDataFileName uf
@@ -201,8 +200,8 @@ reportParse mus o file eith = case eith of
     case mus of
       Left m -> do
         let n = initModel m
-        when e . putStrLn $ interprets us n ast
-        when i $ evalInput ast n
+        when e . putStrLn $ interprets us n lets
+        when i $ evalInput lets n
       Right _ -> when (e || i) $ putStrLn
         "options -e or -i are incompatible with -t"
 

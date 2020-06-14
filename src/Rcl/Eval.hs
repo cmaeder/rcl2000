@@ -13,7 +13,7 @@ import Rcl.Check (checkAccess)
 import Rcl.Data
 import Rcl.Interpret (eval, interprets)
 import Rcl.Model (addSURs, initSess)
-import Rcl.Parse (set, stmt)
+import Rcl.Parse (pLet, set)
 import Rcl.Print (lineStmt)
 import Rcl.Type (typeSet, wellTyped)
 
@@ -22,7 +22,7 @@ import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
 import System.IO (hSetEncoding, stdin, utf8)
 import Text.ParserCombinators.Parsec
 
-evalInput :: [Stmt] -> Model -> IO ()
+evalInput :: [Let] -> Model -> IO ()
 evalInput l m = let ls = map lineStmt l in do
   hSetEncoding stdin utf8
   prefs <- readPrefs ".haskeline"
@@ -37,7 +37,7 @@ getAllUserTypes m =
   (foldr (ins name U) (foldr (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
 
-loop :: [Stmt] -> Model -> InputT IO ()
+loop :: [Let] -> Model -> InputT IO ()
 loop l m = do
   i <- getInputLine "rcl2000> "
   outputStrLn $ fromMaybe "" i
@@ -45,7 +45,7 @@ loop l m = do
     Nothing -> return () -- Ctrl-D pressed
     Just s -> let
       us = getAllUserTypes m
-      fp = parseAndType us stmt wellTyped s
+      fp = parseAndType us pLet wellTyped s
       sp = parseAndType us set typeSet s
       ck w k = isLeft sp && ckCmd w k
       in case words s of

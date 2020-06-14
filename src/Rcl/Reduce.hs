@@ -1,4 +1,4 @@
-module Rcl.Reduce (const2, reduction, runReduce) where
+module Rcl.Reduce (const2, reduction, runReduce, unlet) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.State (State, modify, runState)
@@ -100,6 +100,20 @@ replVar (i, r) = foldSet mapSet
     Var v | i == v -> UnOp OE r
     _ -> s }
 
+replaceAss :: (String, Set) -> Stmt -> Stmt
+replaceAss = foldStmt mapStmt . mapTerm . replAss
+
+replAss :: (String, Set) -> Set -> Set
+replAss (n, r) = foldSet mapSet
+  { foldUn = \ s o p -> let t = UnOp o p in case s of
+      UnOp (Typed _ ts) u -> case u of
+        PrimSet m | n == m && ts == typeOf r -> r
+        _ -> t
+      _ -> t }
+
+unlet :: Let -> Stmt
+unlet (Let as s) = foldr replaceAss s as
+
 replaceMinus :: Stmt -> Stmt
 replaceMinus = foldStmt mapStmt $ mapTerm replMinus
 
@@ -109,9 +123,10 @@ replMinus = foldSet mapSet
       Minus | untyped s2 == Braced [UnOp OE s1] -> UnOp AO s1
       _ -> BinOp o s1 s2 }
 
-reduceAndReconstruct :: UserTypes -> Stmt -> [String]
+reduceAndReconstruct :: UserTypes -> Let -> [String]
 reduceAndReconstruct us so = case wellTyped us so of
-  Right s -> let
+  Right l -> let
+    s = unlet l
     p@(r, vs) = runReduce us s
     t = prStmt p
     errs = filter (not . null) $ map checkVar vs
@@ -120,5 +135,5 @@ reduceAndReconstruct us so = case wellTyped us so of
     , "reduced: " ++ t, "reconstructed: " ++ ppStmt n] else errs
   Left e -> [e]
 
-reduction :: UserTypes -> [Stmt] -> String
+reduction :: UserTypes -> [Let] -> String
 reduction us = unlines . concatMap (reduceAndReconstruct us)

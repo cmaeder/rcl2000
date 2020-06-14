@@ -7,7 +7,7 @@ import qualified Data.Set as Set
 import Numeric (showHex)
 
 import Rcl.Ast
-import Rcl.Reduce (const2, runReduce)
+import Rcl.Reduce (const2, runReduce, unlet)
 import Rcl.Type (isElem, wellTyped)
 
 import Text.PrettyPrint
@@ -83,9 +83,9 @@ useType = foldSetType (("Set(" ++) . (++ ")")) show
 end :: String
 end = "end"
 
-ocl :: UserTypes -> [Stmt] -> (UserTypes, String)
+ocl :: UserTypes -> [Let] -> (UserTypes, String)
 ocl u l = let
-  rs = rights $ map (wellTyped u) l
+  rs = map unlet . rights $ map (wellTyped u) l
   cs = foldr (\ (s, t) -> Map.insertWith Set.union s $ Set.singleton t)
        Map.empty . Set.toList . Set.unions $ map stmtCs rs
   us = Map.unionWith Set.union cs $ Map.map (Set.filter $ not . isElem) u
