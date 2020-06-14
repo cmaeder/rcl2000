@@ -95,6 +95,7 @@ pSet m = let f = format m in foldSet FoldSet
         Derived -> d
         Explicit -> cat [case untyped s of
             PrimSet _ -> d
+            Var _ -> d
             _ -> parens d
           , text $ ':' : ppType ts]
       _ -> let b = prParen m in (if b || f == LaTeX then cat else sep)

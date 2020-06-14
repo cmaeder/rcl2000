@@ -14,3 +14,4 @@ U&U+U&U={}
 OE(U) & U = {}
 let u1:U = (OE U):U u2:U = OE OE CU in u1 = u2
 OE U = OE OE CU
+u1 = u2

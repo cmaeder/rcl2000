@@ -3,6 +3,7 @@ module Rcl.Type (addPrimTypes, elemType, isElem, typeErrors, typeOf, typeSet,
 
 import Control.Monad (foldM, unless, when)
 import Control.Monad.State (State, modify, runState)
+import Data.List (isPrefixOf)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -24,13 +25,18 @@ typeSet us s = case runState (tySet us s >>=
 
 wellTyped :: UserTypes -> Let -> Either String Let
 wellTyped us s = let (t, e) = runState (tyLet us s) [] in
-  if null e then Right t else
-    Left $ unlines (reverse e) ++ "  in: " ++ ppStmts [s]
+  if not $ any (not . isPrefixOf shadow) e then Right t else
+    Left $ msg e ++ ppStmts [s]
+
+shadow :: String -- only a warning, no type error
+shadow = "shadowing: "
+
+msg :: [String] -> String
+msg e = unlines (reverse e) ++ "  in: "
 
 wellTypedLet :: UserTypes -> Let -> (String, Let)
 wellTypedLet us s = case runState (tyLet us s) [] of
-  (t, e) -> ((if null e then "" else unlines (reverse e) ++ "  in: ")
-    ++ ppStmts [t], t)
+  (t, e) -> ((if null e then "" else msg e) ++ ppStmts [t], t)
 
 report :: String -> State [String] ()
 report t = modify (t :)
@@ -43,7 +49,7 @@ tyLet us (Let as s) = do
      case Set.toList $ typeOf c of
        [t] -> case Map.lookup n ws of
          Just ts -> if Set.member t ts then do
-             report $ "shadowing: " ++ n ++ ":" ++ stSet t
+             report $ shadow ++ n ++ ":" ++ stSet t
              return ((n, c) : l, ws)
            else return ((n, c) : l, Map.insert n (Set.insert t ts) ws)
          Nothing -> return ((n, c) : l, Map.insert n (Set.singleton t) ws)
