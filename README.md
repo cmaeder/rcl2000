@@ -147,7 +147,10 @@ The parser is more liberal than described in the [paper][1]:
   recognized if no function names are used as base sets.
 
 - added `UP ⊆ U x P` history relation with `executions : U -> 2^P` and
-  `accessors : P -> 2^U`.
+  `accessors : P -> 2^U`:
+
+        executions(u : U) = { p | (u, p) in UP }
+        accessors(p : P) = { u | (u, p) in UP }
 
 - A statement may be preceded by `let` definitions:
 
