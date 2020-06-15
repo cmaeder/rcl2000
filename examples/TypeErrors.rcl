@@ -3,3 +3,4 @@ U + S = {}
 roles(CU) = U
 |OE(U)| = 1
 let in = in in in in in
+operations*(OE(P), OE(OBJ)) = {}

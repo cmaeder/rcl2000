@@ -106,10 +106,10 @@ initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
 initOpsMap m = m { opsMap = Set.foldr
-    (\ (Permission (Operation oP) (Resource oBj), Role r) n ->
-    let p = (toInt m r, toInt m oBj)
-        is = Map.findWithDefault IntSet.empty p n
-    in Map.insert p (IntSet.insert (toInt m oP) is) n) Map.empty $ pa m }
+    (\ p@(Permission (Operation oP) (Resource oBj)) n ->
+    let q = (toInt m $ pStr p, toInt m oBj)
+    in Map.insert q (IntSet.singleton $ toInt m oP) n) Map.empty
+    $ permissions m }
 
 fcts :: [(Base, UnOp)]
 fcts = map toR [U, P, S] ++ [(S, User Singular TheOp), (R, User Plural Star)

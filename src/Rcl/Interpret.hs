@@ -111,12 +111,16 @@ eval m e = foldSet FoldSet
     (Left _, _) -> v1
     (_, Left _) -> v2
     (Right r1, Right r2) -> case o of
-      Operations b -> let stOps = stUnOp o in case (r1, r2) of
+      Operations b -> let
+        stOps = stUnOp o
+        bt1 = mBaseType s1 in case (r1, r2) of
         (Ints is, Ints os) -> Right . Ints $ IntSet.unions
-          [Map.findWithDefault IntSet.empty (r, ob) $ opsMap m
-            | r <- let rs = if Set.member U $ mBaseType s1 then
+          [Map.findWithDefault IntSet.empty (p, ob) $ opsMap m
+            | p <- let rs = if Set.member U bt1 then
                          apply m "Ur" is else is
-                   in IntSet.toList $ if b == Star then apply m "j" rs else rs
+                       js = if b == Star then apply m "j" rs else rs
+                       ps = if Set.member P bt1 then is else apply m "Rp" js
+                   in IntSet.toList ps
             , ob <- IntSet.toList os]
         (VSet _, _) -> Left $ "unexpected set of set for "
           ++ stOps ++ " first argument: " ++ t1

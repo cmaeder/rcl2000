@@ -158,9 +158,10 @@ tySet us = let
       a1 <- s1
       a2 <- s2
       case o of
-        Operations _ -> do
+        Operations b -> do
           b1 <- filterType ("1st arg: " ++ ppSet s)
-            True (\ t -> any (`isElemOrSet` t) [R, U]) a1
+            True (\ t -> b /= Star && isElemOrSet P t ||
+                   any (`isElemOrSet` t) [R, U]) a1
           b2 <- filterType ("2nd arg: " ++ ppSet s) True (isElemOrSet OBJ) a2
           pure . mkTypedSet (Set.singleton $ toSet OP)
             . BinOp o (mkSingleton True b1) $ mkSingleton True b2

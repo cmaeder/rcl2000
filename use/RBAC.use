@@ -89,8 +89,9 @@ operations
   upermissions_(us : Set(U)): Set(P) = rpermissions_(uroles(us))
   spermissions(ss : Set(S)): Set(P) = rpermissions(sroles(ss))
   spermissions_(ss : Set(S)): Set(P) = rpermissions_(sroles(ss))
-  rops(rs : Set(R), os : Set(OBJ)): Set(OP) =
-    rpermissions(rs)->select(p | os->includes(p.obj))->collect(op)->asSet
+  pops(ps : Set(P), os : Set(OBJ)): Set(OP) =
+    ps -> select(p | os->includes(p.obj))->collect(op)->asSet
+  rops(rs : Set(R), os : Set(OBJ)): Set(OP) = pops(rpermissions(rs), os)
   rops_(rs : Set(R), os : Set(OBJ)): Set(OP) = rops(juns_(rs), os)
   uops(us : Set(U), os : Set(OBJ)): Set(OP) = rops(uroles(us), os)
   uops_(us : Set(U), os : Set(OBJ)): Set(OP) = rops_(uroles(us), os)
