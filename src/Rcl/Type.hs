@@ -8,7 +8,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Rcl.Ast
-import Rcl.Print (ppSet, ppTerm, ppStmt, ppStmts)
+import Rcl.Print (ppSet, ppStmt, ppStmts, ppTerm)
 
 addPrimTypes :: UserTypes -> UserTypes
 addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s

@@ -16,9 +16,8 @@ specified by the resolver version `lts-15.11`, see
 should also succeed with older ghc versions (down to `ghc-7.10.2` of
 `lts-3.22`). Apart from the `--pedantic` flag the haskell sources are
 kept clean using the tools
-[hlint](https://github.com/ndmitchell/hlint),
-[scan](https://hackage.haskell.org/package/scan), and
-[stylish-haskell](https://github.com/jaspervdj/stylish-haskell).
+[hlint](https://github.com/ndmitchell/hlint), and
+[scan](https://hackage.haskell.org/package/scan).
 
 ## Motivation
 
@@ -60,8 +59,9 @@ sets are returned, although `objects` returns a singleton set if
 applied to a single permission. Note that `operations` is a binary
 function and the only one (apart from set operations like union and
 intersection). The application of unary functions can be written
-*with* (as in the original [paper][1]) or *without parentheses* (like in
-haskell): "`AO(OE(CR))`" versus "`AO OE CR`".
+*with* (as in the original [paper][1]) or *without parentheses*:
+"`AO(OE(CR))`" versus "`AO OE CR`". (This is only similar to Haskell
+as this juxtaposition in RCL is right-associative.)
 
 As in the [paper][1] the functions `user` and `roles` are overloaded
 and functions `roles` and `permissions` have "`*`" variants that
@@ -131,13 +131,32 @@ The parser is more liberal than described in the [paper][1]:
   derived by type checking. (The first part of the reduction is in
   fact the replacement of `AO` using `-`, curly braces and `OE`.)
 
+- the function `user` may also be written `users` (plural) and
+  `objects` as `object` (singular).
+
 - user defined set may be overloaded and type annotated for
   disambiguation. "`U`" has type "`Us`" and may be written as
-  "`U:Us`".
+  "`U:Us`". Names are not restricted, even keywords or function names
+  may be used as names of sets. Sometimes annotations, parentheses
+  commas, or semicolons are needed for proper parsing.
 
 - (non-empty) sets can be constructed on the fly using curly
   braces. (In fact singleton sets are constructed during type checking
-  and reduction.)
+  and reduction.) A separating comma between elements of sets is only
+  optional because the end of a set and the start of a second set can be
+  recognized if no function names are used as base sets.
+
+- A statement may be preceded by `let` definitions:
+
+        let v_1 = s_1 ; ... ; v_n = s_n in stmt
+
+The variables `v_i` shadow user defined sets (or equally named
+variables `v_j` with `j < i`). A variable `v_j` may be used in any set
+`s_i` with `j < i` or in the actual statement `stmt`. The semantics of
+`let` is a simple substitution of all variables from right to left in
+`stmt`. A variable `v_i` may be type-annotated which is identical to a
+type annotation of the set `s_i`. (The semicolons in `let` definitions
+are also optional.)
 
 The type checker is as liberal as described in the [paper][1]. Many
 elements are turned to singleton sets to ensure proper typing. The
@@ -180,21 +199,30 @@ in the [paper][1].
 
 The `user*` function also considers users that may have a role's
 permissions due to their assignment to senior roles. The first
-argument of `operations` may also be a user:
+argument of `operations` may also be a permission or a user:
 
+        operations(p : P, obj : OBJ) = { op | p = (op, obj) }
+        operations(r : R, obj : OBJ) = operations(permissions(r), obj)
+        operations*(r : R, obj : OBJ) = operations(permissions*(r), obj)
         operations(u : U, obj : OBJ) = operations(roles(u), obj)
         operations*(u : U, obj : OBJ) = operations*(roles(u), obj)
 
 A permission is a pair consisting of an operation and an object. The
 `objects` function is a mere selector or projection that extracts the
 unique object from a permission and just returns it as a singleton
-set. The `operations` function is different in that it takes as input
-a role and an object and returns all operations from permissions of
-the role that operate on the given object. The `operations*` function
-additionally considers the permissions due to junior roles of the
-input role. No `*` is allowed for the simple `objects` function.
+set. The `operations` function is different in that it takes an object
+as second argument. If the first argument is a permission the result
+is an empty set or a singleton set depending on the permission's
+object. If the first argument is a role all operations from the role's
+permissions that operate on the given object are returned. Note, how
+simple the original `operations` function for roles can be expressed
+using the added `operations` function for permissions. The
+`operations*` functions additionally consider the permissions due to
+junior roles of the input role. No `*` is allowed for the simple
+`objects` function and the `operations` function applied to
+permissions!
 
-A session has a unique name, belongs to a unique user and comprises a
+A session has a unique name, belongs to a unique user, and comprises a
 set of so called *activated* roles. The overloaded function `user`
 (where `*` would be illegal) returns the unique user of the session
 given as input. (In case of need this single user is converted into a
@@ -214,8 +242,9 @@ requiring `roles(s)` to be a subset of `roles(user(s))` for a session
 `s` is not good enough in the presence of role hierarchies. Any role
 from `roles*(user(s))` may be activated in session `s` and any role
 from `roles*(s)` will be activated either explicitely or implicitely.
-A currently unused RCL statement to express the required subset
-relation between activated and authorized roles is the following:
+An RCL statement to express the required subset relation between
+activated and authorized roles would the following, but this relation is
+enforced internally:
 
         OE(roles(OE(S))) ∈ roles*(user(OE(S)))
 

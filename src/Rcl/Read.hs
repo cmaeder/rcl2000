@@ -11,7 +11,7 @@ import Rcl.Ast
 import Rcl.Check (properStructure)
 import Rcl.Data
 import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH, insSet)
-import Rcl.Parse (setDef, pType)
+import Rcl.Parse (pType, setDef)
 import Rcl.Type (isElem)
 
 import System.Directory (doesFileExist, makeAbsolute)
