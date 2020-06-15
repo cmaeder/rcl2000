@@ -19,10 +19,7 @@
 
 ## Access history
 
-- [ ] extend RCL by a UP = U x P relation reflecting the access
-  history
-
-- [ ] give usage example (chinese wall, ordered access)
+- [ ] give usage example (chinese wall, ordered access) for history
 
 ## Release
 

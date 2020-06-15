@@ -28,6 +28,7 @@ data Model = Model
   , userSets :: Map.Map String (Map.Map SetType (Value, [String]))
   , ua :: Set.Set (U, R)
   , pa :: Set.Set (P, R)
+  , up :: Set.Set (U, P)
   , rh :: Map.Map R (Set.Set R) -- all junior roles
   , inv :: Map.Map R (Set.Set R) -- inverse senior roles
   , rhim :: Map.Map R (Set.Set R) -- immediate junior roles
@@ -50,6 +51,7 @@ emptyModel = Model
   , userSets = Map.empty
   , ua = Set.empty
   , pa = Set.empty
+  , up = Set.empty
   , rh = Map.empty
   , inv = Map.empty
   , rhim = Map.empty

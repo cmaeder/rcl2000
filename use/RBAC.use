@@ -52,6 +52,11 @@ association PA between
   R[*]
 end
 
+association UP between
+  U[*]
+  P[*]
+end
+
 aggregation SessionRoles between
   S[*]
   R[*] role activeRoles
@@ -96,6 +101,8 @@ operations
   uops(us : Set(U), os : Set(OBJ)): Set(OP) = rops(uroles(us), os)
   uops_(us : Set(U), os : Set(OBJ)): Set(OP) = rops_(uroles(us), os)
   objects(ps : Set(P)): Set(OBJ) = ps->collect(obj)->asSet
+  executions(us : Set(U)): Set(P) = us -> collect(p)->asSet
+  accessors(ps : Set(P)): Set(U) = ps->collect(u)->asSet
 constraints
   inv singleton: Builtin.allInstances->size = 1
 end

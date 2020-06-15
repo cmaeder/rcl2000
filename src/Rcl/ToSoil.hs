@@ -30,6 +30,7 @@ toSoil m cs = unlines $ let
   ++ set "user" (codeB S . fst) (codeB U . name . user . snd) sl
   ++ insert "UA" (codeB U . name) role (Set.toList $ ua m)
   ++ insert "PA" (codeB P . pStr) role (Set.toList $ pa m)
+  ++ insert "UP" (codeB U . name) pStr (Set.toList $ up m)
   ++ insert "RH" (codeB R . role) role (concatMap (\ (r, l)
     -> map (\ e -> (r, e)) $ Set.toList l) $ Map.toList hs)
   ++ insert "SessionRoles" (codeB S) role

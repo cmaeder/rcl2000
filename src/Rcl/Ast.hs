@@ -39,6 +39,7 @@ data OptStar = Star | TheOp deriving (Eq, Show)
 
 data UnOp = Typed Annotation (Set.Set SetType)
   | AO | OE | User OptS OptStar | Roles OptStar | Sessions
+  | Executions | Accessors
   | Permissions OptStar | Object OptS | Iors Ior OptStar deriving (Eq, Show)
 -- AO: all other, OE: one element, optional s and/or * suffix
 

@@ -1,0 +1,5 @@
+op1 obj1 u1 u2
+op1 obj2 u2 u3
+op2 obj1 u3
+op3 obj3 u4
+op4 obj4 u3 u4 u5

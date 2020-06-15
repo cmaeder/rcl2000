@@ -110,6 +110,7 @@ data Opts = Opts
   , rhFile :: FilePath
   , uaFile :: FilePath
   , paFile :: FilePath
+  , puFile :: FilePath
   , sessFile :: FilePath
   , setsFile :: FilePath
   , useFile :: FilePath
@@ -135,6 +136,7 @@ dOpts = Opts
   , rhFile = "rh"
   , uaFile = "ua"
   , paFile = "pa"
+  , puFile = "pu"
   , sessFile = "s"
   , setsFile = "sets"
   , useFile = "use/RBAC.use"
@@ -150,7 +152,7 @@ cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
         else let
           v = verbose o
           rm = readModel v $ map (optsFile o)
-            [rhFile, uaFile, paFile, sessFile, setsFile]
+            [rhFile, uaFile, paFile, puFile, sessFile, setsFile]
           in case n of
         [] -> if stmtOpts o then
           putStrLn "unexpected options without file arguments"

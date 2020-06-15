@@ -113,7 +113,8 @@ initOpsMap m = m { opsMap = Set.foldr
 
 fcts :: [(Base, UnOp)]
 fcts = map toR [U, P, S] ++ [(S, User Singular TheOp), (R, User Plural Star)
-  , (R, Roles TheOp), (U, Sessions), (R, Permissions Star), (P, Object Plural)]
+  , (R, Roles TheOp), (U, Sessions), (U, Executions), (P, Accessors)
+  , (R, Permissions Star), (P, Object Plural)]
   ++ [(R, Iors i b) | b <- [TheOp, Star], i <- [Jun, Sen]]
 
 toR :: Base -> (Base, UnOp)
@@ -154,6 +155,12 @@ function bo m = let
   (_, Sessions) -> IntMap.fromList $ map (\ u ->
         (toInt m $ name u, IntSet.fromList . map (toInt m)
         . Map.keys $ sessionsOfU m u)) us
+  (_, Executions) -> IntMap.fromList $ map (\ u ->
+        (toInt m $ name u, IntSet.fromList . map (toInt m . pStr)
+        . Set.toList . Set.map snd . Set.filter ((u ==) . fst) $ up m)) us
+  (_, Accessors) -> IntMap.fromList $ map (\ p ->
+        (toInt m $ pStr p, IntSet.fromList . map (toInt m . name)
+        . Set.toList . Set.map fst . Set.filter ((p ==) . snd) $ up m)) ps
   (_, Permissions _) -> IntMap.fromList $ map (\ r ->
         (toInt m $ role r, IntSet.fromList . map (toInt m . pStr)
         . Set.toList . permissionsOfRs m $ Set.singleton r)) rs

@@ -91,10 +91,11 @@ readType f u (i, s) = let p = lp i in case s of
 
 readModel :: Int -> [FilePath] -> IO Model
 readModel v l = case l of
-  [rhf, uaf, paf, sf, uf] -> do
+  [rhf, uaf, paf, puf, sf, uf] -> do
     m1 <- readWordsFile v rhf >>= foldM readRH emptyModel
     m2 <- readWordsFile v uaf >>= foldM readUA (initRH m1)
-    m3 <- readWordsFile v paf >>= foldM readPA m2
+    m6 <- readWordsFile v paf >>= foldM (readP True) m2
+    m3 <- readWordsFile v puf >>= foldM (readP False) m6
     m4 <- readWordsFile v sf >>= foldM readS m3
     m5 <- readSetsFile v uf >>= foldM (readSets uf) m4
     if properStructure m5 then return m5 else do
@@ -111,18 +112,23 @@ readUA m s = case s of
     return $ foldr (addUA u) (addU u m) rs
   _ -> return m
 
-readPA :: Model -> [String] -> IO Model
-readPA m s = case s of
+readP :: Bool -> Model -> [String] -> IO Model
+readP b m s = case s of
   oP : oBj : rs -> do
     let ps = permissions m
         p = strP oP oBj
         sp = pStr p
         p_ = pStr_ p
-    if p `Set.member` ps then putStrLn $ "permission already known: " ++ sp
-      else when (p_ `elem` map pStr_ (Set.toList ps))
+        e = p `Set.member` ps
+        us = filter (not . (`checkU` m)) rs
+    when (b && e) . putStrLn $ "permission already known: " ++ sp
+    when (not b && not e) . putStrLn $ "permission not yet known: " ++ sp
+    when (not e && p_ `elem` map pStr_ (Set.toList ps))
       . putStrLn $ "WARN: overlapping permission representation: " ++ p_
-    when (null rs) . putStrLn $ "no roles assigned to permission: " ++ sp
-    return $ foldr (addPA $ strP oP oBj) (addP oP oBj m) rs
+    when (null rs) . putStrLn $ "no " ++ (if b then "roles" else "users")
+      ++ " assigned to permission: " ++ sp
+    unless (b || null us) . putStrLn $ "users not yet known: " ++ unwords us
+    return $ foldr (if b then addPA p else addPU p) (addP oP oBj m) rs
   [p] -> do
     putStrLn $ "provide two words op and obj for (ignored) permission: " ++ p
     return m
@@ -152,6 +158,10 @@ addUA u r m = addR r m { ua = Set.insert (Name u, Role r) $ ua m }
 addPA :: P -> String -> Model -> Model
 addPA p r m =
   addR r m { pa = Set.insert (p, Role r) $ pa m }
+
+addPU :: P -> String -> Model -> Model
+addPU p u m =
+  addU u m { up = Set.insert (Name u, p) $ up m }
 
 addRH :: String -> [String] -> Model -> IO Model
 addRH r js m = let

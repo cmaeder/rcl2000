@@ -149,7 +149,8 @@ pStar p = try (string . stUnOp $ p TheOp) *>
     <|> p TheOp <$ notFollowedBy alphaNum) <* skip
 
 unOps :: [UnOp]
-unOps = [AO, OE, Sessions, Object Plural, Object Singular]
+unOps =
+  [AO, OE, Sessions, Executions, Accessors, Object Plural, Object Singular]
 
 stars :: [OptStar -> UnOp]
 stars = [User Plural, User Singular, Roles, Permissions, Iors Jun, Iors Sen]

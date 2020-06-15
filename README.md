@@ -146,6 +146,9 @@ The parser is more liberal than described in the [paper][1]:
   optional because the end of a set and the start of a second set can be
   recognized if no function names are used as base sets.
 
+- added `UP ⊆ U x P` history relation with `executions : U -> 2^P` and
+  `accessors : P -> 2^U`.
+
 - A statement may be preceded by `let` definitions:
 
         let v_1 = s_1 ; ... ; v_n = s_n in stmt
@@ -424,8 +427,13 @@ user if there is only one name in a line.
 [pa](examples/pa.txt) defines the permission-to-role
 assignment. Each permission is given by two leading words of a line.
 The first word is the operation and second the object of the
-permission.  The internal name of a permission will be simply the
+permission. The internal name of a permission will be simply the
 operation joined with the object by an (additional) underscore.
+
+[pu](examples/pu.txt) defines the history of users that executed
+certain permissions. Each permission is given by two leading words of a line.
+The first word is the operation and second the object of the
+permission. All other words of the same line are users.
 
 [s](examples/s.txt) contains users sessions. A line starts with a
 session id and a user name and all remaining words are the associated

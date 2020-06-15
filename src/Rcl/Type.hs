@@ -225,6 +225,8 @@ opArg o t = case o of
   User _ b -> b /= Star && t == ElemTy S || isElemOrSet R t
   Roles _ -> any (`isElemOrSet` t) [U, P, S]
   Sessions -> isElemOrSet U t
+  Executions -> isElemOrSet U t
+  Accessors -> isElemOrSet P t
   Permissions _ -> any (`isElemOrSet` t) [R, U, S]
   Object _ -> isElemOrSet P t
   Iors _ _ -> isElemOrSet R t
@@ -243,6 +245,8 @@ opResult o s = let
     else mkSetType U
   Roles _ -> mkSetType R
   Sessions -> mkSetType S
+  Executions -> mkSetType P
+  Accessors -> mkSetType U
   Permissions _ -> mkSetType P
   Object _ -> mkSetType OBJ
   Iors _ _ -> mkSetType R) . UnOp o $ mkSingleton (case o of
