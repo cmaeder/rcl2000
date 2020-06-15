@@ -1,8 +1,8 @@
 module Rcl.ToOcl (aggName, enc, ocl, tr) where
 
 import Data.Char (isAlphaNum, isAscii, ord, toLower, toUpper)
-import Data.Either (rights)
 import qualified Data.Map as Map
+import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
 import Numeric (showHex)
 
@@ -85,7 +85,7 @@ end = "end"
 
 ocl :: UserTypes -> [Let] -> (UserTypes, String)
 ocl u l = let
-  rs = map unlet . rights $ map (wellTyped u) l
+  rs = map unlet $ mapMaybe (snd . wellTyped u) l
   cs = foldr (\ (s, t) -> Map.insertWith Set.union s $ Set.singleton t)
        Map.empty . Set.toList . Set.unions $ map stmtCs rs
   us = Map.unionWith Set.union cs $ Map.map (Set.filter $ not . isElem) u

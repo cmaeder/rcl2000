@@ -15,28 +15,25 @@ addPrimTypes = flip (foldr $ \ (b, s) -> Map.insertWith Set.union s
   . Set.singleton $ toSet b) primTypes
 
 typeErrors :: UserTypes -> [Let] -> String
-typeErrors us = unlines . map (fst . wellTypedLet us)
+typeErrors us = unlines . concatMap
+  (\ l -> let (es, ml) = wellTyped us l in
+      case ml of
+        Just t -> es ++ [ppStmts [t]]
+        _ -> es)
 
-typeSet :: UserTypes -> Set -> Either String Set
+typeSet :: UserTypes -> Set -> ([String], Maybe Set)
 typeSet us s = case runState (tySet us s >>=
     filterType ("set: " ++ ppSet s) True (const True)) [] of
-  (t, []) -> Right t
-  (_, l) -> Left $ unlines l
-
-wellTyped :: UserTypes -> Let -> Either String Let
-wellTyped us s = let (t, e) = runState (tyLet us s) [] in
-  if not $ any (not . isPrefixOf shadow) e then Right t else
-    Left $ msg e ++ ppStmts [s]
+  (t, []) -> ([], Just t)
+  (_, l) -> (reverse l, Nothing)
 
 shadow :: String -- only a warning, no type error
 shadow = "shadowing: "
 
-msg :: [String] -> String
-msg e = unlines (reverse e) ++ "  in: "
-
-wellTypedLet :: UserTypes -> Let -> (String, Let)
-wellTypedLet us s = case runState (tyLet us s) [] of
-  (t, e) -> ((if null e then "" else msg e) ++ ppStmts [t], t)
+wellTyped :: UserTypes -> Let -> ([String], Maybe Let)
+wellTyped us s = let (t, e) = runState (tyLet us s) [] in
+  (if null e then [] else reverse $ ("  in: " ++ ppStmts [s]) : e
+  , if not $ any (not . isPrefixOf shadow) e then Just t else Nothing)
 
 report :: String -> State [String] ()
 report t = modify (t :)

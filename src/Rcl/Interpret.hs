@@ -1,10 +1,10 @@
 module Rcl.Interpret (eval, interprets) where
 
-import Data.Either (partitionEithers)
 import qualified Data.IntMap as IntMap
 import qualified Data.IntSet as IntSet
 import Data.List (find)
 import qualified Data.Map as Map
+import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
 
 import Rcl.Ast
@@ -19,7 +19,10 @@ data TermVal = VTerm Value | VEmptySet | VNum Int | Error String
   deriving (Eq, Show)
 
 interprets :: UserTypes -> Model -> [Let] -> String
-interprets us m l = let (es, ws) = partitionEithers $ map (wellTyped us) l
+interprets us m l = let
+  vs = map (wellTyped us) l
+  es = concatMap fst vs
+  ws = mapMaybe snd vs
   in unlines $ es ++ map (\ s -> let p = runReduce us $ unlet s in
   (\ r -> prStmt p ++ '\n' : if null r then "verified: " ++ ppStmts [s] else r)
   $ interpretError us m p) ws

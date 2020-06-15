@@ -2,7 +2,6 @@ module Rcl.Eval (evalInput, getAllUserTypes) where
 
 import Control.Monad (unless)
 import Data.Char
-import Data.Either (isLeft)
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (delete, insertWith, member, toList)
 import Data.Maybe (fromMaybe)
@@ -47,7 +46,9 @@ loop l m = do
       us = getAllUserTypes m
       fp = parseAndType us pLet wellTyped s
       sp = parseAndType us set typeSet s
-      ck w k = isLeft sp && ckCmd w k
+      ck w k = case sp of
+        Right (_, Just _) -> False
+        _ -> ckCmd w k
       in case words s of
       [] -> loop l m
       [w] | ck w "exit" -> return ()
@@ -74,22 +75,25 @@ loop l m = do
             loop l $ initSess m { sessions = Map.delete si ses }
           else outputStrLn ("unknown session: " ++ si) >> loop l m
       _ -> case (sp, fp) of
-        (Right a, _) -> do
+        (Right (e, Just a), _) -> do
+          unless (null e) $ mapM_ outputStrLn e
           outputStrLn $ case eval m IntMap.empty a of
             Left f -> f
             Right v -> stValue m v
           loop l m
-        (_, Right f) -> outputStr (interprets us m [f])
-          >> loop l m
-        (Left (Left err1), Left (Left err2)) -> do
+        (_, Right (e, Just f)) -> do
+          unless (null e) $ mapM_ outputStrLn e
+          outputStr (interprets us m [f])
+          loop l m
+        (Left err1, Left err2) -> do
           outputStrLn err1
           outputStrLn err2
           loop l m
-        (Left (Right err1), _) -> do
-          outputStrLn err1
+        (Right (err1, _), _) -> do
+          mapM_ outputStrLn err1
           loop l m
-        (_, Left (Right err2)) -> do
-          outputStrLn err2
+        (_, Right (err2, _)) -> do
+          mapM_ outputStrLn err2
           loop l m
 
 ckCmd :: String -> String -> Bool
@@ -104,13 +108,11 @@ isAdd s = map toLower s == "add"
 keys :: String -> [String]
 keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
-parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> Either String a)
-   -> String -> Either (Either String String) a
+parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> ([String], Maybe a))
+   -> String -> Either String ([String], Maybe a)
 parseAndType us p tc s = case parse (spaces *> p <* eof) "" s of
-  Right a -> case tc us a of
-    Right b -> Right b
-    Left err -> Left $ Right err
-  Left err -> Left . Left $ show err
+  Right a -> Right $ tc us a
+  Left err -> Left $ show err
 
 printHelpText :: InputT IO ()
 printHelpText =

@@ -124,16 +124,16 @@ replMinus = foldSet mapSet
       _ -> BinOp o s1 s2 }
 
 reduceAndReconstruct :: UserTypes -> Let -> [String]
-reduceAndReconstruct us so = case wellTyped us so of
-  Right l -> let
+reduceAndReconstruct us so = let (e, ml) = wellTyped us so in case ml of
+  Just l -> let
     s = unlet l
     p@(r, vs) = runReduce us s
     t = prStmt p
     errs = filter (not . null) $ map checkVar vs
     n = replaceMinus (construct r vs)
-    in if null errs then if n == s then [t] else ["given: " ++ ppStmt s
+    in e ++ if null errs then if n == s then [t] else ["given: " ++ ppStmt s
     , "reduced: " ++ t, "reconstructed: " ++ ppStmt n] else errs
-  Left e -> [e]
+  Nothing -> e
 
 reduction :: UserTypes -> [Let] -> String
 reduction us = unlines . concatMap (reduceAndReconstruct us)
