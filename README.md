@@ -484,7 +484,9 @@ package [haskeline](https://github.com/judah/haskeline).
 ## References
 
 [RCL paper 2000][1]
+
 [USE tool 2007][2]
+
 [ANSI RBAC 2004][3]
 
 [1]: https://dl.acm.org/doi/10.1145/382912.382913
