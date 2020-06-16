@@ -1,0 +1,50 @@
+// On the Formal Definition of Separation-of-Duty Policies and their Composition
+// Gligor and Gavrila and Ferraiolo 2000
+users* (OE RS) & users* (OE (AO RS)) = {} // SSoD for RoleSet RS p. 6
+
+|roles* sessions OE U & (OE RS + OE AO RS)| < 2 // SDSoD Till p. 6
+
+let r1 = OE RS;
+    r2 = OE (AO RS);
+    p1 = permissions r1;
+    p2 = permissions r2;
+    o = OE (OBJS & objects (p1 + p2));
+    op1 = operations(p1, o) & OPS;
+    op2 = operations(p2, o) & OPS;
+in users r1 & users r2 = {}
+ /\ op1 /= {} => op2 = {} /\ op2 /= {} => op1 = {} // SSSoD
+
+let r1 = OE RS;
+    r2 = OE (AO RS);
+    p1 = permissions r1;
+    p2 = permissions r2;
+    o = OE (OBJS & objects (p1 + p2));
+    op1 = operations(p1, o) & OPS;
+    op2 = operations(p2, o) & OPS;
+in users r1 & users r2 = {}
+ /\ op1 /= {} => op2 = {}
+ /\ |op1| <= 1
+ /\ |operations*(OE RS, OE OBJS)| <= 1 // 1stSSSoD
+
+let r1 = OE RS;
+    r2 = OE (AO RS)
+    rs = roles (sessions OE U);
+in r1 in rs => {r2} & rs = {}  // DSoD
+
+let u = OE U; o = OE OBJS; p = OPS & operations(executions u, o) // past
+    q = OPS & operations*(roles(sessions u) & RS, o) // allowed
+in |q + p| > |p| => p = {}  // ObjDSoD
+
+|operations*(OE U, OE OBJS)| < 2 // ObjSSoD
+
+|operations*(OE R, OE OBJS)| < 2 // RObjSSoD
+
+|operations*(OE U, OBJS) & OPS| < |OPS| // OpSSoD p. 7
+
+|operations*(OE R, OBJS) & OPS| < |OPS| // ROpSSoD
+
+|operations*(roles (sessions OE U), OBJS) & OPS| < |OPS| // OpDSoD
+
+let u = OE U; o = OE OBJS; p = OPS & operations(executions u, o) // past
+    q = operations(u, o) & OPS
+in | p + q | < |OPS| // HDSoD

@@ -48,3 +48,7 @@ OWNRPM destroy O1 destroy O2
 PGPM add Parent delete Parent
 PPM add Read delete Read
 RPM can_read O1 can_read O2
+
+RS r2 r12
+OBJS obj1 obj3
+OPS op1 op2
