@@ -481,6 +481,12 @@ containing `historyDuplicates: IgnoreAll` exists, then duplicate
 entries are avoided. This functionality is provided by the haskell
 package [haskeline](https://github.com/judah/haskeline).
 
+## References
+
+[RCL paper 2000][1]
+[USE tool 2007][2]
+[ANSI RBAC 2004][3]
+
 [1]: https://dl.acm.org/doi/10.1145/382912.382913
 [2]: https://sourceforge.net/projects/useocl
 [3]: http://profsandhu.com/journals/tissec/ANSI+INCITS+359-2004.pdf
