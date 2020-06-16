@@ -42,11 +42,11 @@ pVar m (i, e) = let f = format m in hcat $ map text [sAll f, stVar i, sIn f]
 
 pLet :: Form -> Let -> Doc
 pLet m (Let as s) = let d = pStmt m s in
-  if null as then d else
-    hsep $ text "let" : punctuate semi (map (pAss m) as) ++ [text "in", d]
+  if null as then d else sep
+  [text "let" <+> fsep (punctuate semi $ map (pAss m) as), text "in" <+> d]
 
 pAss :: Form -> (String, Set) -> Doc
-pAss m (s, r) = hsep [text $ s ++ " =", pSet m r]
+pAss m (s, r) = text (s ++ " =") <+> pSet m r
 
 lLet :: Form -> Let -> Doc
 lLet m s = let d = pLet m s in case format m of
@@ -87,7 +87,7 @@ pSet m = let f = format m in foldSet FoldSet
       a1 = pParenSet o s1 d1
       a2 = pParenSet o s2 d2
       in case o of
-    Operations _ -> cat [p, parens $ hcat [d1, text ",", d2]]
+    Operations _ -> cat [p, parens $ cat [d1, text "," <+> d2]]
     Minus -> cat [a1, hcat [p, a2]]
     _ -> sep [a1, p <+> a2]
   , foldUn = \ (UnOp _ s) o d -> case o of
