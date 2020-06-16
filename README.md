@@ -466,12 +466,20 @@ The class invariants generated from the input file should validate in
 the same way as the internal evaluation that is triggered using the
 `-e` option.
 
+## interactive mode
+
 The `-i` option sends rcl2000 into interactive mode that can be
 terminated by entering `q` or pressing `Ctrl-C` (interrupt) or
 `Ctrl-D` (end of input). You may also try to enter `h` for help or
 some set expressions. This feature is still provisional.
 
 The `-h` option displays a usage message.
+
+The commands, sets, or statements entered at the prompt are kept in a
+history file named `.haskeline_history`. If a file `.haskeline`
+containing `historyDuplicates: IgnoreAll` exists, then duplicate
+entries are avoided. This functionality is provided by the haskell
+package [haskeline](https://github.com/judah/haskeline).
 
 [1]: https://dl.acm.org/doi/10.1145/382912.382913
 [2]: https://sourceforge.net/projects/useocl
