@@ -27,7 +27,8 @@ evalInput l m = let ls = map lineStmt l in do
   prefs <- readPrefs ".haskeline"
   runInputTWithPrefs prefs
     defaultSettings { historyFile = Just ".haskeline_history" }
-    $ modifyHistory (flip (foldr addHistoryRemovingAllDupes) ls) >> loop l m
+    $ modifyHistory (flip (foldl $ flip addHistoryRemovingAllDupes) ls)
+    >> loop l m
 
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
