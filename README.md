@@ -466,7 +466,7 @@ The class invariants generated from the input file should validate in
 the same way as the internal evaluation that is triggered using the
 `-e` option.
 
-## interactive mode
+## Interactive mode
 
 The `-i` option sends rcl2000 into interactive mode that can be
 terminated by entering `q` or pressing `Ctrl-C` (interrupt) or
