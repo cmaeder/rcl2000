@@ -415,9 +415,10 @@ typical static or dynamic SoD constraints.
     use Stmts.use Stmts.soil
 
 
-The above call relies on the files [rh, ua, pa, s and sets](examples)
-from the [examples](examples) directory. The default file extension is
-`.txt`, but could be changed using the `-x` option.
+The above call relies on the files
+[rh, ua, pa, pu, s, and sets](examples) from the [examples](examples)
+directory. The default file extension is `.txt`, but could be changed
+using the `-x` option.
 
 [rh](examples/rh.txt) contains roles, usually one role on a
 separate line. Several roles on one line define a senior role and all
