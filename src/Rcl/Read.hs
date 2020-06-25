@@ -15,7 +15,6 @@ import Rcl.Parse (pType, setDef)
 import Rcl.Type (isElem)
 
 import System.Directory (doesFileExist, makeAbsolute)
-import System.IO (IOMode (..), hGetContents, hSetEncoding, openFile, utf8)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
@@ -26,9 +25,7 @@ readMyFile v f = handle (\ e -> do
     b <- doesFileExist f
     if b then do
         when (v > 0) . putStrLn $ "reading: " ++ f
-        h <- openFile f ReadMode
-        hSetEncoding h utf8
-        s <- hGetContents h
+        s <- readFile f
         when (v > 1) $ do
           a <- makeAbsolute f
           putStrLn $ "successfully read: " ++ a

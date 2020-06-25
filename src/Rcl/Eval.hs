@@ -18,12 +18,10 @@ import Rcl.Type (typeSet, wellTyped)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
-import System.IO (hSetEncoding, stdin, utf8)
 import Text.ParserCombinators.Parsec
 
 evalInput :: [Let] -> Model -> IO ()
 evalInput l m = let ls = map lineStmt l in do
-  hSetEncoding stdin utf8
   prefs <- readPrefs ".haskeline"
   runInputTWithPrefs prefs
     defaultSettings { historyFile = Just ".haskeline_history" }

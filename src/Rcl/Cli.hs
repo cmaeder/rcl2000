@@ -8,13 +8,13 @@ import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 
 import Paths_rcl2000 (getDataFileName, version)
-import Rcl.Ast (Let, UserTypes)
+import Rcl.Ast (Format (..), Let, UserTypes)
 import Rcl.Data (Model)
 import Rcl.Eval (evalInput, getAllUserTypes)
 import Rcl.Interpret (interprets)
 import Rcl.Model (initModel)
 import Rcl.Parse (parser)
-import Rcl.Print (Form (Form), Format (..), pStmts, render)
+import Rcl.Print (Form (Form), pStmts, render)
 import Rcl.Read (readModel, readMyFile, readTypes)
 import Rcl.Reduce (reduction)
 import Rcl.ToOcl (ocl)
@@ -25,7 +25,7 @@ import System.Console.GetOpt
 import System.Directory (makeAbsolute)
 import System.FilePath (hasExtension, replaceDirectory, replaceExtension,
                         takeFileName, (</>))
-import System.IO (hSetEncoding, stdout, utf8)
+import System.IO.CodePage (withCP65001)
 import Text.ParserCombinators.Parsec (ParseError, parse)
 
 -- | describe all available options
@@ -144,7 +144,7 @@ dOpts = Opts
 
 -- | top level call with program name and arguments
 cli :: String -> [String] -> IO ()
-cli prN args = hSetEncoding stdout utf8 >> case getOpt Permute options args of
+cli prN args = withCP65001 $ case getOpt Permute options args of
       (os, n, []) -> let o = foldl (flip id) dOpts os in
         if help o then putStrLn $
           usageInfo ("usage: " ++ prN ++ " [options] <file>*") options

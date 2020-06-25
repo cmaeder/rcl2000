@@ -33,6 +33,7 @@ dependencies:
 - directory
 - filepath
 - haskeline
+- code-page
 
 library:
   source-dirs: src

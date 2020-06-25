@@ -1,5 +1,5 @@
 module Rcl.Print (ppStmts, prStmt, ppStmt, ppTerm, ppSet, ppVar,
-  Form (..), Format (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
+  Form (..), pStmts, rStmt, pSet, Doc, render, lineStmt) where
 
 import Rcl.Ast
 import Text.PrettyPrint
