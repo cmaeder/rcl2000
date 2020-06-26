@@ -4,7 +4,7 @@
 
 Compilation is done using `stack` from
 [http://haskellstack.org](http://haskellstack.org). My current stack
-version is `2.1.3`.
+version is `2.3.1`.
 
     stack build --pedantic
     stack run examples/AhnSandhuPaper2000.rcl
@@ -18,8 +18,8 @@ should also succeed with older ghc versions (down to `ghc-7.10.2` of
 kept clean using the tools
 [hlint](https://github.com/ndmitchell/hlint), and
 [scan](https://hackage.haskell.org/package/scan). Under windows you
-should use the
-[windows installer for stack](https://get.haskellstack.org/stable/windows-x86_64-installer.exe). For
+should use the installer for
+[stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/). For
 properly displaying unicode characters you may need to choose a proper
 font of your command console. The haskell package
 [code-page](https://github.com/RyanGlScott/code-page) is used to
