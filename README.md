@@ -17,7 +17,13 @@ should also succeed with older ghc versions (down to `ghc-7.10.2` of
 `lts-3.22`). Apart from the `--pedantic` flag the haskell sources are
 kept clean using the tools
 [hlint](https://github.com/ndmitchell/hlint), and
-[scan](https://hackage.haskell.org/package/scan).
+[scan](https://hackage.haskell.org/package/scan). Under windows you
+should use the
+[windows installer for stack](https://get.haskellstack.org/stable/windows-x86_64-installer.exe). For
+properly displaying unicode characters you may need to choose a proper
+font of your command console. The haskell package
+[code-page](https://github.com/RyanGlScott/code-page) is used to
+switch to the unicode code page 65001.
 
 ## Motivation
 
