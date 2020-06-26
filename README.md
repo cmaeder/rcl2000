@@ -14,9 +14,9 @@ Glasgow haskell compiler version. Currently this is `ghc-8.8.3` as
 specified by the resolver version, see
 [https://www.stackage.org/](https://www.stackage.org/). Compilation
 should also succeed with older ghc versions (down to `ghc-7.10.2` of
-`lts-3.22`). Apart from the `--pedantic` flag the haskell sources are
-kept clean using the tools
-[hlint](https://github.com/ndmitchell/hlint), and
+`lts-3.22` with `parsec1-1.0.0.6` and `haskeline-0.7.4.3`). Apart from
+the `--pedantic` flag the haskell sources are kept clean using the
+tools [hlint](https://github.com/ndmitchell/hlint), and
 [scan](https://hackage.haskell.org/package/scan). Under windows you
 should use the installer for
 [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/). For
