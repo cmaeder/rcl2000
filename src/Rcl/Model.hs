@@ -1,5 +1,5 @@
-module Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initModel, initRH,
-  initSess, insSet) where
+module Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initModel, initPU,
+                  initRH, initSess, insSet) where
 
 import qualified Data.IntMap as IntMap (IntMap, fromList, insert)
 import qualified Data.IntSet as IntSet
@@ -171,3 +171,6 @@ function bo m = let
 initSess :: Model -> Model
 initSess = insUserSetAux S . flip (foldr initFctMap)
   [(S, Roles TheOp), (S, User Singular TheOp), (U, Sessions)]
+
+initPU :: Model -> Model
+initPU = flip (foldr initFctMap) [(U, Executions), (P, Accessors)]

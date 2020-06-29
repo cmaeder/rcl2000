@@ -18,6 +18,7 @@ import System.Directory (doesFileExist, makeAbsolute)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
+-- | read file content with output depending on verbosity
 readMyFile :: Int -> FilePath -> IO String
 readMyFile v f = handle (\ e -> do
   print (e :: IOException)

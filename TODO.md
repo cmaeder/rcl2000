@@ -2,8 +2,6 @@
 
 ## Interactive interface (issue #6)
 
-- [ ] allow to write out changed sessions
-
 - [ ] support commands as given in the following help text
 
         , "role add|del <role> <juniorRole>*"

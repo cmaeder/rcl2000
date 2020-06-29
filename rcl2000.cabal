@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5bd90e2d8aac851bd57fd86a2d887eac4437922ac0bd1265c7ac6ce707b792e8
+-- hash: ad82a9e1afedf98eb08871f6b8375035db25a6b5ea018f6a381eb322fd197031
 
 name:           rcl2000
 version:        0.1.0.0
@@ -53,6 +53,7 @@ library
       Rcl.Eval
       Rcl.Interpret
       Rcl.Model
+      Rcl.Opts
       Rcl.Parse
       Rcl.Print
       Rcl.Read
@@ -60,6 +61,7 @@ library
       Rcl.ToOcl
       Rcl.ToSoil
       Rcl.Type
+      Rcl.Write
   other-modules:
       Paths_rcl2000
   hs-source-dirs:
