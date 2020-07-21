@@ -33,7 +33,7 @@ shadow = "shadowing: "
 wellTyped :: UserTypes -> Let -> ([String], Maybe Let)
 wellTyped us s = let (t, e) = runState (tyLet us s) [] in
   (if null e then [] else reverse $ ("  in: " ++ ppStmts [s]) : e
-  , if not $ any (not . isPrefixOf shadow) e then Just t else Nothing)
+  , if all (isPrefixOf shadow) e then Just t else Nothing)
 
 report :: String -> State [String] ()
 report t = modify (t :)
