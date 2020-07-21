@@ -132,7 +132,7 @@ The parser is more liberal than described in the [paper][1]:
   be any alphanum or the underscore. Other characters may be easily
   allowed if they are not used elsewhere.
 
-- The minus sign `-` can be used for set difference: "`AO(S)`" is the
+- the minus sign `-` can be used for set difference: "`AO(S)`" is the
   same as "`S-{OE(S)}`" or "`S - OE S`" as the curly braces will be
   derived by type checking. (The first part of the reduction is in
   fact the replacement of `AO` using `-`, curly braces and `OE`.)
@@ -140,10 +140,14 @@ The parser is more liberal than described in the [paper][1]:
 - the function `user` may also be written `users` (plural) and
   `objects` as `object` (singular).
 
-- user defined set may be overloaded and type annotated for
+- explicit `juniors` and `seniors` functions with and without `*` as
+  well as other partly overloaded functions have been added as
+  described below.
+
+- user defined sets may be overloaded and type annotated for
   disambiguation. "`U`" has type "`Us`" and may be written as
   "`U:Us`". Names are not restricted, even keywords or function names
-  may be used as names of sets. Sometimes annotations, parentheses
+  may be used as names of sets. Sometimes annotations, parentheses,
   commas, or semicolons are needed for proper parsing.
 
 - (non-empty) sets can be constructed on the fly using curly
@@ -152,8 +156,8 @@ The parser is more liberal than described in the [paper][1]:
   optional because the end of a set and the start of a second set can be
   recognized if no function names are used as base sets.
 
-- added `UP ⊆ U x P` history relation with `executions : U -> 2^P` and
-  `accessors : P -> 2^U`:
+- a `UP ⊆ U x P` history relation was added with functions
+  `executions : U -> 2^P` and `accessors : P -> 2^U`:
 
         executions(u : U) = { p | (u, p) in UP }
         accessors(p : P) = { u | (u, p) in UP }
