@@ -60,7 +60,7 @@ tyStmt :: UserTypes -> Stmt -> State [String] Stmt
 tyStmt = foldStmt FoldStmt
   { foldBool = \ _ o s1 s2 -> do
     r1 <- s1
-    BoolOp o r1 <$> s2
+    fmap (BoolOp o r1) s2
   , foldCmp = \ _ o e1 e2 -> do
     t1 <- e1
     t2 <- e2
@@ -83,16 +83,16 @@ tyStmt = foldStmt FoldStmt
             b1 <- ft (filt0 filt1) s1
             b2 <- ft (filt0 filt2) s2
             when (Set.null ts) $ md "wrongly typed relation"
-            pure . CmpOp o (Term TheSet $ mkSing b1) . Term TheSet $ mkSing b2
+            return . CmpOp o (Term TheSet $ mkSing b1) . Term TheSet $ mkSing b2
         (Term TheSet s1, EmptySet) | o `elem` [Eq, Ne] -> do
           n <- ft (not . isElem) s1
-          pure $ CmpOp o (Term TheSet n) t2
-        (Term Card _, Term Card _) | o /= Elem -> pure r
-        (Term Card _, Num _) | o /= Elem -> pure r
-        (Num _, Term Card _) | o /= Elem -> pure r
+          return $ CmpOp o (Term TheSet n) t2
+        (Term Card _, Term Card _) | o /= Elem -> return r
+        (Term Card _, Num _) | o /= Elem -> return r
+        (Num _, Term Card _) | o /= Elem -> return r
         _ -> do
           md "wrong comparison"
-          pure r } . tyTerm
+          return r } . tyTerm
 
 tyTerm :: UserTypes -> Term -> State [String] Term
 tyTerm us t = case t of
@@ -101,9 +101,9 @@ tyTerm us t = case t of
     case b of
       Card -> do
         n <- filterType ("cardinality: " ++ ppTerm t) True (not . isElem) r
-        pure $ Term b n
-      TheSet -> pure $ Term b r
-  _ -> pure t
+        return $ Term b n
+      TheSet -> return $ Term b r
+  _ -> return t
 
 disambig :: String -> SetType -> Set -> State [String] Set
 disambig str t s = let
@@ -114,22 +114,22 @@ disambig str t s = let
   ft = filt (\ e -> t `elem` [e, SetOf e])
   in case s of
   BinOp o s1 s2 -> case o of
-    Operations _ -> pure r
+    Operations _ -> return r
     _ -> do
       m1 <- ft s1
       m2 <- ft s2
-      pure . rt . BinOp o (mkSingle st m1) $ mkSingle st m2
-  UnOp o s1 -> if isOp o then pure r else do
+      return . rt . BinOp o (mkSingle st m1) $ mkSingle st m2
+  UnOp o s1 -> if isOp o then return r else do
       r1 <- filt (\ t1 -> case o of
         OE -> SetOf t == t1
         AO -> t1 == t
         Typed _ ts -> t1 == t && Set.member t ts
         _ -> False) s1
-      pure . rt $ UnOp o r1
+      return . rt $ UnOp o r1
   Braced bs -> do
     ms <- mapM (filterType str True ((== t) . SetOf)) bs
-    pure . rt $ Braced ms
-  _ -> pure r
+    return . rt $ Braced ms
+  _ -> return r
 
 filterType :: String -> Bool -> (SetType -> Bool) -> Set -> State [String] Set
 filterType str b f s = let
@@ -142,13 +142,13 @@ filterType str b f s = let
   in case r of
   [] -> do
     unless (null l) . md $ "wrongly typed '" ++ ppSet s ++ "'"
-    pure $ untyped s
+    return $ untyped s
   [a] -> case l of
     _ : _ : _ -> disambig str a $ untyped s
-    _ -> pure s
+    _ -> return s
   _ -> do
     when b . md $ "ambiguous '" ++ ppSet s ++ ":" ++ ppType rs ++ "'"
-    pure . mt $ untyped s
+    return . mt $ untyped s
 
 tySet :: UserTypes -> Set -> State [String] Set
 tySet us = let
@@ -163,7 +163,7 @@ tySet us = let
             True (\ t -> b /= Star && isElemOrSet P t ||
                    any (`isElemOrSet` t) [R, U]) a1
           b2 <- filterType ("2nd arg: " ++ ppSet s) True (isElemOrSet OBJ) a2
-          pure . mkTypedSet (Set.singleton $ toSet OP)
+          return . mkTypedSet (Set.singleton $ toSet OP)
             . BinOp o (mkSingleton True b1) $ mkSingleton True b2
             -- R + U x OBJ -> 2^OP
         _ -> do
@@ -175,11 +175,11 @@ tySet us = let
           b1 <- ft a1
           b2 <- ft a2
           when (Set.null ts) $ md "wrongly typed set operation" s
-          pure . mkTypedSet ts . BinOp o (mkSingle ts b1) $ mkSingle ts b2
+          return . mkTypedSet ts . BinOp o (mkSingle ts b1) $ mkSingle ts b2
   , foldUn = \ s o s1 -> do
       a1 <- s1
       b1 <- filterType ("application: " ++ ppSet s) (isOp o) (opArg o) a1
-      pure $ case o of
+      return $ case o of
         Typed ex _ -> UnOp (Typed ex $ typeOf b1) $ untyped b1
         _ -> opResult o b1
   , foldBraced = \ s bs -> do
@@ -189,13 +189,13 @@ tySet us = let
       fts <- mapM (filterType ("braced set: " ++ ppSet s) (Set.size ft <= 1)
         $ if Set.null ft then const True else (`Set.member` ft)) ss
       when (Set.null ft) $ md "wrongly typed braced set" s
-      pure . mkTypedSet (Set.map SetOf ft) $ Braced fts
+      return . mkTypedSet (Set.map SetOf ft) $ Braced fts
   , foldPrim = \ s -> case s of
       PrimSet p -> do
         let ts = Map.findWithDefault Set.empty p us
         when (Set.null ts) $ md "unknown base set" s
-        pure $ mkTypedSet ts s
-      _ -> pure s }
+        return $ mkTypedSet ts s
+      _ -> return s }
 
 isOp :: UnOp -> Bool
 isOp o = case o of

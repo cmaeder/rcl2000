@@ -1,12 +1,12 @@
 module Rcl.Eval (evalInput, getAllUserTypes) where
 
-import Control.Monad (unless)
+import Control.Monad (liftM2, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (delete, insertWith, member, toList, (!))
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set (insert, singleton, union)
+import qualified Data.Set as Set (foldr, insert, singleton, union)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
@@ -34,8 +34,8 @@ evalInput o l m = let ls = map lineStmt l in do
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
   let ins f b a = Map.insertWith Set.union (f a) . Set.singleton $ ElemTy b
-  in foldr (ins resource OBJ) (foldr (ins fst S) (foldr (ins pStr_ P)
-  (foldr (ins name U) (foldr (ins role R) (getUserTypes m) $ roles m)
+  in Set.foldr (ins resource OBJ) (foldr (ins fst S) (Set.foldr (ins pStr_ P)
+  (Set.foldr (ins name U) (Set.foldr (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
 
 loop :: Opts -> [Let] -> Model -> InputT IO ()
@@ -121,7 +121,7 @@ keys k = let l s = [':' : s, s] in l (take 1 k) ++ l k
 
 parseAndType :: UserTypes -> Parser a -> (UserTypes -> a -> ([String], Maybe a))
    -> String -> Either String ([String], Maybe a)
-parseAndType us p tc s = case parse (spaces *> p <* eof) "" s of
+parseAndType us p tc s = case parse (liftM2 const (spaces >> p) eof) "" s of
   Right a -> Right $ tc us a
   Left err -> Left $ show err
 

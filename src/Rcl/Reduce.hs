@@ -69,7 +69,7 @@ replOE e r = foldSet mapSet
 
 reduce :: UserTypes -> Int -> Stmt -> State Vars Stmt
 reduce us i s = case findSimpleOE s of
-  Nothing -> pure s
+  Nothing -> return s
   Just r -> do
     let ts = elemType $ typeOf r
         p = case Set.toList ts of

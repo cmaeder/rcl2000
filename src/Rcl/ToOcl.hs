@@ -17,7 +17,7 @@ toUse us = let
   l = Map.toList $ Map.differenceWith (\ s1 s2 ->
     let s = Set.difference s1 s2 in
     if Set.null s then Nothing else Just s) us builtinTypes in
-  concatMap toSetClass (Set.unions $ map (toSubs . snd) l)
+  concatMap toSetClass (Set.toList . Set.unions $ map (toSubs . snd) l)
   ++ concatMap toClass l ++ ["class RBAC < Builtin", "operations"]
   ++ concatMap toOp l ++ [end, "constraints", "context RBAC"]
 

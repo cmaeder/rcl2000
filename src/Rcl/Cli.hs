@@ -22,7 +22,6 @@ import Rcl.ToOcl (ocl)
 import Rcl.ToSoil (toSoil)
 import Rcl.Type (typeErrors)
 
-import System.Directory (makeAbsolute)
 import System.FilePath (replaceDirectory, replaceExtension)
 import System.IO.CodePage (withCP65001)
 import Text.ParserCombinators.Parsec (ParseError, parse)
@@ -93,9 +92,7 @@ writeMyFile :: Int -> FilePath -> String -> IO ()
 writeMyFile v f s = do
   when (v > 0) . putStrLn $ "writing: " ++ f
   writeFile f s -- use files are ASCII
-  when (v > 1) $ do
-    a <- makeAbsolute f
-    putStrLn $ "successfully written: " ++ a
+  when (v > 1) . putStrLn $ "successfully written: " ++ f
 
 stmtOpts :: Opts -> Bool
 stmtOpts o = any (\ f -> f o) [pprint, check, reduce, evaluate, toOcl]

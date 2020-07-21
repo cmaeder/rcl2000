@@ -8,7 +8,7 @@ import qualified Data.Set as Set
 
 import Rcl.Data
 
-import System.Directory (doesFileExist, makeAbsolute)
+import System.Directory (doesFileExist)
 
 -- | write file content with output depending on verbosity
 writeMyFile :: Int -> FilePath -> String -> IO ()
@@ -18,9 +18,7 @@ writeMyFile v f s = handle (\ e -> do
     b <- doesFileExist f
     when (v > 0) . putStrLn $ (if b then "over" else "") ++ "writing: " ++ f
     writeFile f s
-    when (v > 1) $ do
-      a <- makeAbsolute f
-      putStrLn $ "successfully written: " ++ a
+    when (v > 1) . putStrLn $ "successfully written: " ++ f
     unless (any isAlphaNum s) . putStrLn $ "WARN: no text in: " ++ f
 
 writeWordsFile :: Int -> FilePath -> [[String]] -> IO ()

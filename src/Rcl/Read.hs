@@ -1,7 +1,7 @@
 module Rcl.Read (readModel, readTypes, readMyFile) where
 
 import Control.Exception (IOException, handle)
-import Control.Monad (foldM, unless, when)
+import Control.Monad (foldM, liftM2, unless, when)
 import Data.Char (isAlphaNum, isLetter)
 import Data.List (partition)
 import qualified Data.Map as Map
@@ -14,7 +14,7 @@ import Rcl.Model (addP, addR, addS, addSURs, addU, checkU, initRH, insSet)
 import Rcl.Parse (pType, setDef)
 import Rcl.Type (isElem)
 
-import System.Directory (doesFileExist, makeAbsolute)
+import System.Directory (doesFileExist)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
@@ -27,9 +27,7 @@ readMyFile v f = handle (\ e -> do
     if b then do
         when (v > 0) . putStrLn $ "reading: " ++ f
         s <- readFile f
-        when (v > 1) $ do
-          a <- makeAbsolute f
-          putStrLn $ "successfully read: " ++ a
+        when (v > 1) . putStrLn $ "successfully read: " ++ f
         unless (any isAlphaNum s) . putStrLn
           $ "WARN: no text in: " ++ f
         return s
@@ -69,7 +67,7 @@ lp i = " (line " ++ show i ++ "): "
 
 readType :: FilePath -> UserTypes -> (Int, [String]) -> IO UserTypes
 readType f u (i, s) = let p = lp i in case s of
-  r : l -> case parse (pType <* eof) f r of
+  r : l -> case parse (liftM2 const pType eof) f r of
     Right t -> if null l then do
         putStrLn $ "missing names for" ++ p ++ r
         return u
