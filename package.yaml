@@ -34,6 +34,7 @@ dependencies:
 - filepath
 - haskeline
 - code-page
+- transformers
 
 library:
   source-dirs: src
