@@ -101,7 +101,7 @@ checkAccess m s oP oBj = let
   in case Map.lookup s $ sessions m of
     Nothing -> ("unknown session: " ++ s) : errs
     Just (Session u@(Name n) as) -> if pc then
-        if p `elem` permsOfRs m as then []
+        if p `Set.member` permsOfRs m as then []
         else let
           ru = rolesOfR (rh m) $ rolesOfU m u
           rs = rolesOfR (inv m) $ rolesOfP m p
@@ -110,7 +110,7 @@ checkAccess m s oP oBj = let
           nn = not nr
           us = map name . Set.toList . Set.unions $ map (usersOfR m) rl
           usr = null us
-          usn = not usr in if p `elem` permsOfRs m ru
+          usn = not usr in if p `Set.member` permsOfRs m ru
           then ["roles of user '" ++ n ++ "' not activated: " ++
             unwords (map role . Set.toList $ Set.intersection rs ru)]
           else ("missing assigned roles for user: " ++ n) :

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad82a9e1afedf98eb08871f6b8375035db25a6b5ea018f6a381eb322fd197031
+-- hash: 9cd12ccb3cf681a48eabdd60ef0cb2ec89a622f41c7f4399852035d62ab3a461
 
 name:           rcl2000
 version:        0.1.0.0
@@ -76,6 +76,7 @@ library
     , mtl
     , parsec1
     , pretty
+    , transformers
   default-language: Haskell2010
 
 executable rcl2000-exe
@@ -96,6 +97,7 @@ executable rcl2000-exe
     , parsec1
     , pretty
     , rcl2000
+    , transformers
   default-language: Haskell2010
 
 test-suite rcl2000-test
@@ -117,4 +119,5 @@ test-suite rcl2000-test
     , parsec1
     , pretty
     , rcl2000
+    , transformers
   default-language: Haskell2010
