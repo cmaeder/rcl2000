@@ -13,9 +13,9 @@ Via the file [stack.yaml](stack.yaml) the compilation uses the latest
 Glasgow haskell compiler version. Currently this is `ghc-8.8.3` as
 specified by the resolver version, see
 [https://www.stackage.org/](https://www.stackage.org/). Compilation
-should also succeed with older ghc versions (down to `ghc-7.10.2` with
-suitable packages). Apart from the `--pedantic` flag the haskell
-sources are kept clean using the tools
+should also succeed with other ghc versions (see
+[.travis.yml](.travis.yml)). Apart from the `--pedantic` flag the
+haskell sources are kept clean using the tools
 [hlint](https://github.com/ndmitchell/hlint), and
 [scan](https://hackage.haskell.org/package/scan). Under windows you
 should use the installer for
@@ -259,8 +259,8 @@ requiring `roles(s)` to be a subset of `roles(user(s))` for a session
 from `roles*(user(s))` may be activated in session `s` and any role
 from `roles*(s)` will be activated either explicitely or implicitely.
 An RCL statement to express the required subset relation between
-activated and authorized roles would the following, but this relation is
-enforced internally:
+activated and authorized roles would be the following, but this
+relation is enforced internally:
 
         OE(roles(OE(S))) ∈ roles*(user(OE(S)))
 
