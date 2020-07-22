@@ -272,7 +272,7 @@ isElemOrSet b t = case t of
   _ -> False
 
 elemType :: Set.Set SetType -> Set.Set SetType
-elemType = Set.foldr (ifSet Set.insert id) Set.empty
+elemType = Set.fold (ifSet Set.insert id) Set.empty
 
 ifSet :: (SetType -> a) -> a -> SetType -> a
 ifSet f c s = case s of

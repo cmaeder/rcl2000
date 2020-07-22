@@ -105,7 +105,7 @@ initBases :: Model -> Model
 initBases = flip (foldr insUserSet) primTypes
 
 initOpsMap :: Model -> Model
-initOpsMap m = m { opsMap = Set.foldr
+initOpsMap m = m { opsMap = Set.fold
     (\ p@(Permission (Operation oP) (Resource oBj)) n ->
     let q = (toInt m $ pStr p, toInt m oBj)
     in Map.insert q (IntSet.singleton $ toInt m oP) n) Map.empty

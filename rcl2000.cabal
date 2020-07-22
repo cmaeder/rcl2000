@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8c11f21500543c21eb20a95b9d145b85651b28b3e387a5c485fd02b85e70101b
+-- hash: 07a55ced3b44eb3fcbd9e72ef2727ca7a22a5dc7b5c444b2ee0fb16123e027bc
 
 name:           rcl2000
 version:        0.1.0.0
@@ -67,7 +67,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.5 && <5
+      base >=4.3 && <5
     , code-page
     , containers
     , directory
@@ -87,7 +87,7 @@ executable rcl2000-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.5 && <5
+      base >=4.3 && <5
     , code-page
     , containers
     , directory
@@ -109,7 +109,7 @@ test-suite rcl2000-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.5 && <5
+      base >=4.3 && <5
     , code-page
     , containers
     , directory

@@ -80,7 +80,7 @@ strP :: String -> String -> P
 strP u v = Permission (Operation u) $ Resource v
 
 usersOfRs :: Model -> Set.Set R -> Set.Set U
-usersOfRs m r = Set.foldr
+usersOfRs m r = Set.fold
   (\ (u, v) -> if v `Set.member` r then Set.insert u else id) Set.empty $ ua m
 
 usersOfR :: Model -> R -> Set.Set U
@@ -91,15 +91,15 @@ rolesOfR m s = Set.unions $ s
   : map (flip (Map.findWithDefault Set.empty) m) (Set.toList s)
 
 rolesOfU :: Model -> U -> Set.Set R
-rolesOfU m u = Set.foldr
+rolesOfU m u = Set.fold
   (\ (v, r) -> if u == v then Set.insert r else id) Set.empty $ ua m
 
 rolesOfP :: Model -> P -> Set.Set R
-rolesOfP m p = Set.foldr
+rolesOfP m p = Set.fold
   (\ (v, r) -> if p == v then Set.insert r else id) Set.empty $ pa m
 
 permissionsOfRs :: Model -> Set.Set R -> Set.Set P
-permissionsOfRs m r = Set.foldr
+permissionsOfRs m r = Set.fold
   (\ (p, v) -> if v `Set.member` r then Set.insert p else id) Set.empty $ pa m
 
 permissionsOfR :: Model -> R -> Set.Set P

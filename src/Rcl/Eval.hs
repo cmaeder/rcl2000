@@ -6,7 +6,7 @@ import Data.Char
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (delete, insertWith, member, toList, (!))
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set (foldr, insert, singleton, union)
+import qualified Data.Set as Set (fold, insert, singleton, union)
 
 import Rcl.Ast
 import Rcl.Check (checkAccess)
@@ -34,8 +34,8 @@ evalInput o l m = let ls = map lineStmt l in do
 getAllUserTypes :: Model -> UserTypes
 getAllUserTypes m =
   let ins f b a = Map.insertWith Set.union (f a) . Set.singleton $ ElemTy b
-  in Set.foldr (ins resource OBJ) (foldr (ins fst S) (Set.foldr (ins pStr_ P)
-  (Set.foldr (ins name U) (Set.foldr (ins role R) (getUserTypes m) $ roles m)
+  in Set.fold (ins resource OBJ) (foldr (ins fst S) (Set.fold (ins pStr_ P)
+  (Set.fold (ins name U) (Set.fold (ins role R) (getUserTypes m) $ roles m)
   $ users m) $ permissions m) . Map.toList $ sessions m) $ objects m
 
 loop :: Opts -> [Let] -> Model -> InputT IO ()
