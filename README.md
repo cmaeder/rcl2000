@@ -321,7 +321,7 @@ roles of sessions as in the following statement.
         |roles*(sessions(OE(U))) ∩ OE(CR)| ≤ 1
 
 It should be noted that the set of conflict sets `CR` can not be used
-if static and dynamic SoD constraints should be enforced
+if static *and* dynamic SoD constraints should be enforced
 *simultaneously*, because a static constraint already rules out the
 mere activation of conflicting roles in sessions. For both, SSoD and
 DSoD, two different sets of sets need to and *can be* defined,
@@ -452,7 +452,7 @@ permission. All other words of the same line are users.
 [s](examples/s.txt) contains users sessions. A line starts with a
 session id and a user name and all remaining words are the associated
 *activated* roles. Note that the activated roles must be a subset of
-the *assigned* roles of the user.
+the *assigned/authorized* roles of the user.
 
 [sets](examples/sets.txt) contains user defined sets of known
 entities like roles, users, etc. The leading word in a line must a new
