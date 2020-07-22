@@ -3,7 +3,6 @@ module Rcl.Check (properStructure, checkAccess) where
 import qualified Data.IntMap as IntMap
 import qualified Data.IntSet as IntSet
 import qualified Data.Map as Map
-import Data.Monoid (All (..))
 import qualified Data.Set as Set
 
 import Rcl.Ast (Base, SetType (..), baseType, primTypes)
@@ -48,12 +47,12 @@ properStructure m = let
   && Map.keysSet i `Set.isSubsetOf` rs
   && all (`Set.isSubsetOf` rs) (Map.elems i)
   && nonCyclicRH i
-  && getAll (Map.foldMapWithKey (\ s js ->
-       All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) i)
-       $ Set.toList js) h)
-  && getAll (Map.foldMapWithKey (\ s js ->
-       All . all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) h)
-       $ Set.toList js) i)
+  && Map.foldrWithKey (\ s js b ->
+       b && all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) i)
+       (Set.toList js)) True h
+  && Map.foldrWithKey (\ s js b ->
+       b && all ((s `Set.member`) . flip (Map.findWithDefault Set.empty) h)
+       (Set.toList js)) True i
   && all (all checkValue . Map.toList) vs
   && all (all (\ (t, (v, _)) -> checkInts m (baseType t) $ getInts v)
          . Map.toList) vs

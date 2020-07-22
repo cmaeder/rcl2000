@@ -2,7 +2,6 @@ module Rcl.Parse (pLet, pType, parser, set, setDef, stmt) where
 
 import Control.Applicative hiding (optional)
 import Data.Char (isLetter)
-import Data.Functor (void)
 import qualified Data.Set as Set (singleton)
 
 import Rcl.Ast
@@ -188,3 +187,6 @@ nestedComment op cl =
 lineComment :: String -> Parser ()
 lineComment op =
   try (string op) *> void (manyTill anyChar $ void newline <|> eof)
+
+void :: Parser a -> Parser ()
+void = fmap $ const ()
