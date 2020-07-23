@@ -1,6 +1,6 @@
 # TODO
 
-## Interactive interface (issue #6)
+## Interactive interface
 
 - [ ] support commands as given in the following help text
 
@@ -22,8 +22,6 @@
 ## Release
 
 - [ ] make a proper release
-
-- [ ] move git repo to public (cmaeder) github
 
 ## Papers possible
 

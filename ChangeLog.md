@@ -4,6 +4,17 @@
 
 ### Added
 
+- writing back changed sessions and accesses (s and pu files) in
+  interactive mode
+
+- user-permission history via executions and accessors functions
+
+- top-level let-in syntax for statements
+
+- explicit set notation using curly braces
+
+- overloaded set names and disambiguation using types
+
 - TODO.md
 
 - documentation as README.md
