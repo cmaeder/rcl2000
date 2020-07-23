@@ -1,7 +1,7 @@
 module Rcl.Eval (evalInput, getAllUserTypes) where
 
 import Control.Monad (liftM2, unless)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans (lift)
 import Data.Char
 import qualified Data.IntMap as IntMap (empty)
 import qualified Data.Map as Map (delete, insertWith, member, toList, (!))
@@ -63,7 +63,7 @@ loop o l m = do
          if null ls then do
              let n = m { up = Set.insert
                        (user $ sessions m Map.! si, strP oP oBj) $ up m }
-             liftIO $ writePU (verbose o) (optsFile o puFile) n
+             lift $ writePU (verbose o) (optsFile o puFile) n
              loop o l n
            else loop o l m
       w : ad : si : urs | ck w "session" && ckAd ad ->
@@ -76,13 +76,13 @@ loop o l m = do
             Right n -> do
               outputStrLn $ "session added: " ++ si
               let nm = initSess n
-              liftIO $ writeS (verbose o) (optsFile o sessFile) nm
+              lift $ writeS (verbose o) (optsFile o sessFile) nm
               loop o l nm
         else let ses = sessions m in if si `Map.member` ses then do
             unless (null urs) . outputStrLn $ "ignoring: " ++ unwords urs
             outputStrLn $ "session deleted: " ++ si
             let n = initSess m { sessions = Map.delete si ses }
-            liftIO $ writeS (verbose o) (optsFile o sessFile) n
+            lift $ writeS (verbose o) (optsFile o sessFile) n
             loop o l n
           else outputStrLn ("unknown session: " ++ si) >> loop o l m
       _ -> case (sp, fp) of
