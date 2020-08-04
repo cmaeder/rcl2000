@@ -67,7 +67,8 @@ function and the only one (apart from set operations like union and
 intersection). The application of unary functions can be written
 *with* (as in the original [paper][1]) or *without parentheses*:
 "`AO(OE(CR))`" versus "`AO OE CR`". (This is only similar to Haskell
-as this juxtaposition in RCL is right-associative.)
+as RCL is a first-order language and juxtaposition is made
+right-associative.)
 
 As in the [paper][1] the functions `user` and `roles` are overloaded
 and functions `roles` and `permissions` have "`*`" variants that
@@ -307,11 +308,19 @@ statement. However, it does not make sense to put a junior and senior
 role into one conflict set, because this would imply that only the
 junior role could be authorized. If the senior role is authorized then
 the junior role is authorized implicitely yielding the unintended
-conflict. In fact only *incomparable* roles with respect to the
-hierarchy relation `<=` should be put into conflict sets! Singleton
-(or even empty) conflict sets as elements of `CR` also do not make
-sense as for these sets the intersection will always be at most one
-element.
+conflict. In fact no roles with common senior roles should be put into
+conflict sets! Singleton (or even empty) conflict sets as elements of
+`CR` also do not make sense as for these sets the intersection will
+always be at most one element.
+
+The constraint to exclude conflicting roles via common senior roles
+could be given as:
+
+        let cr = OE(CR); r1 = OE(cr); r2 = OE(AO(cr))
+        in seniors*(r1) ∩ seniors*(r2) = ∅
+
+The construction `OE(AO(cr))` takes a second role `r2` from `cr` that is
+different from `r1`.
 
 The [paper][1] distinguishes *static* (SSoD) and *dynamic* (DSoD)
 separation of duty. SSoD addresses *assigned* (or with a role

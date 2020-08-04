@@ -48,3 +48,6 @@ in |q + p| > |p| => p = {}  // ObjDSoD
 let u = OE U; o = OE OBJS; p = OPS & operations(executions u, o) // past
     q = operations(u, o) & OPS
 in | p + q | < |OPS| // HDSoD
+
+let cr = OE(CR); r1 = OE(cr); r2 = OE(AO(cr))
+in seniors*(r1) ∩ seniors*(r2) = ∅  // no common senior
