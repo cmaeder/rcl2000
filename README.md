@@ -4,7 +4,7 @@
 
 Compilation is done using `stack` from
 [http://haskellstack.org](http://haskellstack.org). My current stack
-version is `2.3.1`.
+version is `2.3.3`.
 
     stack build --pedantic
     stack run examples/AhnSandhuPaper2000.rcl
