@@ -10,13 +10,13 @@ version is `2.3.3`.
     stack run examples/AhnSandhuPaper2000.rcl
 
 Via the file [stack.yaml](stack.yaml) the compilation uses the latest
-Glasgow haskell compiler version. Currently this is `ghc-8.8.3` as
+Glasgow haskell compiler version. Currently this is `ghc-8.8.4` as
 specified by the resolver version, see
 [https://www.stackage.org/](https://www.stackage.org/). Compilation
 should also succeed with other ghc versions (see
 [.travis.yml](.travis.yml)). Apart from the `--pedantic` flag the
 haskell sources are kept clean using the tools
-[hlint](https://github.com/ndmitchell/hlint), and
+[hlint](https://github.com/ndmitchell/hlint) and
 [scan](https://hackage.haskell.org/package/scan). Under windows you
 should use the installer for
 [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/). For
