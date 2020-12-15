@@ -21,10 +21,10 @@ haskell sources are kept clean using the tools
 [scan](https://hackage.haskell.org/package/scan). Under windows you
 should use the installer for
 [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/). For
-properly displaying unicode characters you may need to choose a proper
+properly displaying Unicode characters you may need to choose a proper
 font of your command console. The haskell package
 [code-page](https://github.com/RyanGlScott/code-page) is used to
-switch to the unicode code page 65001.
+switch to the Unicode code page 65001.
 
 ## Motivation
 
@@ -50,14 +50,14 @@ The abstract syntax tree of RCL 2000 as given in the [paper][1] is
 reflected by the haskell data types in [Ast](src/Rcl/Ast.hs). We
 denote the function terms over sets simply as sets with type `Set` and
 avoid the words term, token and expression. Statements have the type
-`Stmt` and are actually boolean formulas. For these recursive
+`Stmt` and are actually Boolean formulas. For these recursive
 data types handy folding functions are provided to shorten repetitive
 recursive function definitions.
 
 A parser for a list of statements is implemented in
 [Parse](src/Rcl/Parse.hs).  The code uses the (`parsec1` subset of the
 old) haskell `parsec` parser combinator library without separate
-scanner. The parser accepts ascii, latex and unicode variants of the
+scanner. The parser accepts ASCII, LaTeX and Unicode variants of the
 syntax. The (currently) accepted function names are `user`, `roles`,
 `sessions`, `permissions`, `operations`, and `objects`. Note that
 `user` is singular and `objects` is plural. Only the `user` function
@@ -73,7 +73,7 @@ right-associative.)
 
 As in the [paper][1] the functions `user` and `roles` are overloaded
 and functions `roles` and `permissions` have "`*`" variants that
-consider a role hierarchy. (The supported latex suffix is "`^{*}`".)
+consider a role hierarchy. (The supported LaTeX suffix is "`^{*}`".)
 Also the general notational device for set-valued functions is
 respected. This allows whole sets instead of single values as
 arguments. (Only the `user` function for sessions is not set-valued.)
@@ -90,7 +90,7 @@ appended to the `-t` option. The command line interface for the binary
 is defined in [Cli](src/Rcl/Cli.hs).
 
 The module [Print](src/Rcl/Print.hs) allows to output parsed statements
-to ascii, latex or unicode text with or without redundant parentheses.
+to ASCII, LaTeX or Unicode text with or without redundant parentheses.
 Pretty printed output can be successfully re-parsed, i.e. round tripped.
 Printing uses the (good'n old) `pretty` haskell package (see
 `dependencies` in [package.yaml](package.yaml)).
@@ -130,7 +130,7 @@ The parser is more liberal than described in the [paper][1]:
 
 - some parentheses may be omitted.
 
-- set names can start with any unicode letter. Further characters may
+- set names can start with any Unicode letter. Further characters may
   be any alphanum or the underscore. Other characters may be easily
   allowed if they are not used elsewhere.
 
@@ -253,13 +253,13 @@ sessions.
         user(s) = defined unique user of session s
         sessions(u) = { s | user(s) = u }
 
-The `roles` function applied to a session returns the *explicitely
+The `roles` function applied to a session returns the *explicitly
 activated* roles of this session. These *activated* roles must be a
 subset of the roles *authorized* by the session's user. Simply
 requiring `roles(s)` to be a subset of `roles(user(s))` for a session
 `s` is not good enough in the presence of role hierarchies. Any role
 from `roles*(user(s))` may be activated in session `s` and any role
-from `roles*(s)` will be activated either explicitely or implicitely.
+from `roles*(s)` will be activated either explicitly or implicitly.
 An RCL statement to express the required subset relation between
 activated and authorized roles would be the following, but this
 relation is enforced internally:
@@ -282,11 +282,11 @@ restrict any role in the role hierarchy to have at most a single
 immediate junior role. Such a hierarchy would be a forest of trees
 with roots at the bottom. A reversed limited hierarchy with roots at
 the top would result when using `seniors` for single immediate
-seniors. In practise this may be rarely useful, though.
+seniors. In practice this may be rarely useful, though.
 
 A statement "`|juniors(OE(R))| = 0`" or "`|juniors*(OE(R))| = 1`" or
 equivalently for `seniors` would even prohibit a role hierarchy! This
-demonstrates the expresive power of RCL with these additional
+demonstrates the expressive power of RCL with these additional
 `juniors` and `seniors` functions.
 
 The conflict sets `CR`, `CP`, or `CU` described in the [paper][1] are
@@ -308,7 +308,7 @@ For a role hierarchy the function `roles*` must be used in the above
 statement. However, it does not make sense to put a junior and senior
 role into one conflict set, because this would imply that only the
 junior role could be authorized. If the senior role is authorized then
-the junior role is authorized implicitely yielding the unintended
+the junior role is authorized implicitly yielding the unintended
 conflict. In fact no roles with common senior roles should be put into
 conflict sets! Singleton (or even empty) conflict sets as elements of
 `CR` also do not make sense as for these sets the intersection will
@@ -337,8 +337,8 @@ mere activation of conflicting roles in sessions. For both, SSoD and
 DSoD, two different sets of sets need to and *can be* defined,
 i.e. `SCR` and `DCR`. `CR` (as well as `CP` or `CU`) are not builtin
 but *user defined*. `SCR` and `DCR` can be defined in the
-[types](examles/types.txt) file in type checking (`-t`) mode or in the
-[sets](examles/sets.txt) file.
+[types](examples/types.txt) file in type checking (`-t`) mode or in the
+[sets](examples/sets.txt) file.
 
 Usually several permissions are assigned to a single role. In order to
 avoid conflicts maybe more intuitively, a set of conflicting
@@ -347,7 +347,7 @@ permission sets like `CP` may be used.
         |permissions(roles*(OE(U))) ∩ OE(CP)| ≤ 1
 
 Here the use of `permissions*` is not required as `roles*` already
-transitively closes the role sets. The same statment can be expressed
+transitively closes the role sets. The same statement can be expressed
 equivalently.
 
         |permissions*(roles(OE(U))) ∩ OE(CP)| ≤ 1
@@ -423,7 +423,7 @@ to be:
 
 For different numbers `n` different set of set of roles could be
 defined, like the above conflicting roles set `CR` for
-`n=2`. Summerizing, RCL is also able or even better suited to express
+`n=2`. Summarizing, RCL is also able or even better suited to express
 typical static or dynamic SoD constraints.
 
 ## Usage
