@@ -19,12 +19,18 @@
 
 - [ ] give usage example (chinese wall, ordered access) for history
 
+## Generalization
+
+- [ ] support any set of tables (with closures for equally typed columns)
+
+- [ ] allow to qualify column names with table names for disambiguation
+
 ## Release
 
 - [ ] make a proper release
 
 ## Papers possible
 
-- [ ] implementation in Haskell as functional pearl
+- [ ] implementation in Haskell as functional or educational pearl
 
 - [ ] on RCL 2020

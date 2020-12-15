@@ -3,8 +3,9 @@
 ## Building
 
 Compilation is done using `stack` from
-[http://haskellstack.org](http://haskellstack.org). My current stack
-version is `2.3.3`.
+[http://haskellstack.org](http://haskellstack.org). My current
+[stack release](https://github.com/commercialhaskell/stack/releases)
+version is `2.5.1`.
 
     stack build --pedantic
     stack run examples/AhnSandhuPaper2000.rcl
