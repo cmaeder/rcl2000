@@ -11,7 +11,7 @@ version is `2.5.1`.
     stack run examples/AhnSandhuPaper2000.rcl
 
 Via the file [stack.yaml](stack.yaml) the compilation uses the latest
-Glasgow haskell compiler version. Currently this is `ghc-8.8.4` as
+Glasgow haskell compiler version. Currently this is `ghc-8.10.4` as
 specified by the resolver version, see
 [https://www.stackage.org/](https://www.stackage.org/). Compilation
 should also succeed with other ghc versions (see
