@@ -17,7 +17,7 @@ import Rcl.Opts (Opts (..), optsFile)
 import Rcl.Parse (pLet, set)
 import Rcl.Print (lineStmt)
 import Rcl.Type (typeSet, wellTyped)
-import Rcl.Write (writeS, writePU)
+import Rcl.Write (writePU, writeS)
 
 import System.Console.Haskeline
 import System.Console.Haskeline.History (addHistoryRemovingAllDupes)
