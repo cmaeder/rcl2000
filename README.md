@@ -55,7 +55,7 @@ data types handy folding functions are provided to shorten repetitive
 recursive function definitions.
 
 A parser for a list of statements is implemented in
-[Parse](src/Rcl/Parse.hs).  The code uses the (`parsec1` subset of the
+[Parse](src/Rcl/Parse.hs). The code uses the (`parsec1` subset of the
 old) haskell `parsec` parser combinator library without separate
 scanner. The parser accepts ASCII, LaTeX and Unicode variants of the
 syntax. The (currently) accepted function names are `user`, `roles`,
@@ -364,7 +364,7 @@ assign conflicting permissions to roles comparable via `<=`. Assigning
 conflicting permissions to a single role or comparable roles can be
 avoided by the following constraint.
 
-         |permissions*(OE(R)) ∩ OE(CP)| ≤ 1
+        |permissions*(OE(R)) ∩ OE(CP)| ≤ 1
 
 The set `CU` can be used to restrict badly collaborating users. The
 interactions with conflicting roles and the presence of role
