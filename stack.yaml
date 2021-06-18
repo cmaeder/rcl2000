@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-17.14
+resolver: lts-18.0
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,13 +41,8 @@ packages:
 #
 extra-deps:
 - parsec1-1.0.0.7
-- haskeline-0.8.0.0
-- code-page-0.2
 
 # Override default flag values for local packages and extra-deps
-flags:
-  haskeline:
-    terminfo: false
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
