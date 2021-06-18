@@ -26,7 +26,7 @@ description:         Please see the README on GitHub at <https://github.com/cmae
 
 dependencies:
 - base >= 4.3 && < 5
-- parsec
+- parsec1
 - pretty
 - mtl
 - containers

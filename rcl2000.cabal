@@ -72,7 +72,7 @@ library
     , filepath
     , haskeline
     , mtl
-    , parsec
+    , parsec1
     , pretty
     , transformers
   default-language: Haskell2010
@@ -92,7 +92,7 @@ executable rcl2000-exe
     , filepath
     , haskeline
     , mtl
-    , parsec
+    , parsec1
     , pretty
     , rcl2000
     , transformers
@@ -114,7 +114,7 @@ test-suite rcl2000-test
     , filepath
     , haskeline
     , mtl
-    , parsec
+    , parsec1
     , pretty
     , rcl2000
     , transformers
