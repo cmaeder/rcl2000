@@ -1,5 +1,6 @@
 module Rcl.Parse (pLet, pType, parser, set, setDef, stmt) where
 
+import Control.Applicative ((*>), (<*), (<*>), (<$>), (<$))
 import Data.Char (isLetter)
 import qualified Data.Set as Set (singleton)
 
