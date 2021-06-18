@@ -1,6 +1,9 @@
+{-# LANGUAGE CPP #-}
 module Rcl.Parse (pLet, pType, parser, set, setDef, stmt) where
 
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative ((*>), (<*), (<*>), (<$>), (<$))
+#endif
 import Data.Char (isLetter)
 import qualified Data.Set as Set (singleton)
 
